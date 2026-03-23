@@ -96,64 +96,32 @@ export default function PostRFQ() {
     setSubmitting(true)
     setError('')
 
-    const payload = {
-      poster_id: profile.id,
-      title: title.trim(),
-      trade_needed: tradeNeeded,
-      project_type: projectType || null,
-      scope_description: scopeDescription.trim(),
-      budget_min: parseMoney(budgetMin),
-      budget_max: parseMoney(budgetMax),
-      sq_footage: sqFootage ? parseInt(sqFootage) : null,
-      start_date: startDate || null,
-      duration_weeks: durationWeeks ? parseInt(durationWeeks) : null,
-      bid_deadline: bidDeadline ? new Date(bidDeadline).toISOString() : null,
-      location_city: locationCity.trim() || null,
-      location_state: locationState.trim() || null,
-      location_zip: locationZip.trim(),
-      requirements,
-      status: 'open',
-    }
+    const { data: newRfqId, error: rfqError } = await supabase.rpc('post_rfq', {
+      p_title: title.trim(),
+      p_trade_needed: tradeNeeded,
+      p_project_type: projectType || null,
+      p_scope_description: scopeDescription.trim(),
+      p_budget_min: parseMoney(budgetMin),
+      p_budget_max: parseMoney(budgetMax),
+      p_sq_footage: sqFootage ? parseInt(sqFootage) : null,
+      p_start_date: startDate || null,
+      p_duration_weeks: durationWeeks ? parseInt(durationWeeks) : null,
+      p_bid_deadline: bidDeadline ? new Date(bidDeadline).toISOString() : null,
+      p_location_zip: locationZip.trim(),
+      p_location_city: locationCity.trim() || null,
+      p_location_state: locationState.trim() || null,
+      p_requirements: requirements,
+      p_share_to_feed: shareToFeed,
+    })
 
-    const { data: rfqData, error: rfqError } = await supabase
-      .from('rfqs')
-      .insert(payload)
-      .select('id')
-      .single()
-
-    if (rfqError || !rfqData) {
-      setError('Failed to post RFQ. Please try again.')
+    if (rfqError || !newRfqId) {
+      setError(rfqError?.message ?? 'Failed to post RFQ. Please try again.')
       setSubmitting(false)
       return
     }
 
-    const newRfqId = (rfqData as { id: string }).id
-
-    if (!isContractor) {
-      const newBalance = creditBalance - RFQ_CREDIT_COST
-      await supabase.from('users').update({ credit_balance: newBalance }).eq('id', profile.id)
-      await supabase.from('credit_ledger').insert({
-        user_id: profile.id,
-        delta: -RFQ_CREDIT_COST,
-        balance_after: newBalance,
-        transaction_type: 'spend',
-        description: `Posted RFQ: ${title.trim()}`,
-      })
-      await refreshProfile()
-    }
-
-    if (shareToFeed) {
-      const feedBody = `Seeking ${tradeNeeded} Bids — ${title}\n\n${scopeDescription.slice(0, 280)}${scopeDescription.length > 280 ? '...' : ''}`
-      await supabase.from('posts').insert({
-        author_id: profile.id,
-        post_type: 'bid_post',
-        body: feedBody,
-        linked_rfq_id: newRfqId,
-        hashtags: [tradeNeeded.replace(/ /g, ''), 'OpenBid', 'RFQ'],
-      })
-    }
-
-    navigate(`/bids/${newRfqId}`)
+    await refreshProfile()
+    navigate(`/bids/${newRfqId as string}`)
   }
 
   return (
