@@ -541,25 +541,17 @@ as $$
 declare
   v_rfq_id        uuid;
   v_account_type  text;
-  v_credit_balance integer;
   v_new_balance   integer;
   v_rfq_cost      integer := 10;
 begin
-  -- Load caller's account type and credit balance
-  select account_type, credit_balance
-  into   v_account_type, v_credit_balance
+  -- Load caller's account type
+  select account_type
+  into   v_account_type
   from   public.users
   where  id = auth.uid();
 
   if v_account_type is null then
     raise exception 'User not found';
-  end if;
-
-  -- Enforce credit requirement for non-contractors
-  if v_account_type != 'contractor' then
-    if v_credit_balance < v_rfq_cost then
-      raise exception 'Insufficient credits: need % credits, have %', v_rfq_cost, v_credit_balance;
-    end if;
   end if;
 
   -- Insert RFQ
@@ -574,10 +566,19 @@ begin
     coalesce(p_requirements, '{}'), 'open'
   ) returning id into v_rfq_id;
 
-  -- Atomically deduct credits and write ledger for non-contractors
+  -- Atomically deduct credits for non-contractors using a single conditional UPDATE
+  -- (prevents double-spend race between concurrent transactions)
   if v_account_type != 'contractor' then
-    v_new_balance := v_credit_balance - v_rfq_cost;
-    update public.users set credit_balance = v_new_balance where id = auth.uid();
+    update public.users
+    set    credit_balance = credit_balance - v_rfq_cost
+    where  id = auth.uid()
+      and  credit_balance >= v_rfq_cost
+    returning credit_balance into v_new_balance;
+
+    if not found then
+      raise exception 'Insufficient credits: need % credits', v_rfq_cost;
+    end if;
+
     insert into public.credit_ledger (user_id, delta, balance_after, transaction_type, description)
     values (auth.uid(), -v_rfq_cost, v_new_balance, 'spend', 'Posted RFQ: ' || p_title);
   end if;
