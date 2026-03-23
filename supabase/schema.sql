@@ -895,3 +895,78 @@ $$;
 
 revoke execute on function public.apply_job(uuid, text) from public;
 grant  execute on function public.apply_job(uuid, text) to authenticated;
+
+-- ============================================================
+-- FUNCTION: send_message
+-- Atomically deducts 3 credits for non-contractor first contact
+-- with a contractor, inserts message, and notifies recipient.
+-- ============================================================
+create or replace function public.send_message(
+  p_recipient_id uuid,
+  p_thread_id    text,
+  p_body         text
+) returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_msg_id          uuid;
+  v_sender_acct     text;
+  v_recipient_acct  text;
+  v_is_first_contact boolean;
+  v_cold_msg_cost   integer := 3;
+  v_new_balance     integer;
+begin
+  select account_type into v_sender_acct   from public.users where id = auth.uid();
+  select account_type into v_recipient_acct from public.users where id = p_recipient_id;
+
+  if v_sender_acct is null   then raise exception 'Sender not found'; end if;
+  if v_recipient_acct is null then raise exception 'Recipient not found'; end if;
+  if auth.uid() = p_recipient_id then raise exception 'Cannot message yourself'; end if;
+  if p_body is null or trim(p_body) = '' then raise exception 'Message body cannot be empty'; end if;
+
+  -- Credit gate: non-contractor first-contact with a contractor costs 3 credits
+  if v_sender_acct != 'contractor' and v_recipient_acct = 'contractor' then
+    select not exists(
+      select 1 from public.messages where thread_id = p_thread_id
+    ) into v_is_first_contact;
+
+    if v_is_first_contact then
+      update public.users
+      set    credit_balance = credit_balance - v_cold_msg_cost
+      where  id = auth.uid()
+        and  credit_balance >= v_cold_msg_cost
+      returning credit_balance into v_new_balance;
+
+      if not found then
+        raise exception 'Insufficient credits: need % credits for first contact with a contractor', v_cold_msg_cost;
+      end if;
+
+      insert into public.credit_ledger (user_id, delta, balance_after, transaction_type, description)
+      values (auth.uid(), -v_cold_msg_cost, v_new_balance, 'spend', 'Cold message to contractor');
+    end if;
+  end if;
+
+  -- Insert message
+  insert into public.messages (thread_id, sender_id, recipient_id, body)
+  values (p_thread_id, auth.uid(), p_recipient_id, trim(p_body))
+  returning id into v_msg_id;
+
+  -- Notify recipient
+  insert into public.notifications (user_id, type, title, body, entity_id, entity_type)
+  values (
+    p_recipient_id,
+    'message_received',
+    'New message',
+    left(trim(p_body), 100),
+    v_msg_id,
+    'message'
+  );
+
+  return v_msg_id;
+end;
+$$;
+
+revoke execute on function public.send_message(uuid, text, text) from public;
+grant  execute on function public.send_message(uuid, text, text) to authenticated;

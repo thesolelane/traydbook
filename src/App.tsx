@@ -11,13 +11,16 @@ import Feed from './pages/Feed'
 import Jobs from './pages/Jobs'
 import JobDetail from './pages/JobDetail'
 import PostJob from './pages/PostJob'
-import Network from './pages/Network'
+import Explore from './pages/Explore'
 import Bids from './pages/Bids'
 import BidDetail from './pages/BidDetail'
 import BidSubmit from './pages/BidSubmit'
 import PostRFQ from './pages/PostRFQ'
 import Profile from './pages/Profile'
 import EditProfile from './pages/EditProfile'
+import Messages from './pages/Messages'
+import MessageThread from './pages/MessageThread'
+import Notifications from './pages/Notifications'
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -82,11 +85,15 @@ export default function App() {
               <AppLayout><JobDetail /></AppLayout>
             </ProtectedRoute>
           } />
-          <Route path="/network" element={
+
+          {/* Explore (replaces Network) */}
+          <Route path="/explore" element={
             <ProtectedRoute>
-              <AppLayout><Network /></AppLayout>
+              <AppLayout><Explore /></AppLayout>
             </ProtectedRoute>
           } />
+          {/* Keep /network as redirect for any existing links */}
+          <Route path="/network" element={<Navigate to="/explore" replace />} />
 
           {/* Bids — IMPORTANT: specific paths before dynamic :id */}
           <Route path="/bids" element={
@@ -131,6 +138,26 @@ export default function App() {
               <AppLayout><Profile /></AppLayout>
             </ProtectedRoute>
           } />
+
+          {/* Messages — IMPORTANT: /messages/:threadId before /messages */}
+          <Route path="/messages/:threadId" element={
+            <ProtectedRoute>
+              <AppLayout><MessageThread /></AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/messages" element={
+            <ProtectedRoute>
+              <AppLayout><Messages /></AppLayout>
+            </ProtectedRoute>
+          } />
+
+          {/* Notifications */}
+          <Route path="/notifications" element={
+            <ProtectedRoute>
+              <AppLayout><Notifications /></AppLayout>
+            </ProtectedRoute>
+          } />
+
           <Route path="/settings" element={
             <ProtectedRoute>
               <AppLayout>
@@ -145,26 +172,6 @@ export default function App() {
               <AppLayout>
                 <div className="container" style={{ padding: '40px 0', color: 'var(--color-text-muted)' }}>
                   Credits & Billing — coming soon
-                </div>
-              </AppLayout>
-            </ProtectedRoute>
-          } />
-
-
-          <Route path="/messages/:threadId" element={
-            <ProtectedRoute>
-              <AppLayout>
-                <div className="container" style={{ padding: '40px 0', color: 'var(--color-text-muted)' }}>
-                  Messages — full inbox coming in Task #6
-                </div>
-              </AppLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/messages" element={
-            <ProtectedRoute>
-              <AppLayout>
-                <div className="container" style={{ padding: '40px 0', color: 'var(--color-text-muted)' }}>
-                  Messages — full inbox coming in Task #6
                 </div>
               </AppLayout>
             </ProtectedRoute>

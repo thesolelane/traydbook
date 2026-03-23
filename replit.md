@@ -43,13 +43,17 @@ The professional network for the construction trades. Contractors, tradespeople,
 - `src/lib/database.types.ts` — TypeScript DB types
 - `src/context/AuthContext.tsx` — Auth state & helpers
 - `src/components/ProtectedRoute.tsx` — Route guard
-- `src/components/Navbar.tsx` — Main navigation (auth-aware)
+- `src/components/Navbar.tsx` — Main navigation (auth-aware, live unread dots for messages + notifications)
 - `src/types/feed.ts` — FeedPost, POST_TYPE_BADGE, FilterOption, SidebarUser types
 - `src/pages/Feed.tsx` — Main feed (Supabase data + filter + compose + sidebars)
 - `src/components/PostCard.tsx` — Post card with type badge, inline comments, likes
 - `src/components/FeedFilterBar.tsx` — Filter pill bar (URL-synced)
 - `src/components/ComposeModal.tsx` — Compose modal with 4 post type flows
 - `src/components/ReferModal.tsx` — Contractor search + referral post flow
+- `src/pages/Explore.tsx` — Contractor discovery (/explore): search, filter sidebar, contractor cards, connect/message
+- `src/pages/Messages.tsx` — Messages inbox (/messages): thread list with unread indicators + Realtime
+- `src/pages/MessageThread.tsx` — Thread view (/messages/:threadId): chronological messages, send, credit gate, Realtime
+- `src/pages/Notifications.tsx` — Notifications (/notifications): grouped Today/Week/Earlier, mark-all-read on load
 - `src/pages/Landing.tsx` — Public landing page
 - `src/pages/Login.tsx` — Sign in
 - `src/pages/Signup.tsx` — Account type selection
@@ -59,7 +63,7 @@ The professional network for the construction trades. Contractors, tradespeople,
 - `src/styles/landing.css` — Landing page styles
 - `src/styles/auth.css` — Auth page styles
 - `src/index.css` — Global CSS variables + reset
-- `supabase/schema.sql` — Full DB schema with RLS policies
+- `supabase/schema.sql` — Full DB schema with RLS policies + RPCs (send_message, send_connection_request)
 
 ## Post Types
 - `project_update` → blue badge "Project Update"
@@ -72,8 +76,8 @@ The professional network for the construction trades. Contractors, tradespeople,
 ## Task Status
 - ✅ Task #1: Auth, Database & Routing Foundation — DONE
 - ✅ Task #2: Feed Overhaul (post types, compose, filters) — DONE
-- ⏳ Task #3: Full Profile System
-- ⏳ Task #4: Full Bid Board — RFQ Marketplace
-- ⏳ Task #5: Job Board — detail pages, post form & filters
-- ⏳ Task #6: Explore, Messages & Notifications
+- ✅ Task #3: Full Profile System — DONE
+- ✅ Task #4: Full Bid Board — RFQ Marketplace — DONE
+- ✅ Task #5: Job Board — detail pages, post form & filters — DONE
+- ✅ Task #6: Explore, Messages & Notifications — DONE
 - ⏳ Task #7: Credits, Stripe & Settings

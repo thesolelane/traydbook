@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Search, Bell, Menu, X, ChevronDown, Coins, Plus } from 'lucide-react'
+import { Search, Bell, Menu, X, ChevronDown, Coins, Plus, MessageSquare } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { supabase } from '../lib/supabase'
 
 function TraydBookLogo({ size = 'sm' }: { size?: 'sm' | 'md' }) {
   const iconSize = size === 'md' ? 32 : 26
@@ -38,14 +39,89 @@ export default function Navbar() {
   const { profile, signOut } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [hasUnreadNotifs, setHasUnreadNotifs] = useState(false)
+  const [hasUnreadMessages, setHasUnreadMessages] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
 
   const links = [
     { to: '/feed', label: 'Feed' },
     { to: '/jobs', label: 'Jobs' },
-    { to: '/network', label: 'Network' },
+    { to: '/explore', label: 'Explore' },
     { to: '/bids', label: 'Bids' },
   ]
+
+  // Load unread counts
+  const checkUnread = useCallback(async () => {
+    if (!profile) return
+    const [notifRes, msgRes] = await Promise.all([
+      supabase
+        .from('notifications')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', profile.id)
+        .is('read_at', null),
+      supabase
+        .from('messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('recipient_id', profile.id)
+        .is('read_at', null),
+    ])
+    setHasUnreadNotifs((notifRes.count ?? 0) > 0)
+    setHasUnreadMessages((msgRes.count ?? 0) > 0)
+  }, [profile])
+
+  useEffect(() => {
+    checkUnread()
+  }, [checkUnread])
+
+  // Clear notification dot when on /notifications
+  useEffect(() => {
+    if (location.pathname === '/notifications') {
+      setHasUnreadNotifs(false)
+    }
+  }, [location.pathname])
+
+  // Clear message dot when on /messages or /messages/:id
+  useEffect(() => {
+    if (location.pathname.startsWith('/messages')) {
+      // Re-check after a short delay (messages marked as read asynchronously)
+      const t = setTimeout(() => checkUnread(), 800)
+      return () => clearTimeout(t)
+    }
+  }, [location.pathname, checkUnread])
+
+  // Realtime: notifications
+  useEffect(() => {
+    if (!profile) return
+    const channel = supabase
+      .channel('navbar-notifs')
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'notifications',
+        filter: `user_id=eq.${profile.id}`,
+      }, () => { setHasUnreadNotifs(true) })
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'notifications',
+        filter: `user_id=eq.${profile.id}`,
+      }, () => { checkUnread() })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [profile, checkUnread])
+
+  // Realtime: messages
+  useEffect(() => {
+    if (!profile) return
+    const channel = supabase
+      .channel('navbar-msgs')
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'messages',
+        filter: `recipient_id=eq.${profile.id}`,
+      }, () => { setHasUnreadMessages(true) })
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'messages',
+        filter: `recipient_id=eq.${profile.id}`,
+      }, () => { checkUnread() })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [profile, checkUnread])
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -68,7 +144,6 @@ export default function Navbar() {
     : '?'
 
   const isContractor = profile?.account_type === 'contractor'
-  // Only project_owner and agent can post RFQs (homeowner uses a different flow)
   const canPostRfq = profile?.account_type === 'project_owner' || profile?.account_type === 'agent'
 
   return (
@@ -157,19 +232,39 @@ export default function Navbar() {
             </div>
           )}
 
-          <button style={{
+          {/* Messages icon */}
+          <Link to="/messages" style={{
             background: 'none', border: '1px solid var(--color-border)', padding: '5px 7px',
-            borderRadius: 'var(--radius-md)', color: 'var(--color-text-muted)',
-            position: 'relative', cursor: 'pointer',
+            borderRadius: 'var(--radius-md)', color: location.pathname.startsWith('/messages') ? 'var(--color-brand)' : 'var(--color-text-muted)',
+            position: 'relative', display: 'flex', alignItems: 'center', textDecoration: 'none',
+          }}>
+            <MessageSquare size={16} />
+            {hasUnreadMessages && (
+              <span style={{
+                position: 'absolute', top: 3, right: 3,
+                width: 6, height: 6,
+                background: 'var(--color-brand)', borderRadius: '50%',
+                border: '1.5px solid var(--color-surface)',
+              }} />
+            )}
+          </Link>
+
+          {/* Bell icon */}
+          <Link to="/notifications" style={{
+            background: 'none', border: '1px solid var(--color-border)', padding: '5px 7px',
+            borderRadius: 'var(--radius-md)', color: location.pathname === '/notifications' ? 'var(--color-brand)' : 'var(--color-text-muted)',
+            position: 'relative', display: 'flex', alignItems: 'center', textDecoration: 'none',
           }}>
             <Bell size={16} />
-            <span style={{
-              position: 'absolute', top: 3, right: 3,
-              width: 6, height: 6,
-              background: 'var(--color-brand)', borderRadius: '50%',
-              border: '1.5px solid var(--color-surface)',
-            }} />
-          </button>
+            {hasUnreadNotifs && (
+              <span style={{
+                position: 'absolute', top: 3, right: 3,
+                width: 6, height: 6,
+                background: 'var(--color-brand)', borderRadius: '50%',
+                border: '1.5px solid var(--color-surface)',
+              }} />
+            )}
+          </Link>
 
           {profile && (
             <div ref={userMenuRef} style={{ position: 'relative' }}>
@@ -275,6 +370,26 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
+          <Link to="/messages" onClick={() => setMobileOpen(false)} style={{
+            padding: '9px 10px', borderRadius: 'var(--radius-md)',
+            fontFamily: 'var(--font-condensed)', fontSize: 14, fontWeight: 600,
+            letterSpacing: '0.5px', textTransform: 'uppercase', textDecoration: 'none',
+            color: location.pathname.startsWith('/messages') ? 'var(--color-brand)' : 'var(--color-text)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}>
+            Messages
+            {hasUnreadMessages && <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--color-brand)' }} />}
+          </Link>
+          <Link to="/notifications" onClick={() => setMobileOpen(false)} style={{
+            padding: '9px 10px', borderRadius: 'var(--radius-md)',
+            fontFamily: 'var(--font-condensed)', fontSize: 14, fontWeight: 600,
+            letterSpacing: '0.5px', textTransform: 'uppercase', textDecoration: 'none',
+            color: location.pathname === '/notifications' ? 'var(--color-brand)' : 'var(--color-text)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}>
+            Notifications
+            {hasUnreadNotifs && <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--color-brand)' }} />}
+          </Link>
           <button onClick={handleSignOut} style={{
             textAlign: 'left', padding: '9px 10px', borderRadius: 'var(--radius-md)',
             background: 'none', border: 'none',
