@@ -134,7 +134,6 @@ export default function SignupOwner() {
 
       const { error: profileError } = await supabase.from('users').insert({
         id: uid,
-        email,
         display_name: displayName,
         handle: h,
         avatar_url: null,

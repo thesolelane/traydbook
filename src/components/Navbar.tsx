@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Search, Bell, Menu, X, ChevronDown, Coins } from 'lucide-react'
+import { Search, Bell, Menu, X, ChevronDown, Coins, Plus } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
 function TraydBookLogo({ size = 'sm' }: { size?: 'sm' | 'md' }) {
@@ -113,6 +113,34 @@ export default function Navbar() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          {profile && isContractor && (
+            <Link to="/feed/post" style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              background: 'var(--color-brand)',
+              border: 'none',
+              borderRadius: 'var(--radius-md)', padding: '6px 14px',
+              fontFamily: 'var(--font-condensed)',
+              fontSize: 12, fontWeight: 700, letterSpacing: '0.5px',
+              textTransform: 'uppercase', color: '#fff', textDecoration: 'none',
+              whiteSpace: 'nowrap',
+            }}>
+              <Plus size={13} /> Post Work
+            </Link>
+          )}
+          {profile && !isContractor && (
+            <Link to="/bids/new" style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              background: 'var(--color-brand)',
+              border: 'none',
+              borderRadius: 'var(--radius-md)', padding: '6px 14px',
+              fontFamily: 'var(--font-condensed)',
+              fontSize: 12, fontWeight: 700, letterSpacing: '0.5px',
+              textTransform: 'uppercase', color: '#fff', textDecoration: 'none',
+              whiteSpace: 'nowrap',
+            }}>
+              <Plus size={13} /> Post RFQ
+            </Link>
+          )}
           {profile && !isContractor && (
             <div style={{
               display: 'flex', alignItems: 'center', gap: 5,

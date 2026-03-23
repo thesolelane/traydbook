@@ -63,6 +63,7 @@ export default function SignupContractor() {
     locationCity: '', locationState: '',
   })
   const [step3, setStep3] = useState<Step3>({ businessName: '', bio: '', serviceRadius: '50' })
+  const [avatarUrl, setAvatarUrl] = useState('')
 
   function slugify(s: string) {
     return s.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30)
@@ -106,10 +107,9 @@ export default function SignupContractor() {
 
       const { error: profileError } = await supabase.from('users').insert({
         id: uid,
-        email: step1.email,
         display_name: step2.displayName,
         handle,
-        avatar_url: null,
+        avatar_url: avatarUrl || null,
         account_type: accountType,
         location_city: step2.locationCity || null,
         location_state: step2.locationState || null,
@@ -315,6 +315,15 @@ export default function SignupContractor() {
                   onChange={e => setStep3(p => ({ ...p, bio: e.target.value }))}
                   placeholder="Brief intro — trade specialty, years experience, what makes you stand out..."
                   rows={4}
+                />
+              </div>
+              <div className="form-group">
+                <label>Profile Photo URL <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--color-text-muted)' }}>(optional)</span></label>
+                <input
+                  type="url"
+                  value={avatarUrl}
+                  onChange={e => setAvatarUrl(e.target.value)}
+                  placeholder="https://example.com/your-photo.jpg"
                 />
               </div>
               <div className="form-group">

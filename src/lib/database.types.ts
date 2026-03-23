@@ -17,7 +17,6 @@ export interface Database {
       users: {
         Row: {
           id: string
-          email: string
           display_name: string
           handle: string
           avatar_url: string | null

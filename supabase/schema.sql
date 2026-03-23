@@ -9,7 +9,6 @@ create extension if not exists "uuid-ossp";
 -- ============================================================
 create table if not exists public.users (
   id            uuid primary key references auth.users(id) on delete cascade,
-  email         text not null unique,
   display_name  text not null,
   handle        text not null unique,
   avatar_url    text,
@@ -21,11 +20,15 @@ create table if not exists public.users (
   created_at    timestamptz not null default now(),
   deleted_at    timestamptz
 );
+-- Note: email is intentionally omitted from public.users.
+-- Email lives in auth.users (Supabase managed) to prevent PII exposure.
 
 alter table public.users enable row level security;
 
-create policy "Users can read any profile" on public.users
-  for select using (true);
+-- Authenticated users can read any profile (profile discovery).
+-- Email (PII) is not stored here — use auth.users for email lookups server-side.
+create policy "Authenticated users can read any profile" on public.users
+  for select using (auth.uid() IS NOT NULL);
 
 create policy "Users can update own profile" on public.users
   for update using (auth.uid() = id);
