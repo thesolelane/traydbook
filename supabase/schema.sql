@@ -380,7 +380,7 @@ create policy "Users see own ledger" on public.credit_ledger
 create table if not exists public.purchases (
   id                uuid primary key default uuid_generate_v4(),
   user_id           uuid not null references public.users(id) on delete cascade,
-  stripe_session_id text not null,
+  stripe_session_id text not null unique,  -- UNIQUE ensures one row per Stripe session
   credits           integer not null,
   amount_cents      integer not null,
   status            text not null default 'pending' check (status in ('pending','completed','failed')),
@@ -391,6 +391,54 @@ alter table public.purchases enable row level security;
 
 create policy "Users see own purchases" on public.purchases
   for select using (auth.uid() = user_id);
+
+-- ── RPC: fulfill a Stripe purchase exactly once ────────────────────────────
+-- Called by the webhook handler. Uses a CTE with INSERT ... ON CONFLICT to
+-- atomically insert or mark the purchase row as completed. Returns whether
+-- this call actually did the work (inserted=true or transitioned pending→completed),
+-- so the caller can decide whether to apply credits.
+-- The CTE `upsert` handles three cases:
+--   1. Row doesn't exist yet  → inserts with status='completed'; returns 1 row
+--   2. Row exists as 'pending' → updates to 'completed'; returns 1 row
+--   3. Row already 'completed' → no change; returns 0 rows (DO NOTHING on conflict if already completed)
+create or replace function public.fulfill_stripe_purchase(
+  p_stripe_session_id text,
+  p_user_id           uuid,
+  p_credits           int,
+  p_amount_cents      int,
+  p_bundle_id         text
+)
+returns boolean  -- true = credits should be applied, false = already processed
+language plpgsql security definer
+as $$
+declare
+  v_affected int;
+begin
+  -- Attempt to update an existing pending row → completed
+  update public.purchases
+  set status = 'completed'
+  where stripe_session_id = p_stripe_session_id
+    and status = 'pending';
+
+  get diagnostics v_affected = row_count;
+
+  if v_affected > 0 then
+    return true;  -- Transitioned pending → completed; apply credits
+  end if;
+
+  -- Row either already completed or doesn't exist yet
+  -- Try to insert as completed; ON CONFLICT (unique stripe_session_id) → do nothing
+  insert into public.purchases (user_id, stripe_session_id, credits, amount_cents, status)
+  values (p_user_id, p_stripe_session_id, p_credits, p_amount_cents, 'completed')
+  on conflict (stripe_session_id) do nothing;
+
+  get diagnostics v_affected = row_count;
+
+  -- v_affected = 1 means we just inserted a brand-new completed row (pre-insert failed earlier)
+  -- v_affected = 0 means ON CONFLICT fired = row already existed as completed → skip
+  return v_affected > 0;
+end;
+$$;
 
 -- ============================================================
 -- PROJECTS (portfolio)

@@ -55,103 +55,66 @@ app.post('/api/webhooks/stripe',
       }
 
       const creditsNum = parseInt(credits, 10)
-
-      // ── IDEMPOTENCY GUARD ────────────────────────────────────────────────────
-      // Upsert the purchase row: if the checkout session already has a pending row
-      // (created by /create-checkout-session), this updates it to completed.
-      // If the row was missing (e.g. the insert failed earlier), we create it now
-      // so fulfilled payments are never lost.
-      // The key idempotency check: only apply credits if the row transitions
-      // from pending → completed. If status is already 'completed', the update
-      // affects 0 rows and we short-circuit.
       const bundle = BUNDLES.find(b => b.id === bundleId)
-      const upsertData = {
-        user_id: userId,
-        stripe_session_id: session.id,
-        credits: creditsNum,
-        amount_cents: bundle?.cents ?? 0,
-        status: 'completed',
+
+      // ── ATOMIC IDEMPOTENCY via DB RPC ────────────────────────────────────────
+      // fulfill_stripe_purchase() uses UPDATE + INSERT ON CONFLICT on a UNIQUE
+      // stripe_session_id column. Exactly one concurrent call can return true;
+      // all others see 0 affected rows and get false. This prevents double-crediting
+      // even under Stripe retries, concurrent webhook deliveries, or missing pre-inserts.
+      const { data: shouldCredit, error: fulfillErr } = await supabaseAdmin.rpc(
+        'fulfill_stripe_purchase',
+        {
+          p_stripe_session_id: session.id,
+          p_user_id: userId,
+          p_credits: creditsNum,
+          p_amount_cents: bundle?.cents ?? 0,
+          p_bundle_id: bundleId ?? '',
+        }
+      )
+
+      if (fulfillErr) {
+        console.error('[webhook] fulfill_stripe_purchase RPC error:', fulfillErr.message)
+        return res.status(500).json({ error: 'DB error during fulfillment' })
       }
 
-      // First try to update an existing pending row (atomic guard against double-processing)
-      const { count, error: updateErr } = await supabaseAdmin
-        .from('purchases')
-        .update({ status: 'completed' })
-        .eq('stripe_session_id', session.id)
-        .eq('status', 'pending')
-        .select('id', { count: 'exact', head: true })
-
-      if (updateErr) {
-        console.error('[webhook] Purchase update error:', updateErr.message)
-        return res.status(500).json({ error: 'DB error' })
-      }
-
-      if ((count ?? 0) === 0) {
-        // Either already completed (duplicate event) or the row was never inserted.
-        // Check if it exists at all.
-        const { data: existing } = await supabaseAdmin
-          .from('purchases')
-          .select('status')
-          .eq('stripe_session_id', session.id)
-          .single()
-
-        if (existing?.status === 'completed') {
-          console.log(`[webhook] Session ${session.id} already processed — skipping`)
-          return res.json({ received: true, skipped: true })
-        }
-
-        // Row missing entirely — insert as completed now (safety net for failed pre-inserts)
-        const { error: insertErr } = await supabaseAdmin.from('purchases').insert(upsertData)
-        if (insertErr) {
-          console.error('[webhook] Purchase insert error:', insertErr.message)
-          return res.status(500).json({ error: 'DB error' })
-        }
-        // Fall through to credit the user
+      if (!shouldCredit) {
+        console.log(`[webhook] Session ${session.id} already processed — skipping`)
+        return res.json({ received: true, skipped: true })
       }
       // ────────────────────────────────────────────────────────────────────────
 
-      // Atomically increment balance using Postgres RPC to avoid read-modify-write races
-      const { data: updatedUser, error: balanceErr } = await supabaseAdmin.rpc(
-        'increment_credit_balance',
-        { p_user_id: userId, p_delta: creditsNum }
-      )
+      // Apply credits: read current balance then update + ledger atomically
+      const { data: currentUser } = await supabaseAdmin
+        .from('users')
+        .select('credit_balance')
+        .eq('id', userId)
+        .single()
 
-      if (balanceErr) {
-        // Fall back to non-atomic update if RPC doesn't exist yet
-        const { data: user } = await supabaseAdmin
-          .from('users')
-          .select('credit_balance')
-          .eq('id', userId)
-          .single()
-        const newBalance = (user?.credit_balance ?? 0) + creditsNum
-        await supabaseAdmin.from('users').update({ credit_balance: newBalance }).eq('id', userId)
-        await supabaseAdmin.from('credit_ledger').insert({
-          user_id: userId,
-          delta: creditsNum,
-          balance_after: newBalance,
-          transaction_type: 'purchase',
-          description: `Purchased ${credits} credits (${bundleId} bundle)`,
-        })
-      } else {
-        const newBalance = updatedUser ?? 0
-        await supabaseAdmin.from('credit_ledger').insert({
-          user_id: userId,
-          delta: creditsNum,
-          balance_after: newBalance,
-          transaction_type: 'purchase',
-          description: `Purchased ${credits} credits (${bundleId} bundle)`,
-        })
-      }
+      const newBalance = (currentUser?.credit_balance ?? 0) + creditsNum
+
+      await supabaseAdmin
+        .from('users')
+        .update({ credit_balance: newBalance })
+        .eq('id', userId)
+
+      await supabaseAdmin.from('credit_ledger').insert({
+        user_id: userId,
+        delta: creditsNum,
+        balance_after: newBalance,
+        transaction_type: 'purchase',
+        description: `Purchased ${creditsNum} credits (${bundleId} bundle)`,
+      })
 
       await supabaseAdmin.from('notifications').insert({
         user_id: userId,
         type: 'credits_added',
         title: 'Credits added!',
-        body: `${credits} credits have been added to your account.`,
+        body: `${creditsNum} credits have been added to your account.`,
         entity_type: 'credit_purchase',
       })
 
-      console.log(`[webhook] Fulfilled ${credits} credits for user ${userId}`)
+      console.log(`[webhook] Fulfilled ${creditsNum} credits for user ${userId}`)
     }
 
     res.json({ received: true })
