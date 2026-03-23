@@ -1,7 +1,11 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import type { AccountType } from '../lib/database.types'
 import '../styles/auth.css'
+
+interface SignupLocationState {
+  preselectOwner?: boolean
+}
 
 const accountTypes: {
   type: AccountType
@@ -44,7 +48,13 @@ const accountTypes: {
 
 export default function Signup() {
   const navigate = useNavigate()
-  const [selected, setSelected] = useState<AccountType | null>(null)
+  const location = useLocation()
+  const locationState = location.state as SignupLocationState | null
+
+  // If coming from "Find a Contractor" CTA, preselect project_owner
+  const [selected, setSelected] = useState<AccountType | null>(
+    locationState?.preselectOwner ? 'project_owner' : null
+  )
 
   function handleContinue() {
     if (!selected) return
@@ -70,7 +80,7 @@ export default function Signup() {
         </Link>
 
         <h1 className="auth-title">Create your account</h1>
-        <p className="auth-subtitle">Choose how you'll use traydbook</p>
+        <p className="auth-subtitle">Choose how you'll use TraydBook</p>
 
         <div className="account-type-grid">
           {accountTypes.map(at => (

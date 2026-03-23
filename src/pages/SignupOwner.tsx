@@ -74,6 +74,7 @@ export default function SignupOwner() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
+  const [emailConfirmSent, setEmailConfirmSent] = useState(false)
 
   // Step 1 — credentials
   const [email, setEmail] = useState('')
@@ -108,9 +109,10 @@ export default function SignupOwner() {
     if (password !== confirmPassword) { setError('Passwords do not match.'); return }
     if (password.length < 8) { setError('Password must be at least 8 characters.'); return }
     setLoading(true)
-    const { error, userId: uid } = await signUp(email, password)
+    const { error, userId: uid, needsEmailConfirmation } = await signUp(email, password)
     setLoading(false)
     if (error) { setError(error); return }
+    if (needsEmailConfirmation) { setEmailConfirmSent(true); return }
     if (uid) setUserId(uid)
     setStep(2)
   }
@@ -177,6 +179,16 @@ export default function SignupOwner() {
           <div className="auth-logo-word"><span className="trayd">Trayd</span><span className="book">Book</span></div>
         </Link>
 
+        {emailConfirmSent ? (
+          <>
+            <h1 className="auth-title">Check your email</h1>
+            <p className="auth-subtitle">We sent a confirmation link to <strong>{email}</strong>. Click it to verify your account, then sign in to continue.</p>
+            <p className="auth-footer-text" style={{ marginTop: 20 }}>
+              <Link to="/login">Back to sign in</Link>
+            </p>
+          </>
+        ) : (
+        <>
         <div className="signup-steps">
           {Array.from({ length: totalSteps }, (_, i) => i + 1).map(s => (
             <div
@@ -360,6 +372,8 @@ export default function SignupOwner() {
         <p className="auth-footer-text" style={{ marginTop: 20 }}>
           Already have an account? <Link to="/login">Sign in</Link>
         </p>
+        </>
+        )}
       </div>
     </div>
   )

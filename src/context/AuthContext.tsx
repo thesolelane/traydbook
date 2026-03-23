@@ -18,7 +18,7 @@ interface AuthContextType {
   profile: UserProfile | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<{ error: string | null }>
-  signUp: (email: string, password: string) => Promise<{ error: string | null; userId?: string }>
+  signUp: (email: string, password: string) => Promise<{ error: string | null; userId?: string; needsEmailConfirmation?: boolean }>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
 }
@@ -77,7 +77,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signUp(email: string, password: string) {
     const { data, error } = await supabase.auth.signUp({ email, password })
     if (error) return { error: error.message }
-    return { error: null, userId: data.user?.id }
+    // If Supabase email-confirmation is enabled, data.session will be null
+    // until the user verifies their email. Signal this to callers.
+    const needsEmailConfirmation = !data.session && !!data.user
+    return { error: null, userId: data.user?.id, needsEmailConfirmation }
   }
 
   async function signOut() {

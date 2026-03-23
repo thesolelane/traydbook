@@ -68,6 +68,8 @@ export default function Navbar() {
     : '?'
 
   const isContractor = profile?.account_type === 'contractor'
+  // Only project_owner and agent can post RFQs (homeowner uses a different flow)
+  const canPostRfq = profile?.account_type === 'project_owner' || profile?.account_type === 'agent'
 
   return (
     <nav style={{
@@ -127,7 +129,7 @@ export default function Navbar() {
               <Plus size={13} /> Post Work
             </Link>
           )}
-          {profile && !isContractor && (
+          {profile && canPostRfq && (
             <Link to="/bids/new" style={{
               display: 'flex', alignItems: 'center', gap: 5,
               background: 'var(--color-brand)',
