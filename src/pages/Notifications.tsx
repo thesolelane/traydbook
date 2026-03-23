@@ -125,16 +125,20 @@ export default function Notifications() {
       .order('created_at', { ascending: false })
       .limit(100)
 
-    setNotifications((data ?? []) as Notification[])
+    const list = (data ?? []) as Notification[]
+
+    // Mark all unread as read optimistically in local state, then persist
+    const now = new Date().toISOString()
+    const markedList = list.map(n => n.read_at ? n : { ...n, read_at: now })
+    setNotifications(markedList)
     setLoading(false)
 
-    // Mark all as read
-    const unread = (data ?? []).filter((n: Notification) => !n.read_at).map((n: Notification) => n.id)
-    if (unread.length > 0) {
+    const unreadIds = list.filter(n => !n.read_at).map(n => n.id)
+    if (unreadIds.length > 0) {
       await supabase
         .from('notifications')
-        .update({ read_at: new Date().toISOString() })
-        .in('id', unread)
+        .update({ read_at: now })
+        .in('id', unreadIds)
     }
   }, [profile])
 

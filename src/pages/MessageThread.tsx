@@ -75,8 +75,13 @@ export default function MessageThread() {
     }
   }, [profile, threadId])
 
-  const loadOtherUser = useCallback(async () => {
-    const targetId = withId
+  const loadOtherUser = useCallback(async (msgs: Message[]) => {
+    // Prefer the explicit ?with= param; fall back to deriving from messages
+    let targetId = withId
+    if (!targetId && profile && msgs.length > 0) {
+      const m = msgs[0]
+      targetId = m.sender_id === profile.id ? m.recipient_id : m.sender_id
+    }
     if (!targetId) return
 
     const { data } = await supabase
@@ -86,16 +91,23 @@ export default function MessageThread() {
       .single()
 
     if (data) setOtherUser(data as OtherUser)
-  }, [withId])
+  }, [withId, profile])
 
   useEffect(() => {
     async function init() {
       setLoading(true)
-      await Promise.all([loadMessages(), loadOtherUser()])
+      await loadMessages()
+      // loadMessages sets state asynchronously; resolve directly to get msgs for other-user lookup
+      const { data } = await supabase
+        .from('messages')
+        .select('sender_id, recipient_id')
+        .eq('thread_id', threadId ?? '')
+        .limit(1)
+      await loadOtherUser((data ?? []) as Message[])
       setLoading(false)
     }
     init()
-  }, [loadMessages, loadOtherUser])
+  }, [loadMessages, loadOtherUser, threadId])
 
   useEffect(() => {
     if (!profile || !threadId) return
