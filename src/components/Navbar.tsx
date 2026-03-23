@@ -1,7 +1,36 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Search, Bell, Menu, X, ChevronDown, HardHat, Coins } from 'lucide-react'
+import { Search, Bell, Menu, X, ChevronDown, Coins } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+
+function TraydBookLogo({ size = 'sm' }: { size?: 'sm' | 'md' }) {
+  const iconSize = size === 'md' ? 32 : 26
+  const fontSize = size === 'md' ? 28 : 22
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: size === 'md' ? 10 : 8 }}>
+      <div style={{
+        width: iconSize, height: iconSize,
+        background: 'var(--color-brand)',
+        borderRadius: size === 'md' ? 7 : 5,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0,
+      }}>
+        <svg viewBox="0 0 17 17" fill="none" width={iconSize * 0.6} height={iconSize * 0.6}>
+          <rect x="2" y="1.5" width="9" height="13" rx="1.5" fill="rgba(255,255,255,0.12)" stroke="white" strokeWidth="1.2" />
+          <rect x="5" y="1.5" width="9" height="13" rx="1.5" fill="rgba(255,255,255,0.25)" stroke="white" strokeWidth="1.2" />
+          <path d="M7 6h4M7 9h3M7 12h2" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
+        </svg>
+      </div>
+      <span style={{
+        fontFamily: 'var(--font-condensed)',
+        fontSize, fontWeight: 800, letterSpacing: '-0.5px', lineHeight: 1,
+      }}>
+        <span style={{ color: 'var(--color-text)' }}>Trayd</span>
+        <span style={{ color: 'var(--color-brand)' }}>Book</span>
+      </span>
+    </div>
+  )
+}
 
 export default function Navbar() {
   const location = useLocation()
@@ -44,141 +73,114 @@ export default function Navbar() {
     <nav style={{
       background: 'var(--color-surface)',
       borderBottom: '1px solid var(--color-border)',
-      position: 'sticky',
-      top: 0,
-      zIndex: 100,
+      position: 'sticky', top: 0, zIndex: 100,
     }}>
-      <div className="container" style={{ display: 'flex', alignItems: 'center', height: 60, gap: 20 }}>
-        {/* Logo */}
-        <Link to="/feed" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', flexShrink: 0 }}>
-          <div style={{
-            width: 32, height: 32,
-            background: 'var(--color-brand)',
-            borderRadius: 8,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <HardHat size={18} color="white" />
-          </div>
-          <span style={{ fontWeight: 800, fontSize: 18, color: 'var(--color-text)', letterSpacing: '-0.5px' }}>
-            trayd<span style={{ color: 'var(--color-brand)' }}>book</span>
-          </span>
+      <div className="container" style={{ display: 'flex', alignItems: 'center', height: 56, gap: 20 }}>
+        <Link to="/feed" style={{ textDecoration: 'none', flexShrink: 0 }}>
+          <TraydBookLogo />
         </Link>
 
-        {/* Search */}
-        <div style={{ flex: 1, maxWidth: 280, display: 'flex', alignItems: 'center', position: 'relative' }}>
-          <Search size={14} color="var(--color-text-muted)" style={{ position: 'absolute', left: 10, pointerEvents: 'none' }} />
+        <div style={{ flex: 1, maxWidth: 260, display: 'flex', alignItems: 'center', position: 'relative' }}>
+          <Search size={13} color="var(--color-text-light)" style={{ position: 'absolute', left: 10, pointerEvents: 'none' }} />
           <input
             type="search"
             placeholder="Search trades, people, jobs..."
             style={{
-              width: '100%',
-              padding: '7px 12px 7px 30px',
-              border: '1.5px solid var(--color-border)',
-              borderRadius: 8,
-              fontSize: 13,
-              background: 'var(--color-bg)',
-              color: 'var(--color-text)',
-              outline: 'none',
+              width: '100%', padding: '6px 12px 6px 28px',
+              border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)',
+              fontSize: 13, background: 'var(--color-bg)', color: 'var(--color-text)',
+              outline: 'none', fontFamily: 'var(--font-sans)',
             }}
           />
         </div>
 
-        {/* Nav links */}
         <div style={{ display: 'flex', gap: 2, flex: 1, justifyContent: 'center' }} className="nav-links-desktop">
           {links.map(link => {
             const active = location.pathname.startsWith(link.to)
             return (
-              <Link
-                key={link.to}
-                to={link.to}
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: 8,
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: active ? 'var(--color-brand)' : 'var(--color-text-muted)',
-                  background: active ? 'rgba(232,93,38,0.1)' : 'transparent',
-                  whiteSpace: 'nowrap',
-                  textDecoration: 'none',
-                  transition: 'all 0.15s',
-                }}
-              >
+              <Link key={link.to} to={link.to} style={{
+                padding: '6px 14px', borderRadius: 'var(--radius-md)',
+                fontFamily: 'var(--font-condensed)',
+                fontSize: 14, fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase',
+                color: active ? 'var(--color-brand)' : 'var(--color-text-muted)',
+                background: active ? 'var(--color-brand-light)' : 'transparent',
+                whiteSpace: 'nowrap', textDecoration: 'none', transition: 'all 0.15s',
+              }}>
                 {link.label}
               </Link>
             )
           })}
         </div>
 
-        {/* Right side */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-          {/* Credits badge (non-contractors only) */}
           {profile && !isContractor && (
             <div style={{
               display: 'flex', alignItems: 'center', gap: 5,
-              background: 'rgba(232,93,38,0.1)',
-              border: '1px solid rgba(232,93,38,0.2)',
-              borderRadius: 100, padding: '4px 10px',
-              fontSize: 13, fontWeight: 700, color: 'var(--color-brand)',
-              cursor: 'pointer',
-            }}
-              onClick={() => navigate('/settings/credits')}
-            >
-              <Coins size={14} />
-              {profile.credit_balance}
+              background: 'var(--color-brand-light)',
+              border: '1px solid rgba(232,93,4,0.2)',
+              borderRadius: 3, padding: '4px 10px',
+              fontFamily: 'var(--font-condensed)',
+              fontSize: 12, fontWeight: 700, letterSpacing: '0.5px',
+              textTransform: 'uppercase', color: 'var(--color-brand)', cursor: 'pointer',
+            }} onClick={() => navigate('/settings/credits')}>
+              <Coins size={13} />{profile.credit_balance} credits
             </div>
           )}
 
-          {/* Notifications */}
           <button style={{
-            background: 'none', border: 'none', padding: 6,
-            borderRadius: 8, color: 'var(--color-text-muted)',
+            background: 'none', border: '1px solid var(--color-border)', padding: '5px 7px',
+            borderRadius: 'var(--radius-md)', color: 'var(--color-text-muted)',
             position: 'relative', cursor: 'pointer',
           }}>
-            <Bell size={20} />
+            <Bell size={16} />
             <span style={{
-              position: 'absolute', top: 4, right: 4,
-              width: 7, height: 7,
+              position: 'absolute', top: 3, right: 3,
+              width: 6, height: 6,
               background: 'var(--color-brand)', borderRadius: '50%',
-              border: '2px solid var(--color-surface)',
+              border: '1.5px solid var(--color-surface)',
             }} />
           </button>
 
-          {/* User menu */}
           {profile && (
             <div ref={userMenuRef} style={{ position: 'relative' }}>
-              <button
-                onClick={() => setUserMenuOpen(o => !o)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  background: 'none', border: '1.5px solid var(--color-border)',
-                  borderRadius: 100, padding: '4px 10px 4px 4px',
-                  cursor: 'pointer', transition: 'border-color 0.15s',
-                }}
-              >
+              <button onClick={() => setUserMenuOpen(o => !o)} style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: 'none', border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-md)', padding: '4px 10px 4px 4px',
+                cursor: 'pointer',
+              }}>
                 <div style={{
-                  width: 26, height: 26, borderRadius: '50%',
+                  width: 24, height: 24, borderRadius: 'var(--radius-sm)',
                   background: 'var(--color-brand)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontFamily: 'var(--font-condensed)',
                   fontSize: 11, fontWeight: 700, color: '#fff',
                 }}>
                   {initials}
                 </div>
-                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text)', maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span style={{
+                  fontFamily: 'var(--font-condensed)',
+                  fontSize: 13, fontWeight: 600, letterSpacing: '0.3px',
+                  color: 'var(--color-text)', maxWidth: 100,
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>
                   {profile.display_name}
                 </span>
-                <ChevronDown size={13} color="var(--color-text-muted)" />
+                <ChevronDown size={12} color="var(--color-text-light)" />
               </button>
 
               {userMenuOpen && (
                 <div style={{
-                  position: 'absolute', right: 0, top: 'calc(100% + 8px)',
+                  position: 'absolute', right: 0, top: 'calc(100% + 6px)',
                   background: 'var(--color-surface)', border: '1px solid var(--color-border)',
-                  borderRadius: 12, padding: 8, minWidth: 200,
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.4)', zIndex: 200,
+                  borderRadius: 'var(--radius-md)', padding: 6, minWidth: 200,
+                  boxShadow: 'var(--shadow-lg)', zIndex: 200,
                 }}>
-                  <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--color-border)', marginBottom: 4 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700 }}>{profile.display_name}</div>
-                    <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 2, textTransform: 'capitalize' }}>
+                  <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--color-border)', marginBottom: 4 }}>
+                    <div style={{ fontFamily: 'var(--font-condensed)', fontSize: 14, fontWeight: 700, color: 'var(--color-text)' }}>
+                      {profile.display_name}
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-condensed)', fontSize: 11, color: 'var(--color-text-light)', marginTop: 2, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
                       {profile.account_type.replace('_', ' ')}
                     </div>
                   </div>
@@ -187,15 +189,12 @@ export default function Navbar() {
                     { label: 'Settings', to: '/settings' },
                     ...(!isContractor ? [{ label: 'Buy Credits', to: '/settings/credits' }] : []),
                   ].map(item => (
-                    <Link
-                      key={item.to}
-                      to={item.to}
-                      onClick={() => setUserMenuOpen(false)}
-                      style={{
-                        display: 'block', padding: '8px 12px', borderRadius: 8,
-                        fontSize: 14, color: 'var(--color-text)', textDecoration: 'none',
-                        transition: 'background 0.1s',
-                      }}
+                    <Link key={item.to} to={item.to} onClick={() => setUserMenuOpen(false)} style={{
+                      display: 'block', padding: '7px 10px', borderRadius: 'var(--radius-sm)',
+                      fontFamily: 'var(--font-condensed)',
+                      fontSize: 13, fontWeight: 600, letterSpacing: '0.3px',
+                      color: 'var(--color-text)', textDecoration: 'none', transition: 'background 0.1s',
+                    }}
                       onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-bg)')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                     >
@@ -203,15 +202,13 @@ export default function Navbar() {
                     </Link>
                   ))}
                   <div style={{ borderTop: '1px solid var(--color-border)', marginTop: 4, paddingTop: 4 }}>
-                    <button
-                      onClick={handleSignOut}
-                      style={{
-                        width: '100%', textAlign: 'left', padding: '8px 12px',
-                        borderRadius: 8, background: 'none', border: 'none',
-                        fontSize: 14, color: '#f87171', cursor: 'pointer',
-                        fontFamily: 'inherit', transition: 'background 0.1s',
-                      }}
-                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.1)')}
+                    <button onClick={handleSignOut} style={{
+                      width: '100%', textAlign: 'left', padding: '7px 10px',
+                      borderRadius: 'var(--radius-sm)', background: 'none', border: 'none',
+                      fontFamily: 'var(--font-condensed)', fontSize: 13, fontWeight: 600,
+                      letterSpacing: '0.3px', color: '#e05252', cursor: 'pointer', transition: 'background 0.1s',
+                    }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.08)')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                     >
                       Sign Out
@@ -222,45 +219,39 @@ export default function Navbar() {
             </div>
           )}
 
-          {/* Mobile toggle */}
           <button
             style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', padding: 4, cursor: 'pointer' }}
             onClick={() => setMobileOpen(o => !o)}
             className="mobile-menu-btn"
           >
-            {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+            {mobileOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
       </div>
 
-      {/* Mobile nav */}
       {mobileOpen && (
         <div style={{
           background: 'var(--color-surface)', borderTop: '1px solid var(--color-border)',
-          padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: 4,
+          padding: '10px 20px', display: 'flex', flexDirection: 'column', gap: 2,
         }}>
           {links.map(link => (
-            <Link
-              key={link.to}
-              to={link.to}
-              onClick={() => setMobileOpen(false)}
-              style={{
-                padding: '10px 12px', borderRadius: 8, fontSize: 15, fontWeight: 600,
-                color: location.pathname.startsWith(link.to) ? 'var(--color-brand)' : 'var(--color-text)',
-                textDecoration: 'none',
-              }}
-            >
+            <Link key={link.to} to={link.to} onClick={() => setMobileOpen(false)} style={{
+              padding: '9px 10px', borderRadius: 'var(--radius-md)',
+              fontFamily: 'var(--font-condensed)', fontSize: 14, fontWeight: 600,
+              letterSpacing: '0.5px', textTransform: 'uppercase',
+              color: location.pathname.startsWith(link.to) ? 'var(--color-brand)' : 'var(--color-text)',
+              textDecoration: 'none',
+            }}>
               {link.label}
             </Link>
           ))}
-          <button
-            onClick={handleSignOut}
-            style={{
-              textAlign: 'left', padding: '10px 12px', borderRadius: 8,
-              background: 'none', border: 'none', fontSize: 15, color: '#f87171',
-              fontFamily: 'inherit', cursor: 'pointer', marginTop: 4,
-            }}
-          >
+          <button onClick={handleSignOut} style={{
+            textAlign: 'left', padding: '9px 10px', borderRadius: 'var(--radius-md)',
+            background: 'none', border: 'none',
+            fontFamily: 'var(--font-condensed)', fontSize: 14, fontWeight: 600,
+            letterSpacing: '0.5px', textTransform: 'uppercase',
+            color: '#e05252', cursor: 'pointer', marginTop: 4,
+          }}>
             Sign Out
           </button>
         </div>
@@ -273,3 +264,5 @@ export default function Navbar() {
     </nav>
   )
 }
+
+export { TraydBookLogo }

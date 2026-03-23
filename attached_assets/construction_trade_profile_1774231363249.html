@@ -1,0 +1,778 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  .tp-root {
+    font-family: 'Barlow', sans-serif;
+    background: #1a1c1e;
+    color: #e8e4de;
+    min-height: 100vh;
+    padding-bottom: 3rem;
+  }
+
+  .tp-cover {
+    width: 100%;
+    height: 200px;
+    background: linear-gradient(135deg, #1a1c1e 0%, #2b2d30 50%, #1a1c1e 100%);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .tp-cover-pattern {
+    position: absolute;
+    inset: 0;
+    background-image:
+      repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.015) 20px, rgba(255,255,255,0.015) 21px),
+      repeating-linear-gradient(-45deg, transparent, transparent 20px, rgba(255,255,255,0.015) 20px, rgba(255,255,255,0.015) 21px);
+  }
+
+  .tp-cover-badge {
+    position: absolute;
+    top: 16px; right: 16px;
+    background: #e85d04;
+    color: #fff;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border-radius: 3px;
+  }
+
+  .tp-cover-project-strip {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 80px;
+    display: flex;
+    gap: 3px;
+  }
+
+  .tp-project-thumb {
+    flex: 1;
+    background: #2e3033;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .tp-project-thumb-inner {
+    width: 100%; height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    opacity: 0.4;
+  }
+
+  .tp-project-thumb:nth-child(1) { background: #2a3028; }
+  .tp-project-thumb:nth-child(2) { background: #2e2a24; }
+  .tp-project-thumb:nth-child(3) { background: #28292e; }
+  .tp-project-thumb:nth-child(4) { background: #2b2e2a; }
+  .tp-project-thumb:nth-child(5) { background: #2e2a24; }
+
+  .tp-profile-header {
+    padding: 0 20px;
+    position: relative;
+  }
+
+  .tp-avatar-wrap {
+    display: flex;
+    align-items: flex-end;
+    gap: 0;
+    position: relative;
+    margin-top: -36px;
+  }
+
+  .tp-avatar {
+    width: 88px;
+    height: 88px;
+    border-radius: 6px;
+    background: #e85d04;
+    border: 3px solid #1a1c1e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+  }
+
+  .tp-avatar-verified {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: #e85d04;
+    border: 2.5px solid #1a1c1e;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 3;
+  }
+
+  .tp-avatar-verified svg { width: 11px; height: 11px; }
+
+  .tp-header-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
+    padding-bottom: 6px;
+    align-items: flex-end;
+  }
+
+  .tp-btn {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding: 8px 18px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: none;
+  }
+
+  .tp-btn-primary {
+    background: #e85d04;
+    color: #fff;
+  }
+
+  .tp-btn-secondary {
+    background: transparent;
+    color: #e8e4de;
+    border: 1px solid #3d3f42;
+  }
+
+  .tp-btn-icon {
+    background: transparent;
+    color: #a8a49e;
+    border: 1px solid #3d3f42;
+    padding: 8px 10px;
+    font-size: 14px;
+  }
+
+  .tp-identity {
+    padding: 14px 20px 0;
+  }
+
+  .tp-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: #f0ece6;
+    letter-spacing: 0.3px;
+    line-height: 1.1;
+  }
+
+  .tp-handle {
+    font-size: 13px;
+    color: #6e6b65;
+    margin-top: 2px;
+  }
+
+  .tp-trade-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
+
+  .tp-trade-tag {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 3px;
+  }
+
+  .tp-tag-primary { background: rgba(232,93,4,0.15); color: #e85d04; border: 1px solid rgba(232,93,4,0.3); }
+  .tp-tag-secondary { background: rgba(255,255,255,0.05); color: #a8a49e; border: 1px solid #2e3033; }
+
+  .tp-bio {
+    padding: 12px 20px 0;
+    font-size: 14px;
+    color: #b0ac a6;
+    line-height: 1.6;
+    color: #9d9990;
+    max-width: 540px;
+  }
+
+  .tp-meta-row {
+    padding: 10px 20px 0;
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .tp-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 13px;
+    color: #6e6b65;
+  }
+
+  .tp-meta-item svg { width: 13px; height: 13px; flex-shrink: 0; }
+  .tp-meta-item span { color: #9d9990; }
+
+  .tp-stats-row {
+    display: flex;
+    gap: 0;
+    margin: 16px 20px 0;
+    border: 1px solid #2e3033;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .tp-stat {
+    flex: 1;
+    padding: 12px 8px;
+    text-align: center;
+    border-right: 1px solid #2e3033;
+  }
+
+  .tp-stat:last-child { border-right: none; }
+
+  .tp-stat-num {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: #f0ece6;
+    line-height: 1;
+  }
+
+  .tp-stat-num .accent { color: #e85d04; }
+
+  .tp-stat-label {
+    font-size: 10px;
+    color: #5a5750;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-top: 4px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+  }
+
+  .tp-nav {
+    display: flex;
+    gap: 0;
+    margin: 20px 20px 0;
+    border-bottom: 1px solid #2e3033;
+  }
+
+  .tp-nav-item {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: #5a5750;
+    padding: 10px 16px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.15s;
+  }
+
+  .tp-nav-item.active {
+    color: #e85d04;
+    border-bottom-color: #e85d04;
+  }
+
+  .tp-body {
+    padding: 20px 20px 0;
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 16px;
+  }
+
+  .tp-section-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #5a5750;
+    margin-bottom: 12px;
+  }
+
+  .tp-post-card {
+    background: #22252a;
+    border: 1px solid #2e3033;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+
+  .tp-post-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px 10px;
+  }
+
+  .tp-post-avatar {
+    width: 36px; height: 36px;
+    border-radius: 4px;
+    background: #e85d04;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  .tp-post-meta { flex: 1; }
+
+  .tp-post-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #e8e4de;
+  }
+
+  .tp-post-time {
+    font-size: 11px;
+    color: #5a5750;
+    margin-top: 1px;
+  }
+
+  .tp-post-tag {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 3px;
+  }
+
+  .tag-project { background: rgba(232,93,4,0.12); color: #e85d04; }
+  .tag-bid { background: rgba(30,180,100,0.12); color: #2ecc71; }
+  .tag-hire { background: rgba(52,152,219,0.12); color: #5dade2; }
+
+  .tp-post-img {
+    width: 100%;
+    height: 180px;
+    background: #2e3033;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    opacity: 0.3;
+  }
+
+  .tp-post-img.img-a { background: #28312a; }
+  .tp-post-img.img-b { background: #312820; }
+
+  .tp-post-body {
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #9d9990;
+    line-height: 1.55;
+  }
+
+  .tp-post-body strong { color: #c8c4be; font-weight: 600; }
+
+  .tp-post-actions {
+    display: flex;
+    gap: 0;
+    border-top: 1px solid #2e3033;
+  }
+
+  .tp-action-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 9px 6px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: #5a5750;
+    cursor: pointer;
+    background: none;
+    border: none;
+    border-right: 1px solid #2e3033;
+  }
+
+  .tp-action-btn:last-child { border-right: none; }
+  .tp-action-btn:hover { color: #e85d04; background: rgba(232,93,4,0.05); }
+  .tp-action-btn svg { width: 13px; height: 13px; }
+
+  .tp-side-card {
+    background: #22252a;
+    border: 1px solid #2e3033;
+    border-radius: 6px;
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+
+  .tp-license-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 0;
+    border-bottom: 1px solid #2a2d30;
+    font-size: 13px;
+  }
+
+  .tp-license-row:last-child { border-bottom: none; }
+
+  .tp-license-name { color: #9d9990; }
+  .tp-license-val { 
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  .tp-license-active { color: #2ecc71; }
+  .tp-license-exp { color: #5a5750; }
+
+  .tp-skill-bar-row {
+    margin-bottom: 10px;
+  }
+
+  .tp-skill-bar-top {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    margin-bottom: 5px;
+  }
+
+  .tp-skill-name { color: #9d9990; }
+  .tp-skill-pct { 
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    color: #5a5750;
+    font-size: 12px;
+  }
+
+  .tp-bar-track {
+    height: 3px;
+    background: #2e3033;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .tp-bar-fill {
+    height: 100%;
+    background: #e85d04;
+    border-radius: 2px;
+  }
+
+  .tp-avail-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 3px;
+    background: rgba(46,204,113,0.1);
+    color: #2ecc71;
+    border: 1px solid rgba(46,204,113,0.2);
+  }
+
+  .tp-avail-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #2ecc71;
+    animation: pulse-dot 1.8s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .tp-review-item {
+    padding: 10px 0;
+    border-bottom: 1px solid #2a2d30;
+  }
+
+  .tp-review-item:last-child { border-bottom: none; }
+
+  .tp-review-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+  }
+
+  .tp-review-stars {
+    color: #e85d04;
+    font-size: 12px;
+    letter-spacing: 1px;
+  }
+
+  .tp-review-author {
+    font-size: 12px;
+    color: #5a5750;
+    margin-left: auto;
+  }
+
+  .tp-review-text {
+    font-size: 12px;
+    color: #6e6b65;
+    line-height: 1.5;
+  }
+
+  @media (max-width: 640px) {
+    .tp-body { grid-template-columns: 1fr; }
+    .tp-cover-project-strip { display: none; }
+  }
+</style>
+
+<div class="tp-root">
+
+  <div class="tp-cover">
+    <div class="tp-cover-pattern"></div>
+    <div class="tp-cover-badge">GC Licensed · Insured</div>
+    <div class="tp-cover-project-strip">
+      <div class="tp-project-thumb"><div class="tp-project-thumb-inner">🏗</div></div>
+      <div class="tp-project-thumb"><div class="tp-project-thumb-inner">🔩</div></div>
+      <div class="tp-project-thumb"><div class="tp-project-thumb-inner">🏠</div></div>
+      <div class="tp-project-thumb"><div class="tp-project-thumb-inner">🪵</div></div>
+      <div class="tp-project-thumb"><div class="tp-project-thumb-inner">🔧</div></div>
+    </div>
+  </div>
+
+  <div class="tp-profile-header">
+    <div class="tp-avatar-wrap">
+      <div class="tp-avatar">
+        RS
+        <div class="tp-avatar-verified">
+          <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l2.5 2.5L10 3.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+      <div class="tp-header-actions">
+        <button class="tp-btn tp-btn-secondary tp-btn-icon">
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.2"/><path d="M5 8h6M8 5v6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        </button>
+        <button class="tp-btn tp-btn-secondary">Message</button>
+        <button class="tp-btn tp-btn-primary">+ Connect</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tp-identity">
+    <div class="tp-name">Russ Stanton Construction</div>
+    <div class="tp-handle">@russstanton · Fitchburg, MA</div>
+    <div class="tp-trade-tags">
+      <span class="tp-trade-tag tp-tag-primary">General Contractor</span>
+      <span class="tp-trade-tag tp-tag-primary">Framing</span>
+      <span class="tp-trade-tag tp-tag-secondary">Finish Carpentry</span>
+      <span class="tp-trade-tag tp-tag-secondary">Concrete</span>
+      <span class="tp-trade-tag tp-tag-secondary">Project Mgmt</span>
+    </div>
+  </div>
+
+  <div class="tp-bio">
+    28 years in the trades. Specializing in commercial build-outs, residential additions, and structural framing across Central MA. Every job site left cleaner than we found it.
+  </div>
+
+  <div class="tp-meta-row">
+    <div class="tp-meta-item">
+      <svg viewBox="0 0 14 14" fill="none"><path d="M7 1a4 4 0 014 4c0 3-4 8-4 8S3 8 3 5a4 4 0 014-4z" stroke="currentColor" stroke-width="1.2"/><circle cx="7" cy="5" r="1.2" stroke="currentColor" stroke-width="1.1"/></svg>
+      <span>Fitchburg, MA · 50mi radius</span>
+    </div>
+    <div class="tp-meta-item">
+      <svg viewBox="0 0 14 14" fill="none"><rect x="1" y="3" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M1 6h12" stroke="currentColor" stroke-width="1.2"/><path d="M4 1v2M10 1v2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      <span>Member since Jan 2024</span>
+    </div>
+    <div class="tp-meta-item">
+      <svg viewBox="0 0 14 14" fill="none"><path d="M7 1l1.5 3 3.5.5-2.5 2.5.5 3.5L7 9l-3 1.5.5-3.5L2 4.5 5.5 4z" stroke="currentColor" stroke-width="1.1"/></svg>
+      <span>4.9 rating · <span style="color:#e85d04">87 reviews</span></span>
+    </div>
+  </div>
+
+  <div class="tp-stats-row">
+    <div class="tp-stat">
+      <div class="tp-stat-num">142</div>
+      <div class="tp-stat-label">Projects</div>
+    </div>
+    <div class="tp-stat">
+      <div class="tp-stat-num">38</div>
+      <div class="tp-stat-label">Connections</div>
+    </div>
+    <div class="tp-stat">
+      <div class="tp-stat-num"><span class="accent">$</span>2.4M</div>
+      <div class="tp-stat-label">Work Completed</div>
+    </div>
+    <div class="tp-stat">
+      <div class="tp-stat-num">14</div>
+      <div class="tp-stat-label">Active Bids</div>
+    </div>
+    <div class="tp-stat">
+      <div class="tp-stat-num">9</div>
+      <div class="tp-stat-label">Referrals Given</div>
+    </div>
+  </div>
+
+  <div class="tp-nav">
+    <div class="tp-nav-item active">Feed</div>
+    <div class="tp-nav-item">Portfolio</div>
+    <div class="tp-nav-item">Bids & Jobs</div>
+    <div class="tp-nav-item">Reviews</div>
+    <div class="tp-nav-item">About</div>
+  </div>
+
+  <div class="tp-body">
+
+    <div class="tp-main">
+
+      <div class="tp-post-card">
+        <div class="tp-post-header">
+          <div class="tp-post-avatar">RS</div>
+          <div class="tp-post-meta">
+            <div class="tp-post-name">Russ Stanton Construction</div>
+            <div class="tp-post-time">2 hours ago</div>
+          </div>
+          <span class="tp-post-tag tag-project">Project Update</span>
+        </div>
+        <div class="tp-post-img img-a">🏗</div>
+        <div class="tp-post-body">
+          <strong>Day 18 — Steel framing complete on the Leominster warehouse addition.</strong> 4,800 sq ft structural steel, finished 2 days ahead of schedule. Concrete pour starts Monday. Shoutout to the crew for pushing through last week's weather.
+        </div>
+        <div class="tp-post-actions">
+          <button class="tp-action-btn">
+            <svg viewBox="0 0 14 14" fill="none"><path d="M7 2C5.3 2 4 3.3 4 5c0 2.5 3 6 3 6s3-3.5 3-6c0-1.7-1.3-3-3-3z" stroke="currentColor" stroke-width="1.2"/></svg>
+            214 Likes
+          </button>
+          <button class="tp-action-btn">
+            <svg viewBox="0 0 14 14" fill="none"><path d="M2 2h10v8H7l-3 2v-2H2z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+            31 Comments
+          </button>
+          <button class="tp-action-btn">
+            <svg viewBox="0 0 14 14" fill="none"><path d="M2 7l4-4v2.5C9 5.5 12 7 12 11c-1-2-3-3-6-2.5V11z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+            Refer
+          </button>
+          <button class="tp-action-btn">
+            <svg viewBox="0 0 14 14" fill="none"><circle cx="11" cy="3" r="1.5" stroke="currentColor" stroke-width="1.1"/><circle cx="3" cy="7" r="1.5" stroke="currentColor" stroke-width="1.1"/><circle cx="11" cy="11" r="1.5" stroke="currentColor" stroke-width="1.1"/><path d="M4.3 6.3l5-2.5M4.3 7.7l5 2.5" stroke="currentColor" stroke-width="1.1"/></svg>
+            Share
+          </button>
+        </div>
+      </div>
+
+      <div class="tp-post-card">
+        <div class="tp-post-header">
+          <div class="tp-post-avatar">RS</div>
+          <div class="tp-post-meta">
+            <div class="tp-post-name">Russ Stanton Construction</div>
+            <div class="tp-post-time">3 days ago</div>
+          </div>
+          <span class="tp-post-tag tag-bid">Open Bid</span>
+        </div>
+        <div class="tp-post-body">
+          <strong>Looking for a reliable electrical sub — 4-unit residential new build in Fitchburg starting April 14.</strong> Scope: rough-in through finish, panel, EV charging in garage. Est. 6 weeks. Must be MA licensed. DM to discuss or submit quote via Bid Board.
+        </div>
+        <div class="tp-post-actions">
+          <button class="tp-action-btn">
+            <svg viewBox="0 0 14 14" fill="none"><path d="M7 2C5.3 2 4 3.3 4 5c0 2.5 3 6 3 6s3-3.5 3-6c0-1.7-1.3-3-3-3z" stroke="currentColor" stroke-width="1.2"/></svg>
+            88 Likes
+          </button>
+          <button class="tp-action-btn">
+            <svg viewBox="0 0 14 14" fill="none"><path d="M2 2h10v8H7l-3 2v-2H2z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+            12 Comments
+          </button>
+          <button class="tp-action-btn" style="color:#5dade2;">
+            <svg viewBox="0 0 14 14" fill="none"><path d="M2 4h10v7a1 1 0 01-1 1H3a1 1 0 01-1-1V4z" stroke="currentColor" stroke-width="1.2"/><path d="M2 4l5-3 5 3" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+            Submit Bid
+          </button>
+          <button class="tp-action-btn">
+            <svg viewBox="0 0 14 14" fill="none"><circle cx="11" cy="3" r="1.5" stroke="currentColor" stroke-width="1.1"/><circle cx="3" cy="7" r="1.5" stroke="currentColor" stroke-width="1.1"/><circle cx="11" cy="11" r="1.5" stroke="currentColor" stroke-width="1.1"/><path d="M4.3 6.3l5-2.5M4.3 7.7l5 2.5" stroke="currentColor" stroke-width="1.1"/></svg>
+            Share
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="tp-sidebar">
+
+      <div class="tp-side-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <div class="tp-section-label" style="margin-bottom:0;">Availability</div>
+          <div class="tp-avail-badge"><div class="tp-avail-dot"></div>Open to Work</div>
+        </div>
+        <div style="font-size:12px; color:#5a5750; line-height:1.5;">
+          Available for new projects starting <span style="color:#e8e4de;">April 7, 2026</span>. Currently booking commercial & residential builds in Central MA.
+        </div>
+      </div>
+
+      <div class="tp-side-card">
+        <div class="tp-section-label">Licenses & Certs</div>
+        <div class="tp-license-row">
+          <span class="tp-license-name">MA GC License</span>
+          <span class="tp-license-val tp-license-active">Active · CS-102847</span>
+        </div>
+        <div class="tp-license-row">
+          <span class="tp-license-name">OSHA 30</span>
+          <span class="tp-license-val tp-license-active">Certified</span>
+        </div>
+        <div class="tp-license-row">
+          <span class="tp-license-name">Lead RRP</span>
+          <span class="tp-license-val tp-license-active">Active</span>
+        </div>
+        <div class="tp-license-row">
+          <span class="tp-license-name">Liability Insurance</span>
+          <span class="tp-license-val tp-license-active">$2M Coverage</span>
+        </div>
+      </div>
+
+      <div class="tp-side-card">
+        <div class="tp-section-label">Top Skills</div>
+        <div class="tp-skill-bar-row">
+          <div class="tp-skill-bar-top"><span class="tp-skill-name">Structural Framing</span><span class="tp-skill-pct">98%</span></div>
+          <div class="tp-bar-track"><div class="tp-bar-fill" style="width:98%"></div></div>
+        </div>
+        <div class="tp-skill-bar-row">
+          <div class="tp-skill-bar-top"><span class="tp-skill-name">Project Management</span><span class="tp-skill-pct">94%</span></div>
+          <div class="tp-bar-track"><div class="tp-bar-fill" style="width:94%"></div></div>
+        </div>
+        <div class="tp-skill-bar-row">
+          <div class="tp-skill-bar-top"><span class="tp-skill-name">Concrete Work</span><span class="tp-skill-pct">87%</span></div>
+          <div class="tp-bar-track"><div class="tp-bar-fill" style="width:87%"></div></div>
+        </div>
+        <div class="tp-skill-bar-row">
+          <div class="tp-skill-bar-top"><span class="tp-skill-name">Finish Carpentry</span><span class="tp-skill-pct">82%</span></div>
+          <div class="tp-bar-track"><div class="tp-bar-fill" style="width:82%"></div></div>
+        </div>
+      </div>
+
+      <div class="tp-side-card">
+        <div class="tp-section-label">Recent Reviews</div>
+        <div class="tp-review-item">
+          <div class="tp-review-top">
+            <span class="tp-review-stars">★★★★★</span>
+            <span class="tp-review-author">Apex Developers</span>
+          </div>
+          <div class="tp-review-text">Russ delivered the framing package on time and on budget. No surprises. Will rehire.</div>
+        </div>
+        <div class="tp-review-item">
+          <div class="tp-review-top">
+            <span class="tp-review-stars">★★★★★</span>
+            <span class="tp-review-author">HomeOwner · Fitchburg</span>
+          </div>
+          <div class="tp-review-text">Second addition with Russ. Clean job site, clear communication throughout the whole project.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

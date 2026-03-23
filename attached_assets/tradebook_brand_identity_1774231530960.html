@@ -1,0 +1,297 @@
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+.bi{font-family:'Barlow',sans-serif;background:#141416;padding:0 0 48px;}
+
+.bi-section{padding:32px 32px 0;}
+.bi-label{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#3d3f42;margin-bottom:20px;}
+
+.bi-hero{background:#141416;padding:48px 32px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:280px;border-bottom:1px solid #1e2022;}
+
+.tb-logo-full{display:flex;align-items:center;gap:0;}
+.tb-icon{width:52px;height:52px;background:#e85d04;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.tb-icon svg{width:30px;height:30px;}
+.tb-wordmark{font-family:'Barlow Condensed',sans-serif;font-size:42px;font-weight:800;letter-spacing:-0.5px;line-height:1;margin-left:12px;}
+.tb-wordmark .trade{color:#f0ece6;}
+.tb-wordmark .book{color:#e85d04;}
+
+.bi-tagline{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#3d3f42;margin-top:16px;}
+
+.bi-divider{height:1px;background:#1e2022;margin:32px 0 0;}
+
+.bi-logo-variants{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:#1e2022;border:1px solid #1e2022;border-radius:8px;overflow:hidden;margin-top:0;}
+.bi-variant{padding:28px 20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#141416;}
+.bi-variant-label{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#3d3f42;}
+
+.tb-logo-sm{display:flex;align-items:center;gap:8px;}
+.tb-icon-sm{width:32px;height:32px;background:#e85d04;border-radius:5px;display:flex;align-items:center;justify-content:center;}
+.tb-icon-sm svg{width:18px;height:18px;}
+.tb-word-sm{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:800;letter-spacing:-0.3px;line-height:1;}
+.tb-word-sm .trade{color:#f0ece6;}
+.tb-word-sm .book{color:#e85d04;}
+
+.tb-icon-only{width:48px;height:48px;background:#e85d04;border-radius:8px;display:flex;align-items:center;justify-content:center;}
+.tb-icon-only svg{width:28px;height:28px;}
+
+.tb-wordmark-only{font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:800;letter-spacing:-0.3px;line-height:1;}
+.tb-wordmark-only .trade{color:#f0ece6;}
+.tb-wordmark-only .book{color:#e85d04;}
+
+.bi-light-variant{background:#f5f3ef;border-radius:6px;padding:20px;display:flex;align-items:center;justify-content:center;}
+.tb-light-icon{width:36px;height:36px;background:#e85d04;border-radius:5px;display:flex;align-items:center;justify-content:center;}
+.tb-light-icon svg{width:20px;height:20px;}
+.tb-light-word{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:800;letter-spacing:-0.3px;margin-left:9px;}
+.tb-light-word .trade{color:#1a1c1e;}
+.tb-light-word .book{color:#e85d04;}
+
+.bi-dark-variant{background:#1a1c1e;border:1px solid #2e3033;border-radius:6px;padding:20px;display:flex;align-items:center;justify-content:center;}
+
+.bi-colors{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:0;}
+.bi-color-swatch{border-radius:6px;overflow:hidden;}
+.bi-swatch-color{height:64px;}
+.bi-swatch-info{padding:8px 10px;background:#1e2022;}
+.bi-swatch-name{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:.5px;color:#9d9990;}
+.bi-swatch-hex{font-family:'Barlow Condensed',sans-serif;font-size:11px;color:#5a5750;margin-top:2px;}
+
+.bi-type-row{display:flex;flex-direction:column;gap:16px;margin-top:0;}
+.bi-type-item{display:flex;align-items:baseline;gap:16px;padding:14px 16px;background:#1e2022;border-radius:6px;}
+.bi-type-spec{font-family:'Barlow Condensed',sans-serif;font-size:11px;color:#3d3f42;width:120px;flex-shrink:0;letter-spacing:.5px;}
+.bi-type-sample{font-family:'Barlow Condensed',sans-serif;}
+
+.bi-taglines{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:0;}
+.bi-tagline-card{background:#1e2022;border-radius:6px;padding:16px 20px;}
+.bi-tl-text{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:#f0ece6;letter-spacing:.5px;line-height:1.2;}
+.bi-tl-note{font-size:11px;color:#5a5750;margin-top:6px;line-height:1.4;}
+
+.bi-icon-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:0;}
+.bi-icon-cell{background:#1e2022;border-radius:6px;padding:20px 12px;display:flex;flex-direction:column;align-items:center;gap:10px;}
+.bi-icon-wrap{width:44px;height:44px;border-radius:7px;display:flex;align-items:center;justify-content:center;}
+.bi-icon-name{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:#5a5750;text-align:center;}
+
+.bi-badge-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:0;}
+.bi-badge{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:5px 12px;border-radius:3px;}
+</style>
+
+<div class="bi">
+
+  <div class="bi-hero">
+    <div class="tb-logo-full">
+      <div class="tb-icon">
+        <svg viewBox="0 0 30 30" fill="none">
+          <rect x="4" y="3" width="16" height="22" rx="2" fill="rgba(255,255,255,0.15)" stroke="white" stroke-width="1.5"/>
+          <rect x="8" y="3" width="16" height="22" rx="2" fill="rgba(255,255,255,0.25)" stroke="white" stroke-width="1.5"/>
+          <path d="M12 11h8M12 15h6M12 19h4" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="tb-wordmark"><span class="trade">Trade</span><span class="book">Book</span></div>
+    </div>
+    <div class="bi-tagline">The professional network for the trades</div>
+  </div>
+
+  <div class="bi-section">
+    <div class="bi-label">Logo variants</div>
+    <div class="bi-logo-variants">
+      <div class="bi-variant">
+        <div class="tb-logo-sm">
+          <div class="tb-icon-sm">
+            <svg viewBox="0 0 18 18" fill="none">
+              <rect x="2" y="2" width="10" height="13" rx="1.5" fill="rgba(255,255,255,0.15)" stroke="white" stroke-width="1.2"/>
+              <rect x="5" y="2" width="10" height="13" rx="1.5" fill="rgba(255,255,255,0.25)" stroke="white" stroke-width="1.2"/>
+              <path d="M7 7h5M7 9.5h4M7 12h3" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="tb-word-sm"><span class="trade">Trade</span><span class="book">Book</span></div>
+        </div>
+        <div class="bi-variant-label">Compact</div>
+      </div>
+      <div class="bi-variant">
+        <div class="tb-icon-only">
+          <svg viewBox="0 0 28 28" fill="none">
+            <rect x="3" y="3" width="15" height="20" rx="2" fill="rgba(255,255,255,0.15)" stroke="white" stroke-width="1.5"/>
+            <rect x="8" y="3" width="15" height="20" rx="2" fill="rgba(255,255,255,0.3)" stroke="white" stroke-width="1.5"/>
+            <path d="M11 10h7M11 14h5M11 18h4" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="bi-variant-label">Icon only</div>
+      </div>
+      <div class="bi-variant">
+        <div class="tb-wordmark-only"><span class="trade">Trade</span><span class="book">Book</span></div>
+        <div class="bi-variant-label">Wordmark only</div>
+      </div>
+      <div class="bi-variant" style="grid-column:1/2;">
+        <div class="bi-light-variant">
+          <div class="tb-light-icon">
+            <svg viewBox="0 0 20 20" fill="none">
+              <rect x="2" y="2" width="11" height="15" rx="1.5" fill="rgba(232,93,4,0.2)" stroke="#e85d04" stroke-width="1.2"/>
+              <rect x="6" y="2" width="11" height="15" rx="1.5" fill="rgba(232,93,4,0.3)" stroke="#e85d04" stroke-width="1.2"/>
+              <path d="M8 7h5M8 10h4M8 13h3" stroke="#e85d04" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="tb-light-word"><span class="trade">Trade</span><span class="book">Book</span></div>
+        </div>
+        <div class="bi-variant-label">Light background</div>
+      </div>
+      <div class="bi-variant" style="grid-column:2/4;">
+        <div class="bi-dark-variant">
+          <div class="tb-logo-sm">
+            <div class="tb-icon-sm">
+              <svg viewBox="0 0 18 18" fill="none">
+                <rect x="2" y="2" width="10" height="13" rx="1.5" fill="rgba(255,255,255,0.15)" stroke="white" stroke-width="1.2"/>
+                <rect x="5" y="2" width="10" height="13" rx="1.5" fill="rgba(255,255,255,0.25)" stroke="white" stroke-width="1.2"/>
+                <path d="M7 7h5M7 9.5h4M7 12h3" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="tb-word-sm"><span class="trade">Trade</span><span class="book">Book</span></div>
+          </div>
+        </div>
+        <div class="bi-variant-label">Dark UI (platform default)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bi-section" style="margin-top:28px;">
+    <div class="bi-label">Color system</div>
+    <div class="bi-colors">
+      <div class="bi-color-swatch">
+        <div class="bi-swatch-color" style="background:#e85d04;"></div>
+        <div class="bi-swatch-info">
+          <div class="bi-swatch-name">Brand orange</div>
+          <div class="bi-swatch-hex">#E85D04</div>
+        </div>
+      </div>
+      <div class="bi-color-swatch">
+        <div class="bi-swatch-color" style="background:#c44d00;"></div>
+        <div class="bi-swatch-info">
+          <div class="bi-swatch-name">Brand dark</div>
+          <div class="bi-swatch-hex">#C44D00</div>
+        </div>
+      </div>
+      <div class="bi-color-swatch">
+        <div class="bi-swatch-color" style="background:#1a1c1e;"></div>
+        <div class="bi-swatch-info">
+          <div class="bi-swatch-name">Forge black</div>
+          <div class="bi-swatch-hex">#1A1C1E</div>
+        </div>
+      </div>
+      <div class="bi-color-swatch">
+        <div class="bi-swatch-color" style="background:#22252a;"></div>
+        <div class="bi-swatch-info">
+          <div class="bi-swatch-name">Steel surface</div>
+          <div class="bi-swatch-hex">#22252A</div>
+        </div>
+      </div>
+      <div class="bi-color-swatch">
+        <div class="bi-swatch-color" style="background:#f0ece6;"></div>
+        <div class="bi-swatch-info">
+          <div class="bi-swatch-name">Bone white</div>
+          <div class="bi-swatch-hex">#F0ECE6</div>
+        </div>
+      </div>
+      <div class="bi-color-swatch">
+        <div class="bi-swatch-color" style="background:#9d9990;"></div>
+        <div class="bi-swatch-info">
+          <div class="bi-swatch-name">Dust gray</div>
+          <div class="bi-swatch-hex">#9D9990</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bi-section" style="margin-top:28px;">
+    <div class="bi-label">Type system — Barlow Condensed</div>
+    <div class="bi-type-row">
+      <div class="bi-type-item">
+        <div class="bi-type-spec">Display / 700</div>
+        <div class="bi-type-sample" style="font-size:32px;font-weight:700;color:#f0ece6;letter-spacing:-.5px;line-height:1;">The trades, connected.</div>
+      </div>
+      <div class="bi-type-item">
+        <div class="bi-type-spec">Heading / 700</div>
+        <div class="bi-type-sample" style="font-size:22px;font-weight:700;color:#f0ece6;letter-spacing:.2px;">Post a job. Submit a bid. Build your network.</div>
+      </div>
+      <div class="bi-type-item">
+        <div class="bi-type-spec">Label / 600</div>
+        <div class="bi-type-sample" style="font-size:13px;font-weight:600;color:#9d9990;letter-spacing:1.2px;text-transform:uppercase;">General Contractor · Verified · Fitchburg, MA</div>
+      </div>
+      <div class="bi-type-item">
+        <div class="bi-type-spec">Body — Barlow / 400</div>
+        <div class="bi-type-sample" style="font-size:14px;font-weight:400;color:#9d9990;font-family:'Barlow',sans-serif;line-height:1.6;">28 years in the trades. Specializing in commercial build-outs and structural framing across Central MA.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bi-section" style="margin-top:28px;">
+    <div class="bi-label">Tagline options</div>
+    <div class="bi-taglines">
+      <div class="bi-tagline-card">
+        <div class="bi-tl-text">The professional network for the trades.</div>
+        <div class="bi-tl-note">Primary — broad, inclusive, positions against LinkedIn</div>
+      </div>
+      <div class="bi-tagline-card">
+        <div class="bi-tl-text">Where the trades work.</div>
+        <div class="bi-tl-note">Short form — double meaning, "work" as labor and function</div>
+      </div>
+      <div class="bi-tagline-card">
+        <div class="bi-tl-text">Built by the trades. Built for the trades.</div>
+        <div class="bi-tl-note">Community-first — signals platform is trade-owned culturally</div>
+      </div>
+      <div class="bi-tagline-card">
+        <div class="bi-tl-text">Find work. Post work. Build your name.</div>
+        <div class="bi-tl-note">Functional — speaks directly to contractor motivations</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bi-section" style="margin-top:28px;">
+    <div class="bi-label">Platform icons — navigation</div>
+    <div class="bi-icon-grid">
+      <div class="bi-icon-cell">
+        <div class="bi-icon-wrap" style="background:rgba(232,93,4,.12);">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="2" y="2" width="7" height="7" rx="1.5" stroke="#e85d04" stroke-width="1.5"/><rect x="13" y="2" width="7" height="7" rx="1.5" stroke="#e85d04" stroke-width="1.5"/><rect x="2" y="13" width="7" height="7" rx="1.5" stroke="#e85d04" stroke-width="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5" stroke="#e85d04" stroke-width="1.5"/></svg>
+        </div>
+        <div class="bi-icon-name">Feed</div>
+      </div>
+      <div class="bi-icon-cell">
+        <div class="bi-icon-wrap" style="background:rgba(41,128,185,.12);">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="2" y="3" width="18" height="15" rx="2" stroke="#5dade2" stroke-width="1.5"/><path d="M2 8h18M7 3v5M15 3v5" stroke="#5dade2" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <div class="bi-icon-name">Jobs</div>
+      </div>
+      <div class="bi-icon-cell">
+        <div class="bi-icon-wrap" style="background:rgba(46,204,113,.12);">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 6h16v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6zM3 6l8-4 8 4" stroke="#2ecc71" stroke-width="1.5" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="bi-icon-name">Bids</div>
+      </div>
+      <div class="bi-icon-cell">
+        <div class="bi-icon-wrap" style="background:rgba(142,68,173,.12);">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="8" cy="7" r="3.5" stroke="#bb8fce" stroke-width="1.5"/><path d="M2 18c0-3.5 2.5-6 6-6s6 2.5 6 6" stroke="#bb8fce" stroke-width="1.5" stroke-linecap="round"/><circle cx="16" cy="9" r="2.5" stroke="#bb8fce" stroke-width="1.5"/><path d="M14 18c0-2.5 1.5-4 2-4s2 1.5 2 4" stroke="#bb8fce" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <div class="bi-icon-name">Network</div>
+      </div>
+      <div class="bi-icon-cell">
+        <div class="bi-icon-wrap" style="background:rgba(232,93,4,.12);">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="8" r="4" stroke="#e85d04" stroke-width="1.5"/><path d="M3 20c0-4.5 3.5-7 8-7s8 2.5 8 7" stroke="#e85d04" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <div class="bi-icon-name">Profile</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bi-section" style="margin-top:28px;">
+    <div class="bi-label">Status & badge system</div>
+    <div class="bi-badge-row">
+      <div class="bi-badge" style="background:rgba(232,93,4,.12);color:#e85d04;border:1px solid rgba(232,93,4,.25);">Verified GC</div>
+      <div class="bi-badge" style="background:rgba(46,204,113,.12);color:#2ecc71;border:1px solid rgba(46,204,113,.2);">Licensed & Insured</div>
+      <div class="bi-badge" style="background:rgba(41,128,185,.12);color:#5dade2;border:1px solid rgba(41,128,185,.2);">OSHA 30</div>
+      <div class="bi-badge" style="background:rgba(142,68,173,.12);color:#bb8fce;border:1px solid rgba(142,68,173,.2);">Union Member</div>
+      <div class="bi-badge" style="background:rgba(231,76,60,.12);color:#e74c3c;border:1px solid rgba(231,76,60,.2);">Urgent Hire</div>
+      <div class="bi-badge" style="background:rgba(22,160,133,.12);color:#1abc9c;border:1px solid rgba(22,160,133,.2);">Design Pro</div>
+      <div class="bi-badge" style="background:rgba(243,156,18,.12);color:#f39c12;border:1px solid rgba(243,156,18,.2);">Bid Closing</div>
+      <div class="bi-badge" style="background:#1e3a26;color:#2ecc71;border:1px solid rgba(46,204,113,.2);">Awarded</div>
+      <div class="bi-badge" style="background:rgba(255,255,255,.05);color:#9d9990;border:1px solid #2e3033;">Project Owner</div>
+      <div class="bi-badge" style="background:rgba(255,255,255,.05);color:#9d9990;border:1px solid #2e3033;">Trade Partner</div>
+    </div>
+  </div>
+
+</div>

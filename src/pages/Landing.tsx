@@ -1,6 +1,26 @@
 import { Link } from 'react-router-dom'
 import '../styles/landing.css'
 
+function TraydBookNavLogo() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+      <div style={{
+        width: 30, height: 30, background: '#e85d04', borderRadius: 5,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+      }}>
+        <svg viewBox="0 0 17 17" fill="none" width={16} height={16}>
+          <rect x="2" y="1.5" width="9" height="13" rx="1.5" fill="rgba(255,255,255,0.12)" stroke="white" strokeWidth="1.2" />
+          <rect x="5" y="1.5" width="9" height="13" rx="1.5" fill="rgba(255,255,255,0.25)" stroke="white" strokeWidth="1.2" />
+          <path d="M7 6h4M7 9h3M7 12h2" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
+        </svg>
+      </div>
+      <span style={{ fontFamily: 'var(--font-condensed)', fontSize: 22, fontWeight: 800, letterSpacing: '-0.5px', lineHeight: 1 }}>
+        <span style={{ color: '#f0ece6' }}>Trayd</span><span style={{ color: '#e85d04' }}>Book</span>
+      </span>
+    </div>
+  )
+}
+
 const trades = [
   'Electricians', 'Plumbers', 'HVAC Techs', 'Carpenters', 'Ironworkers',
   'Masons', 'Painters', 'Roofers', 'Welders', 'General Contractors',
@@ -10,12 +30,12 @@ const features = [
   {
     icon: '🏗️',
     title: 'Post Your Work',
-    desc: 'Share project photos, milestones, and trade tips with a professional network that actually understands your craft.',
+    desc: 'Share project photos, milestones, and trade tips with a professional network that understands your craft.',
   },
   {
     icon: '📋',
     title: 'Submit Bids',
-    desc: 'Browse real RFQs posted by verified project owners. Submit bids directly and win more contracts.',
+    desc: 'Browse real RFQs posted by verified project owners. Submit structured bids and win more contracts.',
   },
   {
     icon: '💼',
@@ -33,10 +53,7 @@ export default function Landing() {
   return (
     <div className="landing">
       <header className="landing-header">
-        <div className="landing-logo">
-          <span className="landing-logo-mark">T</span>
-          <span>traydbook</span>
-        </div>
+        <TraydBookNavLogo />
         <div className="landing-header-actions">
           <Link to="/login" className="btn-ghost">Sign In</Link>
           <Link to="/signup" className="btn-primary">Join Free</Link>
@@ -47,8 +64,7 @@ export default function Landing() {
         <div className="landing-hero-content">
           <div className="landing-badge">Free for all trade accounts — always</div>
           <h1 className="landing-headline">
-            The professional network<br />
-            built for the<br />
+            The professional network<br />built for the<br />
             <span className="landing-headline-accent">construction trades</span>
           </h1>
           <p className="landing-subhead">
@@ -74,25 +90,37 @@ export default function Landing() {
                   <div className="lmc-name">Mike R. · Licensed Electrician</div>
                   <div className="lmc-meta">Chicago, IL · ⭐ 4.9 (87 reviews)</div>
                 </div>
+                <span style={{
+                  fontFamily: 'var(--font-condensed)', fontSize: 10, fontWeight: 700,
+                  letterSpacing: 1, textTransform: 'uppercase',
+                  padding: '3px 8px', borderRadius: 3,
+                  background: 'rgba(232,93,4,0.12)', color: '#e85d04', marginLeft: 'auto',
+                }}>Project</span>
               </div>
               <div className="lmc-img" />
               <div className="lmc-body">Finished rough-in on a 24-unit residential build. 3 weeks ahead of schedule. #Electrical #Residential</div>
               <div className="lmc-stats">
                 <span>❤️ 142</span>
                 <span>💬 18</span>
-                <span>✅ Verified License</span>
+                <span style={{ color: '#2ecc71' }}>✓ Verified</span>
               </div>
             </div>
-            <div className="landing-mock-card landing-mock-card--offset">
+            <div className="landing-mock-card">
               <div className="lmc-header">
                 <div className="lmc-avatar lmc-avatar--2" />
                 <div>
                   <div className="lmc-name">Rivera Construction</div>
                   <div className="lmc-meta">Open Bid · Denver, CO</div>
                 </div>
+                <span style={{
+                  fontFamily: 'var(--font-condensed)', fontSize: 10, fontWeight: 700,
+                  letterSpacing: 1, textTransform: 'uppercase',
+                  padding: '3px 8px', borderRadius: 3,
+                  background: 'rgba(30,180,100,0.12)', color: '#2ecc71', marginLeft: 'auto',
+                }}>RFQ</span>
               </div>
               <div className="lmc-body">
-                <strong>RFQ: Commercial Plumbing Install</strong><br />
+                <strong style={{ color: 'var(--color-text)' }}>Commercial Plumbing Install</strong><br />
                 4,500 sq ft office build-out. Budget $80k–$120k. Bid deadline in 5 days.
               </div>
               <div className="lmc-stats">
@@ -124,7 +152,7 @@ export default function Landing() {
       </section>
 
       <footer className="landing-footer">
-        <span>© 2025 traydbook</span>
+        <span>© 2025 TraydBook</span>
         <span>·</span>
         <a href="#">Privacy</a>
         <span>·</span>

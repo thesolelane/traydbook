@@ -1,60 +1,64 @@
-# Traydbook
+# TraydBook
 
-The professional network for the construction trades. Post work, find jobs, submit bids, and build your verified reputation — all in one place built exclusively for contractors, tradespeople, and design professionals.
+The professional network for the construction trades. Contractors, tradespeople, and design professionals can post work, find jobs, submit bids, and build verified reputations.
 
-## Stack
+## Brand Identity
+- **Name**: TraydBook — wordmark split as "Trayd" (bone white `#F0ECE6`) + "Book" (orange `#E85D04`)
+- **Logo**: Stacked pages SVG icon on orange background
+- **Theme**: Dark — Forge black `#141416` background, Steel surface `#22252A` cards
+- **Fonts**: Barlow Condensed (headings, labels, UI) + Barlow (body text)
+- **Brand color**: `#E85D04` (orange), press state `#C44D00`
+- **Text colors**: Bone white `#F0ECE6`, Dust gray `#9D9990`, `#5A5750` for muted
+- **Borders**: `#2E3033`
 
-- **Frontend:** React 18 + TypeScript + Vite
-- **Routing:** React Router v6
-- **Icons:** Lucide React
-- **Styling:** Pure CSS custom properties (no CSS framework)
+## Architecture
+- **Frontend**: React 18 + TypeScript + Vite (port 5000)
+- **Backend**: Supabase (auth + database)
+- **Styling**: Pure CSS custom properties, no CSS framework
+- **Routing**: React Router v6
 
-## Project Structure
+## Supabase Config
+- **URL**: `https://tpwrpezsvclzblktgjli.supabase.co`
+- **Anon key**: stored as `VITE_SUPABASE_ANON_KEY` env var
+- **JWT secret**: stored as `SUPABASE_JWT_SECRET`
+- **DB password**: stored as `SUPABASE_DB_PASSWORD`
+- **Schema**: `supabase/schema.sql` — run this in Supabase SQL Editor to create all tables
 
-```
-src/
-  components/
-    Navbar.tsx       - Sticky top navigation with search
-    PostCard.tsx     - Social feed post with like/comment/share
-    JobCard.tsx      - Job listing card with bid action
-    UserCard.tsx     - Professional profile card
-    BidModal.tsx     - Bid submission modal
-  pages/
-    Feed.tsx         - Social feed with post composer + sidebar
-    Jobs.tsx         - Job board with search and filters
-    Network.tsx      - Professional directory with filters
-    Bids.tsx         - My bids tracker with status
-    Profile.tsx      - User profile page
-  data/
-    mockData.ts      - All mock data (users, jobs, posts, bids)
-  App.tsx            - Router setup
-  main.tsx           - Entry point
-  index.css          - Global styles + CSS custom properties
-```
+## User Types
+- **Contractor / Tradesperson** — free always, full access
+- **Design Professional** — free always, full access
+- **Project Owner** — credit-based (50 welcome credits)
+- **Real Estate Agent** — credit-based
+- **Homeowner** — credit-based
 
-## Running the App
+## Credit Costs
+- Post RFQ: 10 credits
+- Post job (non-contractor): 8 credits
+- Cold message contractor: 3 credits
+- Request contact info: 5 credits
+- Boost listing: 15 credits
 
-- **Dev:** `npm run dev` → http://localhost:5000
-- **Build:** `npm run build`
-- **Workflow:** "Start application" on port 5000
+## Key Files
+- `src/lib/supabase.ts` — Supabase client
+- `src/lib/database.types.ts` — TypeScript DB types
+- `src/context/AuthContext.tsx` — Auth state & helpers
+- `src/components/ProtectedRoute.tsx` — Route guard
+- `src/components/Navbar.tsx` — Main navigation (auth-aware)
+- `src/pages/Landing.tsx` — Public landing page
+- `src/pages/Login.tsx` — Sign in
+- `src/pages/Signup.tsx` — Account type selection
+- `src/pages/SignupContractor.tsx` — 3-step contractor onboarding
+- `src/pages/SignupOwner.tsx` — 2-step owner/agent/homeowner onboarding
+- `src/styles/landing.css` — Landing page styles
+- `src/styles/auth.css` — Auth page styles
+- `src/index.css` — Global CSS variables + reset
+- `supabase/schema.sql` — Full DB schema with RLS policies
 
-## Deployment
-
-Configured as a static site:
-- Build: `npm run build`
-- Serve: `dist/` directory
-
-## Design
-
-- Brand color: `#E85D26` (warm orange)
-- Clean, professional UI with a trades-focused aesthetic
-- Responsive layout (mobile nav collapses at 768px)
-- No external CSS frameworks — pure CSS custom properties
-
-## Key Features
-
-- **Feed** — Social posts with like/comment/share, post composer, suggested connections sidebar
-- **Job Board** — Searchable/filterable job listings with bid modal
-- **Network** — Professional directory with trade and search filters
-- **My Bids** — Track submitted bids with status (pending, shortlisted, accepted, rejected)
-- **Profile** — Verified profile with stats, skills, licenses, and posts
+## Task Status
+- ✅ Task #1: Auth, Database & Routing Foundation — DONE
+- ⏳ Task #2: Feed Overhaul (post types, compose, filters)
+- ⏳ Task #3: Full Profile System
+- ⏳ Task #4: Full Bid Board — RFQ Marketplace
+- ⏳ Task #5: Job Board — detail pages, post form & filters
+- ⏳ Task #6: Explore, Messages & Notifications
+- ⏳ Task #7: Credits, Stripe & Settings

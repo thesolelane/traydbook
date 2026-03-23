@@ -31,8 +31,14 @@ export default function Login() {
     <div className="auth-page">
       <div className="auth-card">
         <Link to="/" className="auth-logo">
-          <span className="auth-logo-mark">T</span>
-          <span>traydbook</span>
+          <div className="auth-logo-icon">
+            <svg viewBox="0 0 17 17" fill="none" width={16} height={16}>
+              <rect x="2" y="1.5" width="9" height="13" rx="1.5" fill="rgba(255,255,255,0.12)" stroke="white" strokeWidth="1.2" />
+              <rect x="5" y="1.5" width="9" height="13" rx="1.5" fill="rgba(255,255,255,0.25)" stroke="white" strokeWidth="1.2" />
+              <path d="M7 6h4M7 9h3M7 12h2" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
+            </svg>
+          </div>
+          <div className="auth-logo-word"><span className="trayd">Trayd</span><span className="book">Book</span></div>
         </Link>
 
         <h1 className="auth-title">Welcome back</h1>
