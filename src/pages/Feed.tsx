@@ -137,8 +137,10 @@ export default function Feed() {
 
     const { data, error } = await query
 
+    const hasFetchError = !!error || !data
     let rawMapped: FeedPost[]
-    if (error || !data || data.length === 0) {
+    if (hasFetchError) {
+      // Only fall back to mocks on actual network/auth error — not on a legitimate empty result
       const filtered = filter === 'all' ? mockPosts : mockPosts.filter(p => p.post_type === filter)
       rawMapped = filtered.map(mockToFeedPost)
     } else {
@@ -177,10 +179,11 @@ export default function Feed() {
       setPosts(scored)
       pageRef.current = 1
     } else {
-      setPosts(prev => [...prev, ...scored])
+      // Merge all loaded posts and re-sort globally to maintain correct composite order
+      setPosts(prev => sortByScore([...prev, ...scored], connIds))
       pageRef.current = currentPage + 1
     }
-    setHasMore(!error && !!data && data.length === PAGE_SIZE)
+    setHasMore(!hasFetchError && data!.length === PAGE_SIZE)
     setLoading(false)
     setLoadingMore(false)
   }
@@ -263,13 +266,22 @@ export default function Feed() {
     let rows: SidebarRow[] = []
 
     if (myTrade) {
+      // Fetch extra candidates so we can prefer same-city ones client-side
       const { data } = await supabase
         .from('contractor_profiles')
         .select('user_id, primary_trade, users!user_id (id, display_name, handle, avatar_url, account_type, location_city, location_state)')
         .eq('primary_trade', myTrade)
         .neq('user_id', profile.id)
-        .limit(6)
-      rows = (data ?? []) as SidebarRow[]
+        .limit(20)
+      let candidates = (data ?? []) as SidebarRow[]
+      if (myCity && candidates.length > 0) {
+        const sameCity = candidates.filter(cp => {
+          const u = (cp.users as unknown) as { location_city: string | null } | null
+          return u?.location_city === myCity
+        })
+        candidates = sameCity.length >= 2 ? sameCity : candidates
+      }
+      rows = candidates.slice(0, 6)
     } else if (myCity) {
       const { data } = await supabase
         .from('users')
