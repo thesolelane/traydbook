@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { MapPin, Star, CheckCircle, Briefcase, Award, Edit2 } from 'lucide-react';
 import { currentUser, posts } from '../data/mockData';
 import PostCard from '../components/PostCard';
@@ -17,6 +18,17 @@ function mockToFeed(p: typeof posts[0]): FeedPost {
 }
 
 export default function Profile() {
+  const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set())
+
+  function handleLikeToggle(postId: string, wasLiked: boolean) {
+    setLikedPosts(prev => {
+      const next = new Set(prev)
+      if (wasLiked) next.delete(postId)
+      else next.add(postId)
+      return next
+    })
+  }
+
   return (
     <div style={{ maxWidth: 900, margin: '0 auto', padding: '24px 20px' }}>
       <div className="card" style={{ padding: 28, marginBottom: 20 }}>
@@ -99,7 +111,7 @@ export default function Profile() {
             <h3 style={{ fontWeight: 700, fontSize: 16, marginBottom: 14, color: 'var(--color-text)' }}>Recent Posts</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {posts.slice(0, 2).map(post => (
-                <PostCard key={post.id} post={mockToFeed(post)} likedPosts={new Set()} onLikeToggle={() => undefined} />
+                <PostCard key={post.id} post={mockToFeed(post)} likedPosts={likedPosts} onLikeToggle={handleLikeToggle} />
               ))}
             </div>
           </div>

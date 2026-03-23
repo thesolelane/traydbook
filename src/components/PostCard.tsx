@@ -67,12 +67,17 @@ export default function PostCard({ post, likedPosts, onLikeToggle }: PostCardPro
   async function handleLike() {
     const wasLiked = liked
     const delta = wasLiked ? -1 : 1
+    const prevCount = likeCount
     setLikeCount(c => c + delta)
     onLikeToggle(post.id, wasLiked)
-    await supabase
-      .from('posts')
-      .update({ like_count: likeCount + delta })
-      .eq('id', post.id)
+    const { error } = await supabase.rpc('increment_post_like', {
+      post_id: post.id,
+      delta,
+    })
+    if (error) {
+      setLikeCount(prevCount)
+      onLikeToggle(post.id, !wasLiked)
+    }
   }
 
   async function handleToggleComments() {

@@ -499,3 +499,14 @@ create policy "Admins can read dwell events" on public.dwell_events
       where id = auth.uid() and account_type = 'admin'
     )
   );
+
+-- Atomic like increment/decrement function
+create or replace function public.increment_post_like(post_id uuid, delta integer)
+returns void
+language sql
+security definer
+as $$
+  update public.posts
+  set like_count = greatest(0, like_count + delta)
+  where id = post_id;
+$$;
