@@ -752,3 +752,145 @@ $$;
 
 revoke execute on function public.award_bid(uuid, uuid) from public;
 grant  execute on function public.award_bid(uuid, uuid) to authenticated;
+
+-- ============================================================
+-- FUNCTION: post_job
+-- Atomically creates a job listing, deducts 8 credits for non-contractors,
+-- writes credit ledger, and optionally shares to feed.
+-- ============================================================
+create or replace function public.post_job(
+  p_title          text,
+  p_description    text,
+  p_trade_required text,
+  p_job_type       text,
+  p_location_city  text,
+  p_location_state text,
+  p_pay_min        numeric,
+  p_pay_max        numeric,
+  p_pay_unit       text,
+  p_certs_required text[],
+  p_start_date     date,
+  p_duration_weeks integer,
+  p_is_urgent      boolean,
+  p_share_to_feed  boolean
+) returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_listing_id    uuid;
+  v_account_type  text;
+  v_new_balance   integer;
+  v_job_cost      integer := 8;
+begin
+  -- Load caller's account type
+  select account_type
+  into   v_account_type
+  from   public.users
+  where  id = auth.uid();
+
+  if v_account_type is null then
+    raise exception 'User not found';
+  end if;
+
+  -- Insert job listing
+  insert into public.job_listings (
+    poster_id, title, description, trade_required, job_type,
+    location_city, location_state, pay_min, pay_max, pay_unit,
+    certs_required, start_date, duration_weeks, is_urgent, status
+  ) values (
+    auth.uid(), p_title, p_description, p_trade_required, p_job_type,
+    p_location_city, p_location_state, p_pay_min, p_pay_max, coalesce(p_pay_unit, 'hourly'),
+    coalesce(p_certs_required, '{}'), p_start_date, p_duration_weeks,
+    coalesce(p_is_urgent, false), 'open'
+  ) returning id into v_listing_id;
+
+  -- Atomically deduct credits for non-contractors
+  if v_account_type != 'contractor' then
+    update public.users
+    set    credit_balance = credit_balance - v_job_cost
+    where  id = auth.uid()
+      and  credit_balance >= v_job_cost
+    returning credit_balance into v_new_balance;
+
+    if not found then
+      raise exception 'Insufficient credits: need % credits', v_job_cost;
+    end if;
+
+    insert into public.credit_ledger (user_id, delta, balance_after, transaction_type, description)
+    values (auth.uid(), -v_job_cost, v_new_balance, 'spend', 'Posted Job: ' || p_title);
+  end if;
+
+  -- Optionally share to feed
+  if p_share_to_feed then
+    insert into public.posts (author_id, post_type, body, hashtags)
+    values (
+      auth.uid(),
+      'job_post',
+      'NOW HIRING: ' || p_title || ' — ' || p_location_city || ', ' || p_location_state ||
+        E'\n\n' || left(p_description, 280),
+      array[ replace(p_trade_required, ' ', ''), 'NowHiring', 'Jobs' ]
+    );
+  end if;
+
+  return v_listing_id;
+end;
+$$;
+
+revoke execute on function public.post_job(text,text,text,text,text,text,numeric,numeric,text,text[],date,integer,boolean,boolean) from public;
+grant  execute on function public.post_job(text,text,text,text,text,text,numeric,numeric,text,text[],date,integer,boolean,boolean) to authenticated;
+
+-- ============================================================
+-- FUNCTION: apply_job
+-- Submits a job application. Enforces contractor-only access server-side.
+-- ============================================================
+create or replace function public.apply_job(
+  p_listing_id uuid,
+  p_cover_note text
+) returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_app_id       uuid;
+  v_account_type text;
+  v_poster_id    uuid;
+  v_status       text;
+begin
+  -- Server-side enforcement: only contractors may apply
+  select account_type into v_account_type from public.users where id = auth.uid();
+  if v_account_type != 'contractor' then
+    raise exception 'Only contractors can apply to jobs';
+  end if;
+
+  -- Verify listing exists and is open
+  select poster_id, status into v_poster_id, v_status
+  from   public.job_listings
+  where  id = p_listing_id;
+
+  if v_poster_id is null then
+    raise exception 'Job listing not found';
+  end if;
+
+  if v_status != 'open' then
+    raise exception 'This job listing is no longer accepting applications';
+  end if;
+
+  -- Poster cannot apply to their own listing
+  if auth.uid() = v_poster_id then
+    raise exception 'You cannot apply to your own job listing';
+  end if;
+
+  -- Insert application
+  insert into public.job_applications (listing_id, applicant_id, cover_note, status)
+  values (p_listing_id, auth.uid(), p_cover_note, 'applied')
+  returning id into v_app_id;
+
+  return v_app_id;
+end;
+$$;
+
+revoke execute on function public.apply_job(uuid, text) from public;
+grant  execute on function public.apply_job(uuid, text) to authenticated;

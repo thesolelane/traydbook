@@ -1,112 +1,126 @@
-import { MapPin, Clock, DollarSign, Users, Zap } from 'lucide-react';
-import { Job } from '../data/mockData';
-import { useState } from 'react';
+import { MapPin, Clock, DollarSign, Bookmark, BookmarkCheck, AlertCircle, Star } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { JobListing, JOB_TYPE_LABELS, formatPay, timeAgo } from '../types/jobs'
 
-interface JobCardProps {
-  job: Job;
-  onBid?: (job: Job) => void;
+const TYPE_BADGE: Record<string, string> = {
+  full_time: 'badge-green',
+  contract: 'badge-blue',
+  subcontract: 'badge-brand',
+  per_diem: 'badge-yellow',
 }
 
-const typeColors: Record<string, string> = {
-  'Full-time': 'badge-green',
-  'Contract': 'badge-blue',
-  'Subcontract': 'badge-brand',
-  'Per-diem': 'badge-yellow',
-};
+interface JobCardProps {
+  listing: JobListing
+  isContractor: boolean
+  saved?: boolean
+  onSave?: () => void
+}
 
-export default function JobCard({ job, onBid }: JobCardProps) {
-  const [saved, setSaved] = useState(false);
+export default function JobCard({ listing, isContractor, saved = false, onSave }: JobCardProps) {
+  const initials = (listing.poster?.display_name ?? 'UN').slice(0, 2).toUpperCase()
+  const colors = ['#2563EB', '#059669', '#7C3AED', '#DC2626', '#D97706', '#0891B2', '#E85D04']
+  const colorIdx = listing.poster_id.charCodeAt(0) % colors.length
+  const avatarColor = colors[colorIdx]
 
   return (
     <div className="card" style={{ padding: 20, position: 'relative' }}>
-      {job.isFeatured && (
+      {listing.is_boosted && (
         <div style={{
-          position: 'absolute',
-          top: 0, right: 20,
-          background: 'var(--color-brand)',
-          color: 'white',
-          fontSize: 10,
-          fontWeight: 700,
-          padding: '3px 10px',
-          borderRadius: '0 0 6px 6px',
-          letterSpacing: '0.5px',
-          textTransform: 'uppercase',
+          position: 'absolute', top: 0, right: 20,
+          background: 'var(--color-brand)', color: 'white',
+          fontSize: 10, fontWeight: 700, padding: '3px 10px',
+          borderRadius: '0 0 6px 6px', letterSpacing: '0.5px', textTransform: 'uppercase',
         }}>
           Featured
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-        <div
-          className="avatar-placeholder"
-          style={{ width: 46, height: 46, background: job.companyColor, fontSize: 15, borderRadius: 10 }}
-        >
-          {job.companyInitials}
+      {listing.is_urgent && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 4,
+          color: '#DC2626', fontSize: 11, fontWeight: 700,
+          marginBottom: 8,
+        }}>
+          <AlertCircle size={12} fill="#DC2626" /> URGENT HIRE
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, flexWrap: 'wrap' }}>
-            <h3 style={{ fontWeight: 700, fontSize: 15, color: 'var(--color-text)', flex: 1 }}>{job.title}</h3>
-            {job.isNew && (
-              <span style={{
-                display: 'flex', alignItems: 'center', gap: 3,
-                background: '#ECFDF5', color: '#059669',
-                fontSize: 10, fontWeight: 700,
-                padding: '2px 8px', borderRadius: 20,
-                textTransform: 'uppercase',
-              }}>
-                <Zap size={9} /> New
-              </span>
-            )}
-          </div>
-          <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginTop: 1 }}>{job.company}</p>
+      )}
 
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 8 }}>
+      <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+        {listing.poster?.avatar_url ? (
+          <img src={listing.poster.avatar_url} alt="" style={{ width: 44, height: 44, borderRadius: 10, objectFit: 'cover', flexShrink: 0 }} />
+        ) : (
+          <div className="avatar-placeholder" style={{ width: 44, height: 44, background: avatarColor, fontSize: 14, borderRadius: 10, flexShrink: 0 }}>
+            {initials}
+          </div>
+        )}
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <Link
+            to={`/jobs/${listing.id}`}
+            style={{ fontWeight: 700, fontSize: 15, color: 'var(--color-text)', textDecoration: 'none', display: 'block', lineHeight: 1.3 }}
+          >
+            {listing.title}
+          </Link>
+          <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginTop: 2 }}>
+            {listing.poster?.display_name ?? 'Company'}
+          </p>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 8 }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--color-text-muted)' }}>
-              <MapPin size={12} /> {job.location}
+              <MapPin size={12} /> {listing.location_city}, {listing.location_state}
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--color-text-muted)' }}>
-              <Clock size={12} /> {job.postedAt}
+              <Clock size={12} /> {timeAgo(listing.created_at)}
             </span>
-            {job.budget && (
-              <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#059669', fontWeight: 600 }}>
-                <DollarSign size={12} /> {job.budget}
-              </span>
-            )}
-            <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--color-text-muted)' }}>
-              <Users size={12} /> {job.bidsCount} bid{job.bidsCount !== 1 ? 's' : ''}
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#059669', fontWeight: 600 }}>
+              <DollarSign size={12} /> {formatPay(listing)}
             </span>
           </div>
         </div>
       </div>
 
-      <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginTop: 12, lineHeight: 1.6 }}>
-        {job.description}
+      <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginTop: 12, lineHeight: 1.6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+        {listing.description}
       </p>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
-        <span className={`badge ${typeColors[job.type] ?? 'badge-gray'}`}>{job.type}</span>
-        <span className="badge badge-gray">{job.trade}</span>
-        {job.skills.slice(0, 3).map(skill => (
-          <span key={skill} className="tag">{skill}</span>
+        <span className={`badge ${TYPE_BADGE[listing.job_type] ?? 'badge-gray'}`}>{JOB_TYPE_LABELS[listing.job_type]}</span>
+        <span className="badge badge-gray">{listing.trade_required}</span>
+        {listing.certs_required.slice(0, 3).map(cert => (
+          <span key={cert} className="tag">{cert}</span>
         ))}
       </div>
 
-      <div style={{ display: 'flex', gap: 10, marginTop: 16, alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 10, marginTop: 14, alignItems: 'center' }}>
+        {isContractor ? (
+          <Link to={`/jobs/${listing.id}`} className="btn btn-primary" style={{ fontSize: 13 }}>
+            Apply Now
+          </Link>
+        ) : (
+          <Link to={`/jobs/${listing.id}`} className="btn btn-ghost" style={{ fontSize: 13 }}>
+            View Details
+          </Link>
+        )}
+
         <button
-          className="btn btn-primary"
-          style={{ fontSize: 13 }}
-          onClick={() => onBid?.(job)}
+          onClick={onSave}
+          disabled={saved}
+          className="btn btn-ghost"
+          style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 5, color: saved ? 'var(--color-brand)' : 'var(--color-text-muted)' }}
         >
-          Submit Bid
+          {saved ? <BookmarkCheck size={13} /> : <Bookmark size={13} />}
+          {saved ? 'Saved' : 'Save'}
         </button>
-        <button
-          className={`btn ${saved ? 'btn-ghost' : 'btn-ghost'}`}
-          style={{ fontSize: 13, color: saved ? 'var(--color-brand)' : 'var(--color-text-muted)' }}
-          onClick={() => setSaved(!saved)}
-        >
-          {saved ? 'Saved ✓' : 'Save'}
-        </button>
+
+        {listing.poster?.handle && (
+          <Link
+            to={`/profile/${listing.poster.handle}`}
+            style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 4, textDecoration: 'none' }}
+          >
+            <Star size={11} /> View poster
+          </Link>
+        )}
       </div>
     </div>
-  );
+  )
 }

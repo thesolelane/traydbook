@@ -9,6 +9,8 @@ import SignupContractor from './pages/SignupContractor'
 import SignupOwner from './pages/SignupOwner'
 import Feed from './pages/Feed'
 import Jobs from './pages/Jobs'
+import JobDetail from './pages/JobDetail'
+import PostJob from './pages/PostJob'
 import Network from './pages/Network'
 import Bids from './pages/Bids'
 import BidDetail from './pages/BidDetail'
@@ -67,6 +69,17 @@ export default function App() {
           <Route path="/jobs" element={
             <ProtectedRoute>
               <AppLayout><Jobs /></AppLayout>
+            </ProtectedRoute>
+          } />
+          {/* IMPORTANT: /jobs/post before /jobs/:id */}
+          <Route path="/jobs/post" element={
+            <ProtectedRoute>
+              <AppLayout><PostJob /></AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/jobs/:id" element={
+            <ProtectedRoute>
+              <AppLayout><JobDetail /></AppLayout>
             </ProtectedRoute>
           } />
           <Route path="/network" element={
@@ -137,15 +150,6 @@ export default function App() {
             </ProtectedRoute>
           } />
 
-          <Route path="/jobs/post" element={
-            <ProtectedRoute>
-              <AppLayout>
-                <div className="container" style={{ padding: '40px 0', color: 'var(--color-text-muted)' }}>
-                  Post a Job — coming in Task #5
-                </div>
-              </AppLayout>
-            </ProtectedRoute>
-          } />
 
           <Route path="/messages/:threadId" element={
             <ProtectedRoute>
