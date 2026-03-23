@@ -510,3 +510,43 @@ as $$
   set like_count = greatest(0, like_count + delta)
   where id = post_id;
 $$;
+
+-- ============================================================
+-- POLICY: Allow authenticated users to insert notifications
+-- (needed for bid submission → notify poster)
+-- ============================================================
+do $$ begin
+  if not exists (
+    select 1 from pg_policies where tablename = 'notifications' and policyname = 'Authenticated users can insert notifications'
+  ) then
+    execute 'create policy "Authenticated users can insert notifications" on public.notifications
+      for insert with check (auth.uid() is not null)';
+  end if;
+end $$;
+
+-- ============================================================
+-- FUNCTION: Award a bid (security definer to bypass bidder RLS)
+-- ============================================================
+create or replace function public.award_bid(
+  p_bid_id uuid,
+  p_rfq_id uuid,
+  p_bidder_id uuid
+) returns void
+language plpgsql
+security definer
+as $$
+begin
+  update public.bids set status = 'awarded' where id = p_bid_id;
+  update public.bids set status = 'not_awarded' where rfq_id = p_rfq_id and id != p_bid_id;
+  update public.rfqs set status = 'awarded', awarded_to = p_bidder_id where id = p_rfq_id;
+  insert into public.notifications (user_id, type, title, body, entity_id, entity_type)
+  values (
+    p_bidder_id,
+    'bid_awarded',
+    'Your bid was awarded!',
+    'Congratulations — your bid has been selected for this project.',
+    p_rfq_id,
+    'rfq'
+  );
+end;
+$$;

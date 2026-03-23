@@ -11,6 +11,9 @@ import Feed from './pages/Feed'
 import Jobs from './pages/Jobs'
 import Network from './pages/Network'
 import Bids from './pages/Bids'
+import BidDetail from './pages/BidDetail'
+import BidSubmit from './pages/BidSubmit'
+import PostRFQ from './pages/PostRFQ'
 import Profile from './pages/Profile'
 import EditProfile from './pages/EditProfile'
 
@@ -71,11 +74,34 @@ export default function App() {
               <AppLayout><Network /></AppLayout>
             </ProtectedRoute>
           } />
+
+          {/* Bids — IMPORTANT: specific paths before dynamic :id */}
           <Route path="/bids" element={
             <ProtectedRoute>
               <AppLayout><Bids /></AppLayout>
             </ProtectedRoute>
           } />
+          <Route path="/bids/post" element={
+            <ProtectedRoute>
+              <AppLayout><PostRFQ /></AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/bids/new" element={
+            <ProtectedRoute>
+              <AppLayout><PostRFQ /></AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/bids/:id" element={
+            <ProtectedRoute>
+              <AppLayout><BidDetail /></AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/bids/:id/submit" element={
+            <ProtectedRoute>
+              <AppLayout><BidSubmit /></AppLayout>
+            </ProtectedRoute>
+          } />
+
           <Route path="/profile" element={
             <ProtectedRoute>
               <AppLayout><Profile /></AppLayout>
@@ -120,24 +146,7 @@ export default function App() {
               </AppLayout>
             </ProtectedRoute>
           } />
-          <Route path="/bids/post" element={
-            <ProtectedRoute>
-              <AppLayout>
-                <div className="container" style={{ padding: '40px 0', color: 'var(--color-text-muted)' }}>
-                  Open Bid / Post RFQ — coming in Task #4
-                </div>
-              </AppLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/bids/new" element={
-            <ProtectedRoute>
-              <AppLayout>
-                <div className="container" style={{ padding: '40px 0', color: 'var(--color-text-muted)' }}>
-                  Post RFQ — coming in Task #4
-                </div>
-              </AppLayout>
-            </ProtectedRoute>
-          } />
+
           <Route path="/messages/:threadId" element={
             <ProtectedRoute>
               <AppLayout>
