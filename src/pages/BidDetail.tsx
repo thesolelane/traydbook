@@ -423,7 +423,7 @@ export default function BidDetail() {
       )}
 
       {!isOwner && myBid && (
-        <div className="card" style={{ padding: '18px 20px' }}>
+        <div id="my-bid" className="card" style={{ padding: '18px 20px', scrollMarginTop: 80 }}>
           <h2 style={{ fontFamily: 'var(--font-condensed)', fontWeight: 800, fontSize: 16, marginBottom: 12 }}>Your Bid</h2>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
             <div>

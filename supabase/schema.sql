@@ -526,6 +526,7 @@ end $$;
 
 -- ============================================================
 -- FUNCTION: Award a bid (security definer to bypass bidder RLS)
+-- Caller must be the RFQ poster; RFQ must be open; bid must belong to RFQ.
 -- ============================================================
 create or replace function public.award_bid(
   p_bid_id uuid,
@@ -534,11 +535,48 @@ create or replace function public.award_bid(
 ) returns void
 language plpgsql
 security definer
+set search_path = public
 as $$
+declare
+  v_poster_id uuid;
+  v_rfq_status text;
+  v_bid_rfq_id uuid;
 begin
-  update public.bids set status = 'awarded' where id = p_bid_id;
+  -- Verify RFQ exists and get poster + status
+  select poster_id, status
+  into v_poster_id, v_rfq_status
+  from public.rfqs
+  where id = p_rfq_id;
+
+  if v_poster_id is null then
+    raise exception 'RFQ not found';
+  end if;
+
+  -- Only the RFQ poster may award a bid
+  if auth.uid() != v_poster_id then
+    raise exception 'Unauthorized: only the RFQ poster can award a bid';
+  end if;
+
+  -- RFQ must still be open
+  if v_rfq_status != 'open' then
+    raise exception 'RFQ is not open — cannot award a bid';
+  end if;
+
+  -- The supplied bid must belong to this RFQ
+  select rfq_id
+  into v_bid_rfq_id
+  from public.bids
+  where id = p_bid_id;
+
+  if v_bid_rfq_id is null or v_bid_rfq_id != p_rfq_id then
+    raise exception 'Bid does not belong to this RFQ';
+  end if;
+
+  -- Execute the award
+  update public.bids set status = 'awarded'     where id = p_bid_id;
   update public.bids set status = 'not_awarded' where rfq_id = p_rfq_id and id != p_bid_id;
   update public.rfqs set status = 'awarded', awarded_to = p_bidder_id where id = p_rfq_id;
+
   insert into public.notifications (user_id, type, title, body, entity_id, entity_type)
   values (
     p_bidder_id,
@@ -550,3 +588,7 @@ begin
   );
 end;
 $$;
+
+-- Revoke broad execute grant; only authenticated roles may call it
+revoke execute on function public.award_bid(uuid, uuid, uuid) from public;
+grant  execute on function public.award_bid(uuid, uuid, uuid) to authenticated;

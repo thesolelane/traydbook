@@ -143,13 +143,13 @@ export default function PostRFQ() {
     }
 
     if (shareToFeed) {
-      const feedBody = `🏗️ Seeking ${tradeNeeded} Bids — ${title}\n\n${scopeDescription.slice(0, 280)}${scopeDescription.length > 280 ? '...' : ''}`
+      const feedBody = `Seeking ${tradeNeeded} Bids — ${title}\n\n${scopeDescription.slice(0, 280)}${scopeDescription.length > 280 ? '...' : ''}`
       await supabase.from('posts').insert({
-        user_id: profile.id,
+        author_id: profile.id,
         post_type: 'bid_post',
         body: feedBody,
         linked_rfq_id: newRfqId,
-        tags: [tradeNeeded.replace(/ /g, ''), 'OpenBid', 'RFQ'],
+        hashtags: [tradeNeeded.replace(/ /g, ''), 'OpenBid', 'RFQ'],
       })
     }
 

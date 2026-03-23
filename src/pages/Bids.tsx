@@ -519,7 +519,7 @@ export default function Bids() {
               {myBids.map(bid => {
                 const sc = STATUS_COLOR[bid.status] ?? STATUS_COLOR.pending
                 return (
-                  <Link key={bid.id} to={`/bids/${bid.rfq_id}`} style={{ textDecoration: 'none' }}>
+                  <Link key={bid.id} to={`/bids/${bid.rfq_id}#my-bid`} style={{ textDecoration: 'none' }}>
                     <div className="card" style={{ padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap', transition: 'transform 0.1s' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
@@ -572,6 +572,7 @@ export default function Bids() {
               {awardedItems.map(item => {
                 const rfqData = (item.rfqs as unknown) as Record<string, unknown> | null
                 const posterData = rfqData ? (rfqData.users as unknown) as { display_name: string; handle: string; avatar_url: string | null; location_city: string | null; location_state: string | null } | null : null
+                const rfqStartDate = rfqData?.start_date as string | null | undefined
                 return (
                   <Link key={item.id as string} to={`/bids/${item.rfq_id as string}`} style={{ textDecoration: 'none' }}>
                     <div className="card" style={{ padding: '16px 20px', border: '1.5px solid #05966930' }}>
@@ -588,9 +589,9 @@ export default function Bids() {
                               {(posterData.location_city || posterData.location_state) && ` · ${[posterData.location_city, posterData.location_state].filter(Boolean).join(', ')}`}
                             </p>
                           )}
-                          {rfqData?.start_date && (
+                          {rfqStartDate && (
                             <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
-                              <Calendar size={10} /> Starts {new Date(rfqData.start_date as string).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                              <Calendar size={10} /> Starts {new Date(rfqStartDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                             </p>
                           )}
                         </div>
@@ -610,6 +611,7 @@ export default function Bids() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {awardedItems.map(item => {
                 const winnerData = (item.users as unknown) as { display_name: string; handle: string; avatar_url: string | null; location_city: string | null; location_state: string | null } | null
+                const ownerStartDate = item.start_date as string | null | undefined
                 return (
                   <Link key={item.id as string} to={`/bids/${item.id as string}`} style={{ textDecoration: 'none' }}>
                     <div className="card" style={{ padding: '16px 20px', border: '1.5px solid #05966930' }}>
@@ -627,9 +629,9 @@ export default function Bids() {
                               </p>
                             </>
                           )}
-                          {item.start_date && (
+                          {ownerStartDate && (
                             <p style={{ fontSize: 12, color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 3 }}>
-                              <Calendar size={10} /> {new Date(item.start_date as string).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                              <Calendar size={10} /> {new Date(ownerStartDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                             </p>
                           )}
                         </div>
