@@ -911,25 +911,51 @@ security definer
 set search_path = public
 as $$
 declare
-  v_msg_id          uuid;
-  v_sender_acct     text;
-  v_recipient_acct  text;
-  v_is_first_contact boolean;
-  v_cold_msg_cost   integer := 3;
-  v_new_balance     integer;
+  v_msg_id               uuid;
+  v_sender_acct          text;
+  v_recipient_acct       text;
+  v_is_first_contact     boolean;
+  v_cold_msg_cost        integer := 3;
+  v_new_balance          integer;
+  v_canonical_thread_id  text;
 begin
+  -- Basic input validation
+  if p_body is null or trim(p_body) = '' then
+    raise exception 'Message body cannot be empty';
+  end if;
+  if auth.uid() = p_recipient_id then
+    raise exception 'Cannot message yourself';
+  end if;
+
+  -- Validate participants exist
   select account_type into v_sender_acct   from public.users where id = auth.uid();
   select account_type into v_recipient_acct from public.users where id = p_recipient_id;
-
-  if v_sender_acct is null   then raise exception 'Sender not found'; end if;
+  if v_sender_acct    is null then raise exception 'Sender not found'; end if;
   if v_recipient_acct is null then raise exception 'Recipient not found'; end if;
-  if auth.uid() = p_recipient_id then raise exception 'Cannot message yourself'; end if;
-  if p_body is null or trim(p_body) = '' then raise exception 'Message body cannot be empty'; end if;
 
-  -- Credit gate: non-contractor first-contact with a contractor costs 3 credits
+  -- Derive canonical thread_id server-side from the two participant UUIDs
+  -- (sorted lexicographically so A↔B and B↔A produce the same key)
+  v_canonical_thread_id := (
+    case
+      when auth.uid()::text < p_recipient_id::text
+        then auth.uid()::text || '_' || p_recipient_id::text
+      else
+        p_recipient_id::text || '_' || auth.uid()::text
+    end
+  );
+
+  -- Reject if the client-supplied thread_id doesn't match the server-derived one
+  if p_thread_id is distinct from v_canonical_thread_id then
+    raise exception 'Invalid thread_id: does not match canonical participant pair';
+  end if;
+
+  -- Credit gate: non-contractor first-contact with a contractor costs 3 credits.
+  -- First-contact is determined by participant pair, NOT by thread_id, to prevent bypass.
   if v_sender_acct != 'contractor' and v_recipient_acct = 'contractor' then
     select not exists(
-      select 1 from public.messages where thread_id = p_thread_id
+      select 1 from public.messages
+      where (sender_id = auth.uid() and recipient_id = p_recipient_id)
+         or (sender_id = p_recipient_id and recipient_id = auth.uid())
     ) into v_is_first_contact;
 
     if v_is_first_contact then
@@ -948,9 +974,9 @@ begin
     end if;
   end if;
 
-  -- Insert message
+  -- Insert message using canonical thread_id (not client-supplied)
   insert into public.messages (thread_id, sender_id, recipient_id, body)
-  values (p_thread_id, auth.uid(), p_recipient_id, trim(p_body))
+  values (v_canonical_thread_id, auth.uid(), p_recipient_id, trim(p_body))
   returning id into v_msg_id;
 
   -- Notify recipient
