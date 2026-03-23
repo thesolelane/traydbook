@@ -106,7 +106,7 @@ export default function PostJob() {
             <strong style={{ color: '#DC2626' }}>Insufficient credits</strong>
             <p style={{ color: '#7F1D1D', marginTop: 3 }}>
               You need {JOB_CREDIT_COST} credits to post a job listing. You currently have {creditBalance} credits.{' '}
-              <Link to="/settings/credits" style={{ color: '#DC2626', fontWeight: 600 }}>Buy credits →</Link>
+              <Link to="/credits" style={{ color: '#DC2626', fontWeight: 600 }}>Buy credits →</Link>
             </p>
           </div>
         </div>

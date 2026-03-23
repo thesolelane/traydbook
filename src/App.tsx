@@ -21,6 +21,8 @@ import EditProfile from './pages/EditProfile'
 import Messages from './pages/Messages'
 import MessageThread from './pages/MessageThread'
 import Notifications from './pages/Notifications'
+import Credits from './pages/Credits'
+import Settings from './pages/Settings'
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -160,31 +162,15 @@ export default function App() {
 
           <Route path="/settings" element={
             <ProtectedRoute>
-              <AppLayout>
-                <div className="container" style={{ padding: '40px 0', color: 'var(--color-text-muted)' }}>
-                  Settings — coming soon
-                </div>
-              </AppLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/settings/credits" element={
-            <ProtectedRoute>
-              <AppLayout>
-                <div className="container" style={{ padding: '40px 0', color: 'var(--color-text-muted)' }}>
-                  Credits & Billing — coming soon
-                </div>
-              </AppLayout>
+              <AppLayout><Settings /></AppLayout>
             </ProtectedRoute>
           } />
 
-          {/* /credits alias → /settings/credits */}
+          {/* /settings/credits and /credits both go to Credits page */}
+          <Route path="/settings/credits" element={<Navigate to="/credits" replace />} />
           <Route path="/credits" element={
             <ProtectedRoute>
-              <AppLayout>
-                <div className="container" style={{ padding: '40px 0', color: 'var(--color-text-muted)' }}>
-                  Credits & Billing — coming soon
-                </div>
-              </AppLayout>
+              <AppLayout><Credits /></AppLayout>
             </ProtectedRoute>
           } />
 

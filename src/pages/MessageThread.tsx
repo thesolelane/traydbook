@@ -277,7 +277,7 @@ export default function MessageThread() {
           <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, padding: '8px 12px', marginBottom: 10, fontSize: 13, color: '#DC2626', display: 'flex', alignItems: 'center', gap: 8 }}>
             <AlertCircle size={14} /> {sendError}
             {sendError.includes('credits') && (
-              <Link to="/settings/credits" style={{ color: 'var(--color-brand)', fontWeight: 600, textDecoration: 'none', marginLeft: 4 }}>Buy credits →</Link>
+              <Link to="/credits" style={{ color: 'var(--color-brand)', fontWeight: 600, textDecoration: 'none', marginLeft: 4 }}>Buy credits →</Link>
             )}
           </div>
         )}

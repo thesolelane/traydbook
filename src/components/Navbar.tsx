@@ -227,7 +227,7 @@ export default function Navbar() {
               fontFamily: 'var(--font-condensed)',
               fontSize: 12, fontWeight: 700, letterSpacing: '0.5px',
               textTransform: 'uppercase', color: 'var(--color-brand)', cursor: 'pointer',
-            }} onClick={() => navigate('/settings/credits')}>
+            }} onClick={() => navigate('/credits')}>
               <Coins size={13} />{profile.credit_balance} credits
             </div>
           )}
@@ -312,7 +312,7 @@ export default function Navbar() {
                   {[
                     { label: 'My Profile', to: '/profile' },
                     { label: 'Settings', to: '/settings' },
-                    ...(!isContractor ? [{ label: 'Buy Credits', to: '/settings/credits' }] : []),
+                    ...(!isContractor ? [{ label: 'Buy Credits', to: '/credits' }] : []),
                   ].map(item => (
                     <Link key={item.to} to={item.to} onClick={() => setUserMenuOpen(false)} style={{
                       display: 'block', padding: '7px 10px', borderRadius: 'var(--radius-sm)',

@@ -70,7 +70,7 @@ function navTarget(n: Notification): string | null {
     case 'safety_alert':
       return '/feed'
     case 'credits_added':
-      return '/settings/credits'
+      return '/credits'
     default:
       return null
   }
