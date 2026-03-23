@@ -23,6 +23,7 @@ import MessageThread from './pages/MessageThread'
 import Notifications from './pages/Notifications'
 import Credits from './pages/Credits'
 import Settings from './pages/Settings'
+import ResetPassword from './pages/ResetPassword'
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -165,6 +166,9 @@ export default function App() {
               <AppLayout><Settings /></AppLayout>
             </ProtectedRoute>
           } />
+
+          {/* Password reset — public, linked from Supabase reset email */}
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           {/* /settings/credits and /credits both go to Credits page */}
           <Route path="/settings/credits" element={<Navigate to="/credits" replace />} />
