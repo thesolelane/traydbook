@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import {
   MapPin, Star, CheckCircle, Edit2, UserPlus, MessageSquare,
   Bookmark, Briefcase, Award, Calendar, Shield, Clock,
-  ChevronRight, Loader, AlertCircle, ExternalLink,
+  ChevronRight, Loader, AlertCircle, ExternalLink, ThumbsUp,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -14,6 +14,7 @@ import {
   ProfileUser, ContractorProfile, Credential,
   PortfolioProject, ProfileReview, ConnectionStatus, ProfileTab,
 } from '../types/profile'
+import VerifiedBadge from '../components/VerifiedBadge'
 
 function timeAgo(iso: string): string {
   const diff = (Date.now() - new Date(iso).getTime()) / 1000
@@ -126,6 +127,9 @@ export default function Profile() {
   const [connectLoading, setConnectLoading] = useState(false)
   const [isBookmarked, setIsBookmarked] = useState(false)
   const [hasVerifiedCredential, setHasVerifiedCredential] = useState(false)
+  const [vouchLoading, setVouchLoading] = useState(false)
+  const [alreadyVouched, setAlreadyVouched] = useState(false)
+  const [authIsPro, setAuthIsPro] = useState(false)
   const [messageToast, setMessageToast] = useState<string | null>(null)
 
   const [networkCount, setNetworkCount] = useState<number>(0)
@@ -178,6 +182,8 @@ export default function Profile() {
     setConnectionId(null)
     setIsBookmarked(false)
     setHasVerifiedCredential(false)
+    setAlreadyVouched(false)
+    setAuthIsPro(false)
     setNetworkCount(0)
     setActiveBidsCount(0)
     setReferralsCount(0)
@@ -220,13 +226,57 @@ export default function Profile() {
     if (u.account_type !== 'contractor') return
     const { data } = await supabase
       .from('contractor_profiles')
-      .select('id, user_id, business_name, primary_trade, secondary_trades, years_experience, bio, service_radius_miles, availability_status, available_from, visible_to_owners, rating_avg, rating_count, projects_completed, total_work_value')
+      .select('id, user_id, business_name, primary_trade, secondary_trades, years_experience, bio, service_radius_miles, availability_status, available_from, visible_to_owners, rating_avg, rating_count, projects_completed, total_work_value, badge_tier')
       .eq('user_id', u.id)
       .single()
     if (data) {
       setCp(data as ContractorProfile)
       void loadCoverPhotos((data as ContractorProfile).id)
       void checkVerifiedCredential((data as ContractorProfile).id)
+      void checkAlreadyVouched((data as ContractorProfile).id)
+    }
+  }
+
+  async function checkAlreadyVouched(targetCpId: string) {
+    if (!authProfile || authProfile.account_type !== 'contractor') return
+    const { data: authCp } = await supabase
+      .from('contractor_profiles')
+      .select('id, badge_tier')
+      .eq('user_id', authProfile.id)
+      .single()
+    if (!authCp || authCp.badge_tier !== 'pro_verified') return
+    setAuthIsPro(true)
+    const { count } = await supabase
+      .from('vouches')
+      .select('*', { count: 'exact', head: true })
+      .eq('voucher_id', authCp.id)
+      .eq('vouchee_id', targetCpId)
+    setAlreadyVouched((count ?? 0) > 0)
+  }
+
+  async function handleVouch() {
+    if (!authProfile || !cp) return
+    setVouchLoading(true)
+    try {
+      const { data: authCp } = await supabase
+        .from('contractor_profiles')
+        .select('id')
+        .eq('user_id', authProfile.id)
+        .single()
+      if (!authCp) throw new Error('Could not load your profile.')
+      const { error } = await supabase.from('vouches').insert({
+        voucher_id: authCp.id,
+        vouchee_id: cp.id,
+      })
+      if (error) throw new Error(error.message)
+      setAlreadyVouched(true)
+      setMessageToast('Vouch submitted!')
+      setTimeout(() => setMessageToast(null), 3000)
+    } catch (err) {
+      setMessageToast(err instanceof Error ? err.message : 'Failed to vouch.')
+      setTimeout(() => setMessageToast(null), 3000)
+    } finally {
+      setVouchLoading(false)
     }
   }
 
@@ -604,6 +654,18 @@ export default function Profile() {
                       <span style={{ fontSize: 10, fontWeight: 700, background: 'var(--color-brand)', color: '#fff', borderRadius: 10, padding: '1px 5px' }}>3cr</span>
                     )}
                   </button>
+                  {authIsPro && isContractor && !isOwn && cp?.badge_tier !== 'pro_verified' && (
+                    <button
+                      onClick={() => void handleVouch()}
+                      disabled={vouchLoading || alreadyVouched}
+                      className="btn btn-ghost"
+                      style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, color: alreadyVouched ? '#059669' : 'var(--color-text-muted)' }}
+                      title={alreadyVouched ? 'You already vouched for this contractor' : 'Vouch for this contractor'}
+                    >
+                      <ThumbsUp size={13} fill={alreadyVouched ? '#059669' : 'none'} />
+                      {alreadyVouched ? 'Vouched' : 'Vouch'}
+                    </button>
+                  )}
                   <button
                     onClick={() => setIsBookmarked(b => !b)}
                     className="btn btn-ghost"
@@ -623,10 +685,8 @@ export default function Profile() {
               <h1 style={{ fontFamily: 'var(--font-condensed)', fontWeight: 800, fontSize: 24, letterSpacing: '-0.3px' }}>
                 {user.display_name}
               </h1>
-              {hasVerifiedCredential && (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 3, background: '#EFF6FF', padding: '3px 8px', borderRadius: 12, fontSize: 11, color: '#2563EB', fontWeight: 700 }}>
-                  <CheckCircle size={11} fill="#2563EB" color="#2563EB" /> Verified
-                </span>
+              {isContractor && cp && cp.badge_tier && (
+                <VerifiedBadge tier={cp.badge_tier} size="md" />
               )}
               {isContractor && cp && (
                 <span className="badge badge-brand" style={{ fontSize: 12 }}>{cp.primary_trade}</span>

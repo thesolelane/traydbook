@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  Search, Star, MapPin, Briefcase, CheckCircle, MessageSquare,
+  Search, Star, MapPin, Briefcase, MessageSquare,
   UserPlus, UserCheck, SlidersHorizontal, X, Calendar,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import VerifiedBadge from '../components/VerifiedBadge'
+import type { BadgeTier } from '../types/profile'
 
 const TRADE_OPTIONS = [
   'Carpentry', 'Concrete', 'Drywall', 'Electrical',
@@ -62,6 +64,7 @@ interface ContractorRow {
   service_radius_miles: number
   availability_status: string
   available_from: string | null
+  badge_tier: BadgeTier
   user: UserShape
   credentials: { id: string; verified_at: string | null }[]
 }
@@ -152,14 +155,14 @@ export default function Explore() {
       nameUserIds = (nd ?? []).map((u: { id: string }) => u.id)
     }
 
-    // --- Pre-query C: verified contractor IDs ---
+    // --- Pre-query C: verified contractor IDs (using badge_tier for verified filter) ---
     let verifiedContractorIds: string[] | null = null
     if (verifiedOnly) {
       const { data: vc } = await supabase
-        .from('credentials').select('contractor_id')
-        .not('verified_at', 'is', null)
+        .from('contractor_profiles').select('id')
+        .in('badge_tier', ['pro_verified', 'licensed'])
         .limit(5000)
-      verifiedContractorIds = [...new Set((vc ?? []).map((c: { contractor_id: string }) => c.contractor_id))]
+      verifiedContractorIds = (vc ?? []).map((c: { id: string }) => c.id)
     }
 
     // --- Main contractor query — all server-side ---
@@ -168,7 +171,7 @@ export default function Explore() {
       .select(`
         id, user_id, primary_trade, business_name, bio, years_experience,
         rating_avg, rating_count, projects_completed, service_radius_miles,
-        availability_status, available_from,
+        availability_status, available_from, badge_tier,
         user:users!user_id (display_name, handle, avatar_url, location_city, location_state),
         credentials (id, verified_at)
       `)
@@ -464,7 +467,6 @@ export default function Explore() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 14 }}>
               {contractors.map(c => {
                 const u = c.user
-                const verifiedCount = c.credentials.filter(cr => cr.verified_at).length
                 const initials = u.display_name.slice(0, 2).toUpperCase()
                 const color = COLORS[c.user_id.charCodeAt(0) % COLORS.length]
                 const connState = connections[c.user_id] ?? 'none'
@@ -485,11 +487,7 @@ export default function Explore() {
                           <Link to={`/profile/${u.handle}`} style={{ fontWeight: 700, fontSize: 14, color: 'var(--color-text)', textDecoration: 'none' }}>
                             {u.display_name}
                           </Link>
-                          {verifiedCount > 0 && (
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 3, color: '#2563EB', fontSize: 11, fontWeight: 700 }}>
-                              <CheckCircle size={11} /> {verifiedCount} verified
-                            </span>
-                          )}
+                          {c.badge_tier && <VerifiedBadge tier={c.badge_tier} size="sm" />}
                         </div>
                         <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 2 }}>{c.primary_trade}</div>
 

@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
-import type { Session, User } from '@supabase/supabase-js'
+import type { Session, User, Provider } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import type { AccountType } from '../lib/database.types'
 
@@ -17,8 +17,10 @@ interface AuthContextType {
   user: User | null
   profile: UserProfile | null
   loading: boolean
+  needsOnboarding: boolean
   signIn: (email: string, password: string) => Promise<{ error: string | null }>
   signUp: (email: string, password: string) => Promise<{ error: string | null; userId?: string; needsEmailConfirmation?: boolean }>
+  signInWithOAuth: (provider: Provider) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
 }
@@ -30,38 +32,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [needsOnboarding, setNeedsOnboarding] = useState(false)
 
-  async function fetchProfile(userId: string) {
+  async function fetchProfile(userId: string): Promise<UserProfile | null> {
     const { data } = await supabase
       .from('users')
       .select('id, display_name, handle, avatar_url, account_type, credit_balance')
       .eq('id', userId)
       .single()
-    if (data) setProfile(data as UserProfile)
+    return data as UserProfile | null
   }
 
   async function refreshProfile() {
-    if (user) await fetchProfile(user.id)
+    if (!user) return
+    const data = await fetchProfile(user.id)
+    if (data) {
+      setProfile(data)
+      setNeedsOnboarding(false)
+    }
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session)
       setUser(session?.user ?? null)
       if (session?.user) {
-        fetchProfile(session.user.id).finally(() => setLoading(false))
-      } else {
-        setLoading(false)
+        const p = await fetchProfile(session.user.id)
+        if (p) {
+          setProfile(p)
+          setNeedsOnboarding(false)
+        } else {
+          setNeedsOnboarding(true)
+        }
       }
+      setLoading(false)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session)
       setUser(session?.user ?? null)
       if (session?.user) {
-        fetchProfile(session.user.id)
+        const p = await fetchProfile(session.user.id)
+        if (p) {
+          setProfile(p)
+          setNeedsOnboarding(false)
+        } else {
+          setNeedsOnboarding(true)
+        }
       } else {
         setProfile(null)
+        setNeedsOnboarding(false)
       }
     })
 
@@ -77,19 +97,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signUp(email: string, password: string) {
     const { data, error } = await supabase.auth.signUp({ email, password })
     if (error) return { error: error.message }
-    // If Supabase email-confirmation is enabled, data.session will be null
-    // until the user verifies their email. Signal this to callers.
     const needsEmailConfirmation = !data.session && !!data.user
     return { error: null, userId: data.user?.id, needsEmailConfirmation }
+  }
+
+  async function signInWithOAuth(provider: Provider) {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    })
+    if (error) return { error: error.message }
+    return { error: null }
   }
 
   async function signOut() {
     await supabase.auth.signOut()
     setProfile(null)
+    setNeedsOnboarding(false)
   }
 
   return (
-    <AuthContext.Provider value={{ session, user, profile, loading, signIn, signUp, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ session, user, profile, loading, needsOnboarding, signIn, signUp, signInWithOAuth, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   )

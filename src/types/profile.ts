@@ -11,6 +11,8 @@ export interface ProfileUser {
   created_at: string
 }
 
+export type BadgeTier = 'pro_verified' | 'licensed' | 'vouched' | null
+
 export interface ContractorProfile {
   id: string
   user_id: string
@@ -27,6 +29,7 @@ export interface ContractorProfile {
   rating_count: number
   projects_completed: number
   total_work_value: number
+  badge_tier: BadgeTier
 }
 
 export interface Credential {

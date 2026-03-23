@@ -64,6 +64,25 @@ The professional network for the construction trades. Contractors, tradespeople,
 - `src/styles/auth.css` — Auth page styles
 - `src/index.css` — Global CSS variables + reset
 - `supabase/schema.sql` — Full DB schema with RLS policies + RPCs (send_message, send_connection_request)
+- `supabase/migrations/008_badge_system.sql` — Migration for badge_tier + vouches table
+
+## Social Login
+- Google, Apple, LinkedIn OAuth via Supabase (requires enabling in Supabase dashboard)
+- New OAuth users without a profile are redirected to `/onboarding` (pick account type, confirm name, choose trade if contractor)
+- `src/pages/OAuthCallback.tsx` — handles OAuth redirect and routes to feed or onboarding
+- `src/pages/Onboarding.tsx` — multi-step onboarding for new OAuth users
+- `src/components/SocialAuthButtons.tsx` — shared social auth button component (Login + Signup pages)
+
+## Verified Badge System
+Three badge tiers for contractors:
+- `pro_verified` — license + GL insurance + workers' comp (all verified) — orange badge
+- `licensed` — contractor license verified — blue badge
+- `vouched` — endorsed by a Pro Verified contractor — green badge
+
+Badge is stored on `contractor_profiles.badge_tier`. Updated by admin or database trigger.
+Contractors submit credentials (license, GL, WC) in Settings → "Verification & Badges".
+Pro Verified contractors can vouch for others via the Vouch button on their profiles.
+`src/components/VerifiedBadge.tsx` — badge display component (used on Profile, Explore cards)
 
 ## Post Types
 - `project_update` → blue badge "Project Update"
@@ -80,4 +99,5 @@ The professional network for the construction trades. Contractors, tradespeople,
 - ✅ Task #4: Full Bid Board — RFQ Marketplace — DONE
 - ✅ Task #5: Job Board — detail pages, post form & filters — DONE
 - ✅ Task #6: Explore, Messages & Notifications — DONE
-- ⏳ Task #7: Credits, Stripe & Settings
+- ✅ Task #7: Credits, Stripe & Settings — DONE
+- ✅ Task #8: Social Login + Verified Badge System — DONE

@@ -2,6 +2,7 @@ import { useState, FormEvent } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
+import SocialAuthButtons from '../components/SocialAuthButtons'
 import '../styles/auth.css'
 
 export default function Login() {
@@ -160,6 +161,8 @@ export default function Login() {
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
+
+        <SocialAuthButtons label="Or sign in with" />
 
         <p className="auth-footer-text">
           Don't have an account?{' '}

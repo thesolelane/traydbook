@@ -7,6 +7,8 @@ import Login from './pages/Login'
 import Signup from './pages/Signup'
 import SignupContractor from './pages/SignupContractor'
 import SignupOwner from './pages/SignupOwner'
+import OAuthCallback from './pages/OAuthCallback'
+import Onboarding from './pages/Onboarding'
 import Feed from './pages/Feed'
 import Jobs from './pages/Jobs'
 import JobDetail from './pages/JobDetail'
@@ -65,6 +67,15 @@ export default function App() {
               <SignupOwner />
             </ProtectedRoute>
           } />
+
+          {/* OAuth callback — handles redirect from social login providers */}
+          <Route path="/auth/callback" element={<OAuthCallback />} />
+
+          {/* Onboarding — for new OAuth users who don't have a profile yet */}
+          <Route path="/onboarding" element={<Onboarding />} />
+
+          {/* Password reset — public, linked from Supabase reset email */}
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           {/* Protected routes */}
           <Route path="/feed" element={
@@ -166,9 +177,6 @@ export default function App() {
               <AppLayout><Settings /></AppLayout>
             </ProtectedRoute>
           } />
-
-          {/* Password reset — public, linked from Supabase reset email */}
-          <Route path="/reset-password" element={<ResetPassword />} />
 
           {/* /settings/credits and /credits both go to Credits page */}
           <Route path="/settings/credits" element={<Navigate to="/credits" replace />} />

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import type { AccountType } from '../lib/database.types'
+import SocialAuthButtons from '../components/SocialAuthButtons'
 import '../styles/auth.css'
 
 interface SignupLocationState {
@@ -110,6 +111,8 @@ export default function Signup() {
         >
           Continue
         </button>
+
+        <SocialAuthButtons label="Or sign up with" />
 
         <p className="auth-footer-text">
           Already have an account? <Link to="/login">Sign in</Link>

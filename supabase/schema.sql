@@ -58,6 +58,10 @@ create table if not exists public.contractor_profiles (
   created_at           timestamptz not null default now()
 );
 
+-- badge_tier: null = no badge, 'pro_verified' = licensed+insured, 'licensed' = license only, 'vouched' = vouched by pro
+-- updated by the platform when credentials are verified or vouches are created
+alter table public.contractor_profiles add column if not exists badge_tier text check (badge_tier in ('pro_verified','licensed','vouched'));
+
 alter table public.contractor_profiles enable row level security;
 
 create policy "Contractor profiles are public" on public.contractor_profiles
@@ -117,6 +121,37 @@ create policy "Users create connections" on public.connections
 
 create policy "Recipients update connections" on public.connections
   for update using (auth.uid() = recipient_id or auth.uid() = requester_id);
+
+-- ============================================================
+-- VOUCHES (licensed+insured contractors can vouch for non-licensed trades)
+-- ============================================================
+create table if not exists public.vouches (
+  id          uuid primary key default uuid_generate_v4(),
+  voucher_id  uuid not null references public.contractor_profiles(id) on delete cascade,
+  vouchee_id  uuid not null references public.contractor_profiles(id) on delete cascade,
+  note        text,
+  created_at  timestamptz not null default now(),
+  unique(voucher_id, vouchee_id)
+);
+
+alter table public.vouches enable row level security;
+
+create policy "Vouches are public" on public.vouches
+  for select using (true);
+
+create policy "Pro contractors can vouch" on public.vouches
+  for insert with check (
+    auth.uid() = (select user_id from public.contractor_profiles where id = voucher_id)
+    and exists (
+      select 1 from public.contractor_profiles
+      where id = voucher_id and badge_tier = 'pro_verified'
+    )
+  );
+
+create policy "Vouchers can delete own vouches" on public.vouches
+  for delete using (
+    auth.uid() = (select user_id from public.contractor_profiles where id = voucher_id)
+  );
 
 -- ============================================================
 -- POSTS
