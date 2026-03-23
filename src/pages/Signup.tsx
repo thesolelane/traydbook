@@ -8,7 +8,8 @@ interface SignupLocationState {
   preselectOwner?: boolean
 }
 
-const accountTypes: {
+// All account types (shown on general signup)
+const allAccountTypes: {
   type: AccountType
   icon: string
   title: string
@@ -26,9 +27,9 @@ const accountTypes: {
   },
   {
     type: 'project_owner',
-    icon: '📋',
-    title: 'Project Owner',
-    desc: 'Developers, investors, and commercial clients posting RFQs.',
+    icon: '💼',
+    title: 'Investor / Developer',
+    desc: 'Real estate investors, developers, and commercial project owners.',
     free: false,
   },
   {
@@ -47,20 +48,25 @@ const accountTypes: {
   },
 ]
 
+// Only non-contractor types — shown when coming from "Find a Contractor"
+const hiringAccountTypes = allAccountTypes.filter(at => at.type !== 'contractor')
+
 export default function Signup() {
   const navigate = useNavigate()
   const location = useLocation()
   const locationState = location.state as SignupLocationState | null
+  const isHiringFlow = !!locationState?.preselectOwner
 
-  // If coming from "Find a Contractor" CTA, preselect project_owner
+  const accountTypes = isHiringFlow ? hiringAccountTypes : allAccountTypes
+
   const [selected, setSelected] = useState<AccountType | null>(
-    locationState?.preselectOwner ? 'project_owner' : null
+    isHiringFlow ? 'project_owner' : null
   )
 
   function handleContinue() {
     if (!selected) return
     if (selected === 'contractor') {
-      navigate('/signup/contractor', { state: { accountType: selected } })
+      navigate('/signup/trade-select')
     } else {
       navigate('/signup/owner', { state: { accountType: selected } })
     }
@@ -80,8 +86,17 @@ export default function Signup() {
           <div className="auth-logo-word"><span className="trayd">Trayd</span><span className="book">Book</span></div>
         </Link>
 
-        <h1 className="auth-title">Create your account</h1>
-        <p className="auth-subtitle">Choose how you'll use TraydBook</p>
+        {isHiringFlow ? (
+          <>
+            <h1 className="auth-title">I'm looking to hire</h1>
+            <p className="auth-subtitle">Choose how best describes you</p>
+          </>
+        ) : (
+          <>
+            <h1 className="auth-title">Create your account</h1>
+            <p className="auth-subtitle">Choose how you'll use TraydBook</p>
+          </>
+        )}
 
         <div className="account-type-grid">
           {accountTypes.map(at => (
@@ -115,7 +130,10 @@ export default function Signup() {
         <SocialAuthButtons label="Or sign up with" />
 
         <p className="auth-footer-text">
-          Already have an account? <Link to="/login">Sign in</Link>
+          {isHiringFlow
+            ? <><Link to="/signup/trade-select">Join as a contractor instead</Link></>
+            : <>Already have an account? <Link to="/login">Sign in</Link></>
+          }
         </p>
       </div>
     </div>

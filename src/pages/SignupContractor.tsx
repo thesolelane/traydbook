@@ -6,11 +6,11 @@ import type { AccountType } from '../lib/database.types'
 import '../styles/auth.css'
 
 const TRADES = [
-  'Electrician', 'Plumber', 'HVAC Tech', 'Carpenter', 'Ironworker',
-  'Mason / Bricklayer', 'Painter', 'Roofer', 'Welder', 'Pipefitter',
-  'Sheet Metal Worker', 'Concrete / Flatwork', 'Drywall / Finisher',
-  'Flooring', 'Tile Setter', 'Glazier', 'Insulation', 'Landscaping',
-  'General Contractor', 'Construction Manager', 'Other',
+  'Design Professional', 'General Contractor', 'Electrician', 'Plumber',
+  'HVAC Tech', 'Carpenter', 'Ironworker', 'Mason / Bricklayer', 'Painter',
+  'Roofer', 'Welder', 'Pipefitter', 'Sheet Metal Worker', 'Concrete / Flatwork',
+  'Drywall / Finisher', 'Flooring', 'Tile Setter', 'Glazier', 'Insulation',
+  'Landscaping', 'Construction Manager', 'Other',
 ]
 
 const US_STATES = [
@@ -43,6 +43,7 @@ interface Step3 {
 
 interface ContractorLocationState {
   accountType?: AccountType
+  preselectedTrade?: string
 }
 
 export default function SignupContractor() {
@@ -60,7 +61,7 @@ export default function SignupContractor() {
 
   const [step1, setStep1] = useState<Step1>({ email: '', password: '', confirmPassword: '' })
   const [step2, setStep2] = useState<Step2>({
-    displayName: '', handle: '', primaryTrade: '', yearsExperience: '',
+    displayName: '', handle: '', primaryTrade: locationState?.preselectedTrade ?? '', yearsExperience: '',
     locationCity: '', locationState: '',
   })
   const [step3, setStep3] = useState<Step3>({ businessName: '', bio: '', serviceRadius: '50' })

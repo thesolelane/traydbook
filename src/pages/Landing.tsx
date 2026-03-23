@@ -73,7 +73,7 @@ export default function Landing() {
           </p>
           <div className="landing-cta-row">
             <Link
-              to="/signup/contractor"
+              to="/signup/trade-select"
               className="btn-primary btn-lg"
             >
               Join as Contractor

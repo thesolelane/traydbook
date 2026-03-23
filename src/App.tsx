@@ -6,6 +6,7 @@ import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import SignupContractor from './pages/SignupContractor'
+import SignupTradeSelect from './pages/SignupTradeSelect'
 import SignupOwner from './pages/SignupOwner'
 import OAuthCallback from './pages/OAuthCallback'
 import Onboarding from './pages/Onboarding'
@@ -55,6 +56,11 @@ export default function App() {
           <Route path="/signup" element={
             <ProtectedRoute publicOnly>
               <Signup />
+            </ProtectedRoute>
+          } />
+          <Route path="/signup/trade-select" element={
+            <ProtectedRoute publicOnly>
+              <SignupTradeSelect />
             </ProtectedRoute>
           } />
           <Route path="/signup/contractor" element={
