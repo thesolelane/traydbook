@@ -126,6 +126,7 @@ export default function Profile() {
   const [connectLoading, setConnectLoading] = useState(false)
   const [isBookmarked, setIsBookmarked] = useState(false)
   const [hasVerifiedCredential, setHasVerifiedCredential] = useState(false)
+  const [messageToast, setMessageToast] = useState<string | null>(null)
 
   const [networkCount, setNetworkCount] = useState<number>(0)
   const [activeBidsCount, setActiveBidsCount] = useState<number>(0)
@@ -168,6 +169,25 @@ export default function Profile() {
   async function loadProfile(handle: string) {
     setLoading(true)
     setNotFound(false)
+    // Reset all tab-level state so a new handle never inherits stale data
+    loadedTabs.current = new Set()
+    setActiveTab('feed')
+    setCp(null)
+    setUser(null)
+    setConnectionStatus('none')
+    setConnectionId(null)
+    setIsBookmarked(false)
+    setHasVerifiedCredential(false)
+    setNetworkCount(0)
+    setActiveBidsCount(0)
+    setReferralsCount(0)
+    setCoverPhotos([])
+    setFeedPosts([])
+    setProjects([])
+    setJobListings([])
+    setBids([])
+    setReviews([])
+    setCredentials([])
 
     const { data: userData, error } = await supabase
       .from('users')
@@ -412,6 +432,17 @@ export default function Profile() {
     setConnectLoading(false)
   }
 
+  function handleMessageClick() {
+    if (!authProfile || !user) return
+    if (connectionStatus !== 'connected' && authProfile.account_type !== 'contractor') {
+      setMessageToast('Sending a cold message costs 3 credits. Messaging is coming in Task #6.')
+      setTimeout(() => setMessageToast(null), 4000)
+      return
+    }
+    setMessageToast('Direct messaging is coming in Task #6.')
+    setTimeout(() => setMessageToast(null), 3000)
+  }
+
   function handleLikeToggle(postId: string, wasLiked: boolean) {
     setLikedPosts(prev => {
       const next = new Set(prev)
@@ -458,6 +489,20 @@ export default function Profile() {
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto', padding: '24px 20px' }}>
+
+      {/* Toast notification */}
+      {messageToast && (
+        <div style={{
+          position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
+          background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+          borderLeft: '3px solid var(--color-brand)',
+          borderRadius: 8, padding: '10px 18px', fontSize: 13, fontWeight: 600,
+          color: 'var(--color-text)', boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+          zIndex: 2000, whiteSpace: 'nowrap', maxWidth: '90vw',
+        }}>
+          {messageToast}
+        </div>
+      )}
 
       {/* PROFILE HEADER CARD */}
       <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 16 }}>
@@ -529,11 +574,15 @@ export default function Profile() {
                     {connectLabel}
                   </button>
                   <button
-                    onClick={() => navigate(`/messages?user=${user.id}`)}
+                    onClick={handleMessageClick}
                     className="btn btn-secondary"
                     style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}
+                    title={connectionStatus !== 'connected' && authProfile?.account_type !== 'contractor' ? 'Costs 3 credits' : 'Send a message'}
                   >
                     <MessageSquare size={13} /> Message
+                    {connectionStatus !== 'connected' && authProfile?.account_type !== 'contractor' && (
+                      <span style={{ fontSize: 10, fontWeight: 700, background: 'var(--color-brand)', color: '#fff', borderRadius: 10, padding: '1px 5px' }}>3cr</span>
+                    )}
                   </button>
                   <button
                     onClick={() => setIsBookmarked(b => !b)}
@@ -888,6 +937,12 @@ export default function Profile() {
                   <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>No credentials on file.</p>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {isOwn && (
+                      <div style={{ fontSize: 12, color: 'var(--color-text-muted)', background: 'var(--color-bg)', borderRadius: 6, padding: '8px 10px', border: '1px solid var(--color-border)', display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                        <Shield size={12} style={{ marginTop: 1, flexShrink: 0, color: 'var(--color-brand)' }} />
+                        Only the masked reference is stored publicly. Full credentials are held offline and verified by the TraydBook team. Non-owners never see beyond the masked version.
+                      </div>
+                    )}
                     {credentials.map(cred => (
                       <div key={cred.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '12px 0', borderBottom: '1px solid var(--color-border)' }}>
                         <div>
@@ -904,6 +959,11 @@ export default function Profile() {
                               cred.expiry_date ? `Expires ${new Date(cred.expiry_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}` : null,
                             ].filter(Boolean).join(' · ')}
                           </p>
+                          {isOwn && !cred.verified_at && (
+                            <p style={{ fontSize: 11, color: '#D97706', marginTop: 3 }}>
+                              Awaiting admin verification
+                            </p>
+                          )}
                         </div>
                       </div>
                     ))}

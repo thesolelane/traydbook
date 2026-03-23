@@ -204,7 +204,6 @@ export default function EditProfile() {
       .insert({
         contractor_id: cp.id,
         credential_type: credForm.credential_type.trim(),
-        license_number_encrypted: credForm.license_number_raw.trim(),
         masked_display: masked,
         issuing_state: credForm.issuing_state.trim() || null,
         expiry_date: credForm.expiry_date || null,
@@ -531,7 +530,7 @@ export default function EditProfile() {
                 </div>
               </div>
               <p style={{ fontSize: 11, color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
-                Your full license number is stored securely and only shown to you. Others see the masked version only.
+                Only the masked version is stored publicly. Full credential numbers are verified offline by the TraydBook team — you will be contacted after submission.
               </p>
               <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                 <button onClick={() => setShowCredModal(false)} className="btn btn-ghost" style={{ fontSize: 13 }}>Cancel</button>
