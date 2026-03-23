@@ -42,3 +42,5 @@ publicDir = "dist"
 
 [userenv.shared]
 VITE_SUPABASE_URL = "https://tpwrpezsvclzblktgjli.supabase.co"
+SUPABASE_JWT_SECRET = "c3c7b36f-a4dd-40af-aacf-ab4f4f76cfff"
+SUPABASE_DB_PASSWORD = "R5JIHRytna9co8vH"
