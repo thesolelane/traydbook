@@ -980,14 +980,16 @@ begin
   returning id into v_msg_id;
 
   -- Notify recipient
+  -- entity_id = sender's user_id (so frontend can identify the conversation partner)
+  -- entity_type = 'thread:<canonical_thread_id>' (so frontend can navigate to the thread)
   insert into public.notifications (user_id, type, title, body, entity_id, entity_type)
   values (
     p_recipient_id,
     'message_received',
     'New message',
     left(trim(p_body), 100),
-    v_msg_id,
-    'message'
+    auth.uid(),
+    'thread:' || v_canonical_thread_id
   );
 
   return v_msg_id;

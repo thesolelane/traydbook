@@ -90,17 +90,6 @@ function formatAvailDate(iso: string | null): string | null {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-function matchesSearch(c: ContractorRow, q: string): boolean {
-  if (!q.trim()) return true
-  const lower = q.toLowerCase()
-  return (
-    (c.user.display_name ?? '').toLowerCase().includes(lower) ||
-    (c.business_name ?? '').toLowerCase().includes(lower) ||
-    (c.primary_trade ?? '').toLowerCase().includes(lower) ||
-    (c.bio ?? '').toLowerCase().includes(lower)
-  )
-}
-
 export default function Explore() {
   const { profile } = useAuth()
   const navigate = useNavigate()
@@ -133,7 +122,46 @@ export default function Explore() {
   const loadContractors = useCallback(async () => {
     setLoading(true)
 
-    // Server-side: apply filters that map directly to contractor_profiles columns
+    // Pre-query 1: get user IDs matching display_name search or location state
+    // These are server-side lookups to filter contractor_profiles by user_id
+    let userIdFilter: string[] | null = null
+    if (debouncedSearch.trim() || locationState) {
+      let userQ = supabase.from('users').select('id')
+      const userConditions: string[] = []
+      if (debouncedSearch.trim()) {
+        userConditions.push(`display_name.ilike.%${debouncedSearch.trim()}%`)
+      }
+      if (locationState) {
+        userConditions.push(`location_state.eq.${locationState}`)
+      }
+      if (userConditions.length > 1) {
+        // Both conditions: AND logic — user must match both
+        userQ = userQ.ilike('display_name', `%${debouncedSearch.trim()}%`)
+        userQ = userQ.eq('location_state', locationState)
+      } else if (userConditions.length === 1) {
+        if (debouncedSearch.trim()) {
+          userQ = userQ.ilike('display_name', `%${debouncedSearch.trim()}%`)
+        }
+        if (locationState) {
+          userQ = userQ.eq('location_state', locationState)
+        }
+      }
+      const { data: ud } = await userQ.limit(500)
+      userIdFilter = (ud ?? []).map((u: { id: string }) => u.id)
+    }
+
+    // Pre-query 2: get contractor IDs with at least one verified credential
+    let verifiedContractorIds: string[] | null = null
+    if (verifiedOnly) {
+      const { data: vc } = await supabase
+        .from('credentials')
+        .select('contractor_id')
+        .not('verified_at', 'is', null)
+        .limit(5000)
+      verifiedContractorIds = [...new Set((vc ?? []).map((c: { contractor_id: string }) => c.contractor_id))]
+    }
+
+    // Main contractor query — all filters applied server-side
     let q = supabase
       .from('contractor_profiles')
       .select(`
@@ -150,19 +178,53 @@ export default function Explore() {
     if (ratingMin > 0)         q = q.gte('rating_avg', ratingMin)
     if (availByDate)           q = q.lte('available_from', availByDate)
     if (radiusMiles > 0)       q = q.gte('service_radius_miles', radiusMiles)
+    if (profile)               q = q.neq('user_id', profile.id)
+
+    if (debouncedSearch.trim()) {
+      // Combine: profile field search OR user display_name match
+      const profileSearch = [
+        `business_name.ilike.%${debouncedSearch.trim()}%`,
+        `bio.ilike.%${debouncedSearch.trim()}%`,
+        `primary_trade.ilike.%${debouncedSearch.trim()}%`,
+      ]
+      if (userIdFilter && userIdFilter.length > 0) {
+        q = q.or(`${profileSearch.join(',')},user_id.in.(${userIdFilter.join(',')})`)
+      } else if (userIdFilter !== null && userIdFilter.length === 0) {
+        // Only profile fields (display_name search returned no users)
+        q = q.or(profileSearch.join(','))
+      }
+    } else if (locationState && userIdFilter !== null) {
+      // Location filter only (no search term) — restrict to matching user IDs
+      if (userIdFilter.length > 0) {
+        q = q.in('user_id', userIdFilter)
+      } else {
+        // No users in that state — return empty
+        setAllContractors([])
+        setLoading(false)
+        return
+      }
+    }
+
+    if (verifiedContractorIds !== null) {
+      if (verifiedContractorIds.length > 0) {
+        q = q.in('id', verifiedContractorIds)
+      } else {
+        // No verified contractors
+        setAllContractors([])
+        setLoading(false)
+        return
+      }
+    }
 
     q = q.order('rating_avg', { ascending: false }).limit(200)
 
     const { data } = await q
     // Normalize: Supabase foreign-key join may return `user` as object or array
-    let rows: ContractorRow[] = (data ?? []).map((r) => normalizeContractor(r as RawContractorRow))
-
-    // Remove the current user from results
-    if (profile) rows = rows.filter(r => r.user_id !== profile.id)
+    const rows: ContractorRow[] = (data ?? []).map((r) => normalizeContractor(r as RawContractorRow))
 
     setAllContractors(rows)
     setLoading(false)
-  }, [tradeFilters, availFilter, ratingMin, availByDate, radiusMiles, profile])
+  }, [tradeFilters, availFilter, ratingMin, availByDate, radiusMiles, locationState, verifiedOnly, debouncedSearch, profile])
 
   const loadConnections = useCallback(async () => {
     if (!profile) return
@@ -183,13 +245,8 @@ export default function Explore() {
   useEffect(() => { loadContractors() }, [loadContractors])
   useEffect(() => { loadConnections() }, [loadConnections])
 
-  // Client-side filters: search (includes display_name) + location state + verified
-  const contractors = allContractors.filter(c => {
-    if (!matchesSearch(c, debouncedSearch)) return false
-    if (locationState && (c.user.location_state ?? '').toUpperCase() !== locationState) return false
-    if (verifiedOnly && !c.credentials.some(cr => cr.verified_at)) return false
-    return true
-  })
+  // All filtering is now server-side; allContractors is the final result
+  const contractors = allContractors
 
   async function handleConnect(c: ContractorRow) {
     if (!profile) return

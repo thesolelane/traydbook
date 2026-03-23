@@ -55,8 +55,14 @@ function navTarget(n: Notification): string | null {
     case 'connection_request':
     case 'connection_accepted':
       return '/explore'
-    case 'message_received':
+    case 'message_received': {
+      // entity_type = 'thread:<threadId>', entity_id = sender user_id
+      if (n.entity_type?.startsWith('thread:') && n.entity_id) {
+        const tid = n.entity_type.replace('thread:', '')
+        return `/messages/${tid}?with=${n.entity_id}`
+      }
       return '/messages'
+    }
     case 'credential_expiring':
       return '/profile'
     case 'referral_received':
