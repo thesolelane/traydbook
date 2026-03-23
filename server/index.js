@@ -123,6 +123,16 @@ app.post('/api/create-checkout-session', requireAuth, async (req, res) => {
   if (!bundle) return res.status(400).json({ error: 'Invalid bundle' })
   if (!STRIPE_SECRET_KEY) return res.status(503).json({ error: 'Stripe not configured' })
 
+  // Server-side account type check: contractors do not use credits and cannot purchase
+  const { data: userRow } = await supabaseAdmin
+    .from('users')
+    .select('account_type')
+    .eq('id', userId)
+    .single()
+  if (userRow?.account_type === 'contractor') {
+    return res.status(403).json({ error: 'Contractors do not use credits' })
+  }
+
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],

@@ -409,6 +409,7 @@ create or replace function public.fulfill_stripe_purchase(
 )
 returns boolean
 language plpgsql security definer
+set search_path = public
 as $$
 declare
   v_affected   int;
@@ -465,6 +466,13 @@ begin
   return true;
 end;
 $$;
+
+-- Restrict execution: only the service_role (webhook server) may call this function.
+-- Authenticated end-users cannot mint credits by calling this directly.
+revoke execute on function public.fulfill_stripe_purchase(text, uuid, int, int, text) from public;
+revoke execute on function public.fulfill_stripe_purchase(text, uuid, int, int, text) from anon;
+revoke execute on function public.fulfill_stripe_purchase(text, uuid, int, int, text) from authenticated;
+grant  execute on function public.fulfill_stripe_purchase(text, uuid, int, int, text) to service_role;
 
 -- ============================================================
 -- PROJECTS (portfolio)
