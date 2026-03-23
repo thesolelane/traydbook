@@ -36,9 +36,12 @@ export interface Job {
   isFeatured?: boolean;
 }
 
+export type PostType = 'project_update' | 'job_post' | 'bid_post' | 'trade_tip' | 'safety_alert' | 'referral' | 'story'
+
 export interface Post {
   id: string;
   author: User;
+  post_type: PostType;
   content: string;
   images?: string[];
   tags: string[];
@@ -47,6 +50,8 @@ export interface Post {
   shares: number;
   postedAt: string;
   isLiked?: boolean;
+  is_urgent?: boolean;
+  is_boosted?: boolean;
 }
 
 export interface Bid {
@@ -270,6 +275,7 @@ export const posts: Post[] = [
   {
     id: 'p1',
     author: users[0],
+    post_type: 'project_update',
     content: 'Just wrapped up a 28,000 sq ft office build for a fintech startup here in Austin. 14 months from groundbreak to CO. Incredibly proud of this team — every trade showed up and delivered. This is what happens when communication is right and expectations are set early.\n\nKey takeaways: weekly all-hands, transparent budget tracking, and a solid pre-con process. Happy to share our project management approach with anyone building their own process.',
     tags: ['GeneralContracting', 'ProjectManagement', 'CommercialConstruction'],
     likes: 142,
@@ -281,6 +287,7 @@ export const posts: Post[] = [
   {
     id: 'p2',
     author: users[2],
+    post_type: 'trade_tip',
     content: 'Quick tip for anyone doing residential additions in Texas: ALWAYS verify the setback requirements BEFORE your client gets too excited about the design. Had two consultations this week where the homeowner already had a design in mind that was 3 feet into the required setback. Save everyone time — pull the plat and zoning ordinance on day one.',
     tags: ['Architecture', 'DesignTips', 'ZoningLaw', 'Texas'],
     likes: 89,
@@ -292,8 +299,9 @@ export const posts: Post[] = [
   {
     id: 'p3',
     author: users[1],
-    content: 'Shoutout to the city of Houston for finally updating their online permitting portal. Used to take 2 weeks to get a permit inspection scheduled — got one today for tomorrow morning. Small wins matter in this business.',
-    tags: ['Plumbing', 'Houston', 'Permitting'],
+    post_type: 'safety_alert',
+    content: 'SAFETY ALERT: Had a near-miss on site today — unsecured scaffolding on the 3rd floor. Please double-check your fall protection setups at the start of every shift, no exceptions. Lives are more important than schedule. Share this with your crew.',
+    tags: ['Safety', 'FallProtection', 'SiteManagement'],
     likes: 204,
     comments: 47,
     shares: 31,
@@ -302,13 +310,39 @@ export const posts: Post[] = [
   },
   {
     id: 'p4',
+    author: users[3],
+    post_type: 'job_post',
+    content: 'NOW HIRING: 2 EPA-certified HVAC technicians for commercial service contracts in the DFW area. Full-time, $32–$42/hr DOE. Company vehicle, gas card, and full benefits. Must have 3+ years commercial experience. DM me or apply at our website.',
+    tags: ['HVAC', 'NowHiring', 'DFW', 'CommercialHVAC'],
+    likes: 58,
+    comments: 22,
+    shares: 14,
+    postedAt: '2 days ago',
+    isLiked: false,
+    is_urgent: true,
+  },
+  {
+    id: 'p5',
     author: users[4],
+    post_type: 'project_update',
     content: 'Working on a beautiful boutique hotel lobby redesign in downtown San Antonio. Sharing some early FF&E selections — love when a client trusts the process and we can really push the design. Natural materials, warm lighting, local artist feature wall. More to come as the project progresses.',
     tags: ['InteriorDesign', 'HospitalityDesign', 'SanAntonio', 'FFandE'],
     likes: 178,
     comments: 29,
     shares: 15,
-    postedAt: '2 days ago',
+    postedAt: '3 days ago',
+    isLiked: false,
+  },
+  {
+    id: 'p6',
+    author: users[0],
+    post_type: 'bid_post',
+    content: 'Open bid on a 12-unit townhome complex in North Austin. Seeking qualified subs for: framing, MEP rough-in, exterior cladding, and finish work. Bonded GC, payment bond in place. Project starts Q3. Send your prelim numbers to bid by April 15.',
+    tags: ['OpenBid', 'AustinConstruction', 'Subcontractors'],
+    likes: 67,
+    comments: 18,
+    shares: 9,
+    postedAt: '4 days ago',
     isLiked: false,
   },
 ];
