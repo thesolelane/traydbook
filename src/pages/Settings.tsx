@@ -26,18 +26,6 @@ const NOTIF_LABELS: { type: NotificationType; label: string; description: string
 
 type NotifPrefs = Partial<Record<NotificationType, boolean>>
 
-function getNotifPrefs(userId: string): NotifPrefs {
-  try {
-    const raw = localStorage.getItem(`notif_prefs_${userId}`)
-    if (raw) return JSON.parse(raw) as NotifPrefs
-  } catch {}
-  return {}
-}
-
-function saveNotifPrefs(userId: string, prefs: NotifPrefs) {
-  localStorage.setItem(`notif_prefs_${userId}`, JSON.stringify(prefs))
-}
-
 function SectionCard({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
     <div style={{
@@ -155,17 +143,30 @@ export default function Settings() {
 
   // ── Notifications ──
   const [notifPrefs, setNotifPrefs] = useState<NotifPrefs>({})
+  const [savingNotif, setSavingNotif] = useState(false)
 
   useEffect(() => {
-    if (profile) setNotifPrefs(getNotifPrefs(profile.id))
+    if (!profile) return
+    supabase
+      .from('user_notification_prefs')
+      .select('prefs')
+      .eq('user_id', profile.id)
+      .single()
+      .then(({ data }) => {
+        if (data?.prefs) setNotifPrefs(data.prefs as NotifPrefs)
+      })
   }, [profile])
 
-  function handleNotifToggle(type: NotificationType) {
-    if (!profile) return
-    const current = notifPrefs[type] !== false // default true
+  async function handleNotifToggle(type: NotificationType) {
+    if (!profile || savingNotif) return
+    const current = notifPrefs[type] !== false
     const updated = { ...notifPrefs, [type]: !current }
     setNotifPrefs(updated)
-    saveNotifPrefs(profile.id, updated)
+    setSavingNotif(true)
+    await supabase
+      .from('user_notification_prefs')
+      .upsert({ user_id: profile.id, prefs: updated, updated_at: new Date().toISOString() })
+    setSavingNotif(false)
   }
 
   // ── Privacy (contractors only) ──
@@ -379,7 +380,7 @@ export default function Settings() {
       {/* Notification preferences */}
       <SectionCard title="Notifications" icon={<Bell size={16} />}>
         <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 14 }}>
-          Choose which notifications you receive. Preferences are saved per device.
+          Choose which notifications you receive. Preferences are saved to your account.
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {NOTIF_LABELS.map(({ type, label, description }) => {
@@ -403,11 +404,13 @@ export default function Settings() {
                 </div>
                 <button
                   onClick={() => handleNotifToggle(type)}
+                  disabled={savingNotif}
                   style={{
                     width: 40, height: 22, borderRadius: 11,
                     background: enabled ? 'var(--color-brand)' : 'var(--color-border)',
-                    border: 'none', cursor: 'pointer', position: 'relative',
-                    transition: 'background 0.2s', flexShrink: 0,
+                    border: 'none', cursor: savingNotif ? 'not-allowed' : 'pointer',
+                    position: 'relative', transition: 'background 0.2s', flexShrink: 0,
+                    opacity: savingNotif ? 0.7 : 1,
                   }}
                 >
                   <span style={{

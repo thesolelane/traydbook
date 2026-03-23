@@ -340,6 +340,23 @@ create policy "Users can update own notifications" on public.notifications
   for update using (auth.uid() = user_id);
 
 -- ============================================================
+-- NOTIFICATION PREFERENCES
+-- ============================================================
+-- One row per user; stores which notification types are enabled.
+-- Uses jsonb for flexibility — keys are NotificationType strings, values are booleans.
+-- Absent key = enabled (default on). Explicit false = disabled.
+create table if not exists public.user_notification_prefs (
+  user_id   uuid primary key references public.users(id) on delete cascade,
+  prefs     jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.user_notification_prefs enable row level security;
+
+create policy "Users manage own notification prefs" on public.user_notification_prefs
+  for all using (auth.uid() = user_id);
+
+-- ============================================================
 -- CREDIT LEDGER
 -- ============================================================
 create table if not exists public.credit_ledger (

@@ -74,16 +74,47 @@ export default function Credits() {
     if (profile && isContractor) navigate('/feed', { replace: true })
   }, [profile, isContractor, navigate])
 
-  // Handle return from Stripe Checkout
+  // Handle return from Stripe Checkout: poll until webhook fulfills credits (max 30s)
   useEffect(() => {
     const success = searchParams.get('success')
     const canceled = searchParams.get('canceled')
-    if (success === 'true') {
-      setBanner('success')
-      refreshProfile()
-    } else if (canceled === 'true') {
+    const sessionId = searchParams.get('session_id')
+
+    if (canceled === 'true') {
       setBanner('canceled')
+      return
     }
+
+    if (success !== 'true' || !sessionId) return
+
+    setBanner('success')
+
+    // Poll the session status endpoint until the purchase is completed
+    async function pollUntilFulfilled() {
+      const { data: { session: authSession } } = await supabase.auth.getSession()
+      const token = authSession?.access_token
+      if (!token) { refreshProfile(); return }
+
+      const maxAttempts = 15
+      for (let i = 0; i < maxAttempts; i++) {
+        await new Promise(r => setTimeout(r, 2000))
+        try {
+          const res = await fetch(`/api/session-status?session_id=${sessionId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+          if (!res.ok) continue
+          const { status } = await res.json()
+          if (status === 'completed') {
+            await refreshProfile()
+            return
+          }
+        } catch {}
+      }
+      // Fallback: refresh even if we didn't confirm completion
+      await refreshProfile()
+    }
+
+    pollUntilFulfilled()
   }, [searchParams, refreshProfile])
 
   // Load credit ledger history
@@ -103,14 +134,17 @@ export default function Credits() {
     setBuyError('')
     setBuying(bundleId)
     try {
+      const { data: { session: authSession } } = await supabase.auth.getSession()
+      const token = authSession?.access_token
+      if (!token) throw new Error('Not authenticated. Please sign in again.')
+
       const res = await fetch('/api/create-checkout-session', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          bundleId,
-          userId: profile.id,
-          returnOrigin: window.location.origin,
-        }),
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ bundleId }),
       })
       const { url, error } = await res.json()
       if (!res.ok || !url) throw new Error(error ?? 'Failed to create checkout session')
