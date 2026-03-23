@@ -138,6 +138,24 @@ export default function App() {
               </AppLayout>
             </ProtectedRoute>
           } />
+          <Route path="/messages/:threadId" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <div className="container" style={{ padding: '40px 0', color: 'var(--color-text-muted)' }}>
+                  Messages — full inbox coming in Task #6
+                </div>
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/messages" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <div className="container" style={{ padding: '40px 0', color: 'var(--color-text-muted)' }}>
+                  Messages — full inbox coming in Task #6
+                </div>
+              </AppLayout>
+            </ProtectedRoute>
+          } />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

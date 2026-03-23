@@ -113,7 +113,7 @@ function SkeletonProfile() {
 
 export default function Profile() {
   const { handle: urlHandle } = useParams<{ handle: string }>()
-  const { profile: authProfile } = useAuth()
+  const { profile: authProfile, refreshProfile } = useAuth()
   const navigate = useNavigate()
 
   const [user, setUser] = useState<ProfileUser | null>(null)
@@ -288,6 +288,7 @@ export default function Profile() {
       .from('credentials')
       .select('*', { count: 'exact', head: true })
       .eq('contractor_id', cpId)
+      .eq('status', 'active')
       .not('verified_at', 'is', null)
     setHasVerifiedCredential((count ?? 0) > 0)
   }
@@ -432,15 +433,31 @@ export default function Profile() {
     setConnectLoading(false)
   }
 
-  function handleMessageClick() {
+  async function handleMessageClick() {
     if (!authProfile || !user) return
-    if (connectionStatus !== 'connected' && authProfile.account_type !== 'contractor') {
-      setMessageToast('Sending a cold message costs 3 credits. Messaging is coming in Task #6.')
-      setTimeout(() => setMessageToast(null), 4000)
-      return
+    const threadId = [authProfile.id, user.id].sort().join('_')
+    const isColdMessage = connectionStatus !== 'connected' && authProfile.account_type !== 'contractor'
+    const COLD_MESSAGE_COST = 3
+
+    if (isColdMessage) {
+      if ((authProfile.credit_balance ?? 0) < COLD_MESSAGE_COST) {
+        setMessageToast(`Insufficient credits — you need ${COLD_MESSAGE_COST} to send a cold message (you have ${authProfile.credit_balance ?? 0}).`)
+        setTimeout(() => setMessageToast(null), 5000)
+        return
+      }
+      const { error: creditErr } = await supabase
+        .from('users')
+        .update({ credit_balance: (authProfile.credit_balance ?? 0) - COLD_MESSAGE_COST })
+        .eq('id', authProfile.id)
+      if (creditErr) {
+        setMessageToast('Credit deduction failed — please try again.')
+        setTimeout(() => setMessageToast(null), 3000)
+        return
+      }
+      if (refreshProfile) await refreshProfile()
     }
-    setMessageToast('Direct messaging is coming in Task #6.')
-    setTimeout(() => setMessageToast(null), 3000)
+
+    navigate(`/messages/${threadId}`)
   }
 
   function handleLikeToggle(postId: string, wasLiked: boolean) {
@@ -574,7 +591,7 @@ export default function Profile() {
                     {connectLabel}
                   </button>
                   <button
-                    onClick={handleMessageClick}
+                    onClick={() => void handleMessageClick()}
                     className="btn btn-secondary"
                     style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}
                     title={connectionStatus !== 'connected' && authProfile?.account_type !== 'contractor' ? 'Costs 3 credits' : 'Send a message'}
@@ -665,7 +682,7 @@ export default function Profile() {
       <div className="card" style={{ padding: '0 20px', marginBottom: 16, overflowX: 'auto' }}>
         <div style={{ display: 'flex', gap: 0 }}>
           {tabs.map(tab => {
-            if (!isContractor && ['portfolio', 'bids'].includes(tab.key)) return null
+            if (!isContractor && tab.key === 'portfolio') return null
             return (
               <button
                 key={tab.key}
@@ -784,7 +801,7 @@ export default function Profile() {
         </div>
       )}
 
-      {activeTab === 'bids' && isContractor && (
+      {activeTab === 'bids' && (
         <div>
           {!canViewBidsJobs ? (
             <div className="card" style={{ padding: 40, textAlign: 'center' }}>
