@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Search, Star, MapPin, Briefcase, CheckCircle, MessageSquare, UserPlus, UserCheck, SlidersHorizontal, X } from 'lucide-react'
+import {
+  Search, Star, MapPin, Briefcase, CheckCircle, MessageSquare,
+  UserPlus, UserCheck, SlidersHorizontal, X, Calendar,
+} from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
@@ -23,6 +26,13 @@ const AVAIL_OPTIONS = [
   { label: 'Busy', value: 'busy' },
 ]
 
+const US_STATES = [
+  'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA',
+  'KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ',
+  'NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT',
+  'VA','WA','WV','WI','WY','DC',
+]
+
 interface ContractorRow {
   id: string
   user_id: string
@@ -35,7 +45,13 @@ interface ContractorRow {
   projects_completed: number
   availability_status: string
   available_from: string | null
-  user: { display_name: string; handle: string; avatar_url: string | null; location_city: string | null; location_state: string | null }
+  user: {
+    display_name: string
+    handle: string
+    avatar_url: string | null
+    location_city: string | null
+    location_state: string | null
+  }
   credentials: { id: string; verified_at: string | null }[]
 }
 
@@ -43,8 +59,25 @@ interface ConnectionState { [userId: string]: 'none' | 'pending' | 'accepted' }
 
 const MSG_COLD_COST = 3
 
-function threadId(uid1: string, uid2: string) {
+function makeThreadId(uid1: string, uid2: string) {
   return [uid1, uid2].sort().join('_')
+}
+
+function formatAvailDate(iso: string | null): string | null {
+  if (!iso) return null
+  const d = new Date(iso)
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+function matchesSearch(c: ContractorRow, q: string): boolean {
+  if (!q.trim()) return true
+  const lower = q.toLowerCase()
+  return (
+    (c.user.display_name ?? '').toLowerCase().includes(lower) ||
+    (c.business_name ?? '').toLowerCase().includes(lower) ||
+    (c.primary_trade ?? '').toLowerCase().includes(lower) ||
+    (c.bio ?? '').toLowerCase().includes(lower)
+  )
 }
 
 export default function Explore() {
@@ -52,7 +85,7 @@ export default function Explore() {
   const navigate = useNavigate()
   const isContractor = profile?.account_type === 'contractor'
 
-  const [contractors, setContractors] = useState<ContractorRow[]>([])
+  const [allContractors, setAllContractors] = useState<ContractorRow[]>([])
   const [loading, setLoading] = useState(true)
   const [connections, setConnections] = useState<ConnectionState>({})
   const [connecting, setConnecting] = useState<Set<string>>(new Set())
@@ -61,6 +94,8 @@ export default function Explore() {
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [tradeFilters, setTradeFilters] = useState<Set<string>>(new Set())
   const [availFilter, setAvailFilter] = useState('')
+  const [availByDate, setAvailByDate] = useState('')  // ISO date string
+  const [locationState, setLocationState] = useState('')
   const [ratingMin, setRatingMin] = useState(0)
   const [verifiedOnly, setVerifiedOnly] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -75,6 +110,8 @@ export default function Explore() {
 
   const loadContractors = useCallback(async () => {
     setLoading(true)
+
+    // Server-side: apply filters that map directly to contractor_profiles columns
     let q = supabase
       .from('contractor_profiles')
       .select(`
@@ -85,29 +122,22 @@ export default function Explore() {
       `)
       .eq('visible_to_owners', true)
 
-    if (debouncedSearch.trim()) {
-      q = q.or(`business_name.ilike.%${debouncedSearch}%,bio.ilike.%${debouncedSearch}%,primary_trade.ilike.%${debouncedSearch}%`)
-    }
     if (tradeFilters.size > 0) q = q.in('primary_trade', [...tradeFilters])
-    if (availFilter) q = q.eq('availability_status', availFilter)
-    if (ratingMin > 0) q = q.gte('rating_avg', ratingMin)
+    if (availFilter)          q = q.eq('availability_status', availFilter)
+    if (ratingMin > 0)        q = q.gte('rating_avg', ratingMin)
+    if (availByDate)          q = q.lte('available_from', availByDate)
 
-    q = q.order('rating_avg', { ascending: false }).limit(60)
+    q = q.order('rating_avg', { ascending: false }).limit(200)
 
     const { data } = await q
     let rows = (data ?? []) as ContractorRow[]
 
-    if (verifiedOnly) {
-      rows = rows.filter(r => r.credentials.some(c => c.verified_at))
-    }
+    // Remove the current user from results
+    if (profile) rows = rows.filter(r => r.user_id !== profile.id)
 
-    if (profile) {
-      rows = rows.filter(r => r.user_id !== profile.id)
-    }
-
-    setContractors(rows)
+    setAllContractors(rows)
     setLoading(false)
-  }, [debouncedSearch, tradeFilters, availFilter, ratingMin, verifiedOnly, profile])
+  }, [tradeFilters, availFilter, ratingMin, availByDate, profile])
 
   const loadConnections = useCallback(async () => {
     if (!profile) return
@@ -125,33 +155,34 @@ export default function Explore() {
     setConnections(map)
   }, [profile])
 
-  useEffect(() => {
-    loadContractors()
-  }, [loadContractors])
+  useEffect(() => { loadContractors() }, [loadContractors])
+  useEffect(() => { loadConnections() }, [loadConnections])
 
-  useEffect(() => {
-    loadConnections()
-  }, [loadConnections])
+  // Client-side filters: search (includes display_name) + location state + verified
+  const contractors = allContractors.filter(c => {
+    if (!matchesSearch(c, debouncedSearch)) return false
+    if (locationState && (c.user.location_state ?? '').toUpperCase() !== locationState) return false
+    if (verifiedOnly && !c.credentials.some(cr => cr.verified_at)) return false
+    return true
+  })
 
-  async function handleConnect(contractor: ContractorRow) {
+  async function handleConnect(c: ContractorRow) {
     if (!profile) return
-    const uid = contractor.user_id
+    const uid = c.user_id
     setConnecting(prev => new Set([...prev, uid]))
     const { error } = await supabase.from('connections').insert({
       requester_id: profile.id,
       recipient_id: uid,
       status: 'pending',
     })
-    if (!error) {
-      setConnections(prev => ({ ...prev, [uid]: 'pending' }))
-    }
+    if (!error) setConnections(prev => ({ ...prev, [uid]: 'pending' }))
     setConnecting(prev => { const n = new Set(prev); n.delete(uid); return n })
   }
 
-  function handleMessage(contractor: ContractorRow) {
+  function handleMessage(c: ContractorRow) {
     if (!profile) return
-    const tid = threadId(profile.id, contractor.user_id)
-    navigate(`/messages/${tid}?with=${contractor.user_id}`)
+    const tid = makeThreadId(profile.id, c.user_id)
+    navigate(`/messages/${tid}?with=${c.user_id}`)
   }
 
   function toggleTrade(t: string) {
@@ -161,14 +192,30 @@ export default function Explore() {
   function clearFilters() {
     setTradeFilters(new Set())
     setAvailFilter('')
+    setAvailByDate('')
+    setLocationState('')
     setRatingMin(0)
     setVerifiedOnly(false)
     setSearch('')
   }
 
-  const hasActiveFilters = tradeFilters.size > 0 || availFilter || ratingMin > 0 || verifiedOnly || search
+  const hasActiveFilters =
+    tradeFilters.size > 0 || availFilter || availByDate || locationState || ratingMin > 0 || verifiedOnly || search
 
-  const Sidebar = () => (
+  function AvailabilityBadge({ status }: { status: string }) {
+    const cfg = status === 'available'
+      ? { text: 'Available', bg: 'rgba(5,150,105,0.15)', color: '#059669' }
+      : status === 'busy'
+      ? { text: 'Busy', bg: 'rgba(217,119,6,0.15)', color: '#D97706' }
+      : { text: 'Not Available', bg: 'rgba(107,114,128,0.12)', color: 'var(--color-text-muted)' }
+    return (
+      <span style={{ fontSize: 11, fontWeight: 700, background: cfg.bg, color: cfg.color, borderRadius: 20, padding: '2px 8px' }}>
+        {cfg.text}
+      </span>
+    )
+  }
+
+  const FilterPanel = () => (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <span style={{ fontFamily: 'var(--font-condensed)', fontWeight: 700, fontSize: 15 }}>Filters</span>
@@ -177,9 +224,10 @@ export default function Explore() {
         )}
       </div>
 
+      {/* Trade */}
       <div style={{ marginBottom: 18 }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 10 }}>Trade</div>
-        <div style={{ maxHeight: 200, overflowY: 'auto', paddingRight: 2 }}>
+        <div style={{ maxHeight: 200, overflowY: 'auto' }}>
           {TRADE_OPTIONS.map(t => (
             <label key={t} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7, cursor: 'pointer', fontSize: 13 }}>
               <input type="checkbox" checked={tradeFilters.has(t)} onChange={() => toggleTrade(t)} style={{ accentColor: 'var(--color-brand)', width: 15, height: 15 }} />
@@ -189,8 +237,22 @@ export default function Explore() {
         </div>
       </div>
 
+      {/* Location state */}
       <div style={{ marginBottom: 18 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 10 }}>Availability</div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 10 }}>Location (State)</div>
+        <select
+          value={locationState}
+          onChange={e => setLocationState(e.target.value)}
+          style={{ width: '100%', padding: '7px 10px', border: '1px solid var(--color-border)', borderRadius: 6, fontSize: 13, background: 'var(--color-bg)', color: 'var(--color-text)', outline: 'none' }}
+        >
+          <option value="">Any State</option>
+          {US_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+      </div>
+
+      {/* Availability status */}
+      <div style={{ marginBottom: 18 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 10 }}>Availability Status</div>
         {AVAIL_OPTIONS.map(opt => (
           <label key={opt.label} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, cursor: 'pointer', fontSize: 13 }}>
             <input type="radio" name="avail" checked={availFilter === opt.value} onChange={() => setAvailFilter(opt.value)} style={{ accentColor: 'var(--color-brand)', width: 15, height: 15 }} />
@@ -199,6 +261,21 @@ export default function Explore() {
         ))}
       </div>
 
+      {/* Available by date */}
+      <div style={{ marginBottom: 18 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 10 }}>Available By Date</div>
+        <input
+          type="date"
+          value={availByDate}
+          onChange={e => setAvailByDate(e.target.value)}
+          style={{ width: '100%', padding: '7px 10px', border: '1px solid var(--color-border)', borderRadius: 6, fontSize: 13, background: 'var(--color-bg)', color: 'var(--color-text)', outline: 'none' }}
+        />
+        {availByDate && (
+          <button onClick={() => setAvailByDate('')} style={{ fontSize: 11, color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: '3px 0', textDecoration: 'underline' }}>Clear</button>
+        )}
+      </div>
+
+      {/* Rating */}
       <div style={{ marginBottom: 18 }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 10 }}>Minimum Rating</div>
         {RATING_OPTIONS.map(opt => (
@@ -209,25 +286,13 @@ export default function Explore() {
         ))}
       </div>
 
+      {/* Verified only */}
       <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, fontWeight: verifiedOnly ? 600 : 400 }}>
         <input type="checkbox" checked={verifiedOnly} onChange={e => setVerifiedOnly(e.target.checked)} style={{ accentColor: 'var(--color-brand)', width: 15, height: 15 }} />
         Verified credentials only
       </label>
     </div>
   )
-
-  function AvailabilityBadge({ status }: { status: string }) {
-    const cfg = status === 'available'
-      ? { text: 'Available', bg: '#ECFDF5', color: '#059669' }
-      : status === 'busy'
-      ? { text: 'Busy', bg: '#FEF9C3', color: '#92400E' }
-      : { text: 'Not Available', bg: '#F3F4F6', color: '#6B7280' }
-    return (
-      <span style={{ fontSize: 11, fontWeight: 700, background: cfg.bg, color: cfg.color, borderRadius: 20, padding: '2px 8px' }}>
-        {cfg.text}
-      </span>
-    )
-  }
 
   const COLORS = ['#2563EB', '#059669', '#7C3AED', '#DC2626', '#D97706', '#0891B2', '#E85D04']
 
@@ -241,18 +306,13 @@ export default function Explore() {
       </div>
 
       <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
-        <div className="card" style={{ padding: 20, width: 240, flexShrink: 0, display: 'none' }} id="explore-sidebar">
-          <Sidebar />
+        {/* Desktop sidebar */}
+        <div className="card explore-sidebar" style={{ padding: 20, width: 240, flexShrink: 0 }}>
+          <FilterPanel />
         </div>
 
-        <style>{`
-          @media (min-width: 900px) {
-            #explore-sidebar { display: block !important; }
-            #explore-filter-btn { display: none !important; }
-          }
-        `}</style>
-
         <div style={{ flex: 1, minWidth: 0 }}>
+          {/* Search + mobile filter toggle */}
           <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
             <div style={{ flex: 1, minWidth: 200, position: 'relative', display: 'flex', alignItems: 'center' }}>
               <Search size={14} color="var(--color-text-muted)" style={{ position: 'absolute', left: 10 }} />
@@ -270,25 +330,31 @@ export default function Explore() {
               )}
             </div>
 
-            <button id="explore-filter-btn" onClick={() => setSidebarOpen(o => !o)} className="btn btn-ghost" style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, position: 'relative' }}>
+            <button
+              onClick={() => setSidebarOpen(o => !o)}
+              className="btn btn-ghost explore-filter-btn"
+              style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, position: 'relative' }}
+            >
               <SlidersHorizontal size={13} /> Filters
               {hasActiveFilters && <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--color-brand)', position: 'absolute', top: 5, right: 5 }} />}
             </button>
 
             <span style={{ fontSize: 12, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
-              {loading ? '…' : contractors.length} contractor{contractors.length !== 1 ? 's' : ''}
+              {loading ? '…' : `${contractors.length} contractor${contractors.length !== 1 ? 's' : ''}`}
             </span>
           </div>
 
+          {/* Mobile inline filter panel */}
           {sidebarOpen && (
             <div className="card" style={{ padding: 20, marginBottom: 14 }}>
-              <Sidebar />
+              <FilterPanel />
             </div>
           )}
 
+          {/* Credit banner for non-contractors */}
           {!isContractor && (
             <div style={{ background: 'var(--color-brand-light)', border: '1px solid rgba(232,93,4,0.2)', borderRadius: 8, padding: '10px 14px', marginBottom: 14, fontSize: 13, color: 'var(--color-brand)', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <MessageSquare size={14} /> Cold messages to contractors cost {MSG_COLD_COST} credits (you have {profile?.credit_balance ?? 0}).
+              <MessageSquare size={14} /> First message to a contractor costs {MSG_COLD_COST} credits. You have {profile?.credit_balance ?? 0}.
             </div>
           )}
 
@@ -310,6 +376,7 @@ export default function Explore() {
                 const initials = u.display_name.slice(0, 2).toUpperCase()
                 const color = COLORS[c.user_id.charCodeAt(0) % COLORS.length]
                 const connState = connections[c.user_id] ?? 'none'
+                const availDate = formatAvailDate(c.available_from)
 
                 return (
                   <div key={c.id} className="card" style={{ padding: 18 }}>
@@ -333,10 +400,11 @@ export default function Explore() {
                           )}
                         </div>
                         <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 2 }}>{c.primary_trade}</div>
+
                         <div style={{ display: 'flex', gap: 8, marginTop: 5, flexWrap: 'wrap', alignItems: 'center' }}>
                           {c.rating_count > 0 && (
                             <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 12, color: '#D97706', fontWeight: 600 }}>
-                              <Star size={11} fill="#D97706" /> {c.rating_avg.toFixed(1)} ({c.rating_count})
+                              <Star size={11} fill="#D97706" /> {Number(c.rating_avg).toFixed(1)} ({c.rating_count})
                             </span>
                           )}
                           {(u.location_city || u.location_state) && (
@@ -344,7 +412,15 @@ export default function Explore() {
                               <MapPin size={11} /> {[u.location_city, u.location_state].filter(Boolean).join(', ')}
                             </span>
                           )}
+                        </div>
+
+                        <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap', alignItems: 'center' }}>
                           <AvailabilityBadge status={c.availability_status} />
+                          {availDate && c.availability_status !== 'available' && (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 11, color: 'var(--color-text-muted)' }}>
+                              <Calendar size={10} /> Available {availDate}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -362,7 +438,7 @@ export default function Explore() {
 
                     <div style={{ display: 'flex', gap: 8 }}>
                       <Link to={`/profile/${u.handle}`} className="btn btn-ghost" style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <Briefcase size={12} /> View Profile
+                        <Briefcase size={12} /> Profile
                       </Link>
 
                       {connState === 'accepted' ? (
@@ -399,6 +475,14 @@ export default function Explore() {
           )}
         </div>
       </div>
+
+      <style>{`
+        .explore-sidebar { display: none; }
+        @media (min-width: 900px) {
+          .explore-sidebar { display: block !important; }
+          .explore-filter-btn { display: none !important; }
+        }
+      `}</style>
     </div>
   )
 }

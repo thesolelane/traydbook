@@ -177,6 +177,17 @@ export default function App() {
             </ProtectedRoute>
           } />
 
+          {/* /credits alias → /settings/credits */}
+          <Route path="/credits" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <div className="container" style={{ padding: '40px 0', color: 'var(--color-text-muted)' }}>
+                  Credits & Billing — coming soon
+                </div>
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

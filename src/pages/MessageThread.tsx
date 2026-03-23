@@ -141,10 +141,11 @@ export default function MessageThread() {
 
     if (error) {
       if (error.message.includes('Insufficient credits')) {
-        setSendError(`You need ${COLD_MSG_COST} credits to start a conversation. `)
-      } else {
-        setSendError(error.message)
+        // Redirect to credits page per spec
+        navigate('/credits')
+        return
       }
+      setSendError(error.message)
       setSending(false)
       return
     }
