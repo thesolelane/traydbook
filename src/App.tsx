@@ -104,6 +104,34 @@ export default function App() {
             </ProtectedRoute>
           } />
 
+          <Route path="/jobs/post" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <div className="container" style={{ padding: '40px 0', color: 'var(--color-text-muted)' }}>
+                  Post a Job — coming in Task #5
+                </div>
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/bids/post" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <div className="container" style={{ padding: '40px 0', color: 'var(--color-text-muted)' }}>
+                  Open Bid / Post RFQ — coming in Task #4
+                </div>
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/bids/new" element={
+            <ProtectedRoute>
+              <AppLayout>
+                <div className="container" style={{ padding: '40px 0', color: 'var(--color-text-muted)' }}>
+                  Post RFQ — coming in Task #4
+                </div>
+              </AppLayout>
+            </ProtectedRoute>
+          } />
+
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

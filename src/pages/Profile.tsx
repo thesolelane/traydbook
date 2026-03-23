@@ -1,6 +1,20 @@
 import { MapPin, Star, CheckCircle, Briefcase, Award, Edit2 } from 'lucide-react';
 import { currentUser, posts } from '../data/mockData';
 import PostCard from '../components/PostCard';
+import { FeedPost } from '../types/feed';
+
+function mockToFeed(p: typeof posts[0]): FeedPost {
+  return {
+    id: p.id, post_type: p.post_type,
+    body: p.content, media_urls: [], hashtags: p.tags,
+    like_count: p.likes, comment_count: p.comments, share_count: p.shares,
+    is_urgent: p.is_urgent ?? false, is_boosted: p.is_boosted ?? false,
+    created_at: new Date().toISOString(), author_id: p.author.id,
+    author_name: p.author.name, author_handle: p.author.id,
+    author_avatar: null, author_account_type: 'contractor',
+    author_trade: p.author.trade, author_verified: p.author.verified,
+  }
+}
 
 export default function Profile() {
   return (
@@ -85,7 +99,7 @@ export default function Profile() {
             <h3 style={{ fontWeight: 700, fontSize: 16, marginBottom: 14, color: 'var(--color-text)' }}>Recent Posts</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {posts.slice(0, 2).map(post => (
-                <PostCard key={post.id} post={post} />
+                <PostCard key={post.id} post={mockToFeed(post)} likedPosts={new Set()} onLikeToggle={() => undefined} />
               ))}
             </div>
           </div>
