@@ -392,6 +392,20 @@ alter table public.purchases enable row level security;
 create policy "Users see own purchases" on public.purchases
   for select using (auth.uid() = user_id);
 
+-- Ensure the unique constraint exists on already-provisioned databases.
+-- `create table if not exists` does not add constraints to existing tables.
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.purchases'::regclass
+      and contype = 'u'
+      and conname = 'purchases_stripe_session_id_key'
+  ) then
+    alter table public.purchases add constraint purchases_stripe_session_id_key unique (stripe_session_id);
+  end if;
+end $$;
+
 -- Atomically fulfills a Stripe purchase: idempotency via UNIQUE stripe_session_id,
 -- atomic balance increment, ledger + notification insert. Returns true if credits applied.
 create or replace function public.fulfill_stripe_purchase(
