@@ -822,14 +822,15 @@ begin
     values (auth.uid(), -v_job_cost, v_new_balance, 'spend', 'Posted Job: ' || p_title);
   end if;
 
-  -- Optionally share to feed
+  -- Optionally share to feed with linked_job_id for detail navigation
   if p_share_to_feed then
-    insert into public.posts (author_id, post_type, body, hashtags)
+    insert into public.posts (author_id, post_type, body, linked_job_id, hashtags)
     values (
       auth.uid(),
       'job_post',
       'NOW HIRING: ' || p_title || ' — ' || p_location_city || ', ' || p_location_state ||
         E'\n\n' || left(p_description, 280),
+      v_listing_id,
       array[ replace(p_trade_required, ' ', ''), 'NowHiring', 'Jobs' ]
     );
   end if;
