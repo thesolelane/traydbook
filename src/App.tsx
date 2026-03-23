@@ -12,6 +12,7 @@ import Jobs from './pages/Jobs'
 import Network from './pages/Network'
 import Bids from './pages/Bids'
 import Profile from './pages/Profile'
+import EditProfile from './pages/EditProfile'
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -78,6 +79,12 @@ export default function App() {
           <Route path="/profile" element={
             <ProtectedRoute>
               <AppLayout><Profile /></AppLayout>
+            </ProtectedRoute>
+          } />
+          {/* /profile/edit MUST be before /profile/:handle to avoid conflict */}
+          <Route path="/profile/edit" element={
+            <ProtectedRoute>
+              <AppLayout><EditProfile /></AppLayout>
             </ProtectedRoute>
           } />
           <Route path="/profile/:handle" element={
