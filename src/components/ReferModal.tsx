@@ -39,30 +39,26 @@ export default function ReferModal({ onClose, onPosted }: ReferModalProps) {
     setSearching(true)
     const { data } = await supabase
       .from('users')
-      .select('id, display_name, handle, avatar_url, account_type')
+      .select('id, display_name, handle, avatar_url, account_type, location_city, location_state, contractor_profiles!user_id (primary_trade)')
       .eq('account_type', 'contractor')
       .ilike('display_name', `%${query}%`)
       .neq('id', profile?.id ?? '')
       .limit(6)
 
     if (data) {
-      const userIds = data.map((u: { id: string }) => u.id)
-      const { data: profiles } = await supabase
-        .from('contractor_profiles')
-        .select('user_id, primary_trade, location')
-        .in('user_id', userIds)
-
-      const profileMap = new Map((profiles ?? []).map((p: { user_id: string; primary_trade: string | null; location: string | null }) => [p.user_id, p]))
-
-      setResults(data.map((u: { id: string; display_name: string; handle: string; avatar_url: string | null }) => {
-        const cp = profileMap.get(u.id)
+      setResults(data.map((u: {
+        id: string; display_name: string; handle: string; avatar_url: string | null;
+        location_city: string | null; location_state: string | null;
+        contractor_profiles: unknown;
+      }) => {
+        const cp = (u.contractor_profiles as { primary_trade: string | null } | null)
         return {
           id: u.id,
           display_name: u.display_name,
           handle: u.handle,
           avatar_url: u.avatar_url,
           primary_trade: cp?.primary_trade ?? null,
-          location: cp?.location ?? null,
+          location: [u.location_city, u.location_state].filter(Boolean).join(', ') || null,
         }
       }))
     }
