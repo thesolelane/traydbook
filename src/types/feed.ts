@@ -67,7 +67,7 @@ export interface PostTypeBadge {
 export const POST_TYPE_BADGE: Record<string, PostTypeBadge> = {
   project_update: { bg: 'rgba(37,99,235,0.15)', text: '#2563EB', label: 'Project Update' },
   bid_post: { bg: 'rgba(232,93,4,0.15)', text: '#E85D04', label: 'Open Bid' },
-  job_post: { bg: 'rgba(220,38,38,0.15)', text: '#DC2626', label: 'Urgent Hire' },
+  job_post: { bg: 'rgba(220,38,38,0.15)', text: '#DC2626', label: 'Job Post' },
   trade_tip: { bg: 'rgba(5,150,105,0.15)', text: '#059669', label: 'Trade Tip' },
   safety_alert: { bg: 'rgba(217,119,6,0.15)', text: '#D97706', label: 'Safety Alert' },
   referral: { bg: 'rgba(124,58,237,0.15)', text: '#7C3AED', label: 'Referral' },

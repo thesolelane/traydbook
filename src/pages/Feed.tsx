@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { Plus, TrendingUp, UserPlus, Loader, RefreshCw } from 'lucide-react'
 import { supabase } from '../lib/supabase'
@@ -33,6 +33,15 @@ function mockToFeedPost(p: typeof mockPosts[0]): FeedPost {
   }
 }
 
+function compositeScore(post: FeedPost, connectedAuthorIds: Set<string>): number {
+  const hoursOld = (Date.now() - new Date(post.created_at).getTime()) / 3600000
+  const recencyScore = 1000 / (hoursOld + 1)
+  const boostBonus = post.is_boosted ? 200 : 0
+  const urgencyBonus = post.is_urgent ? 100 : 0
+  const connectionBonus = connectedAuthorIds.has(post.author_id) ? 150 : 0
+  return recencyScore + boostBonus + urgencyBonus + connectionBonus
+}
+
 function SkeletonCard() {
   return (
     <div className="card" style={{ padding: 20 }}>
@@ -63,21 +72,54 @@ export default function Feed() {
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
-  const [page, setPage] = useState(0)
+  const pageRef = useRef(0)
   const PAGE_SIZE = 10
 
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set())
   const [composeOpen, setComposeOpen] = useState(false)
 
+  const [connectedAuthorIds, setConnectedAuthorIds] = useState<Set<string>>(new Set())
   const [sidebarUsers, setSidebarUsers] = useState<SidebarUser[]>([])
   const [connectedIds, setConnectedIds] = useState<Set<string>>(new Set())
   const [trendingTags, setTrendingTags] = useState<{ tag: string; count: number }[]>([])
 
   const [networkCount, setNetworkCount] = useState<number | null>(null)
-  const [activeBids, setActiveBids] = useState<number | null>(null)
+  const [openJobsCount, setOpenJobsCount] = useState<number | null>(null)
+  const [activeBidsCount, setActiveBidsCount] = useState<number | null>(null)
+  const [myTrade, setMyTrade] = useState<string | null>(null)
+  const [myLocation, setMyLocation] = useState<string | null>(null)
 
-  const fetchPosts = useCallback(async (reset = false) => {
-    const currentPage = reset ? 0 : page
+  const isContractor = profile?.account_type === 'contractor'
+
+  async function enrichWithContractorProfiles(rawPosts: FeedPost[]): Promise<FeedPost[]> {
+    if (rawPosts.length === 0) return rawPosts
+    const authorIds = [...new Set(rawPosts.map(p => p.author_id))]
+    const { data: cps } = await supabase
+      .from('contractor_profiles')
+      .select('user_id, primary_trade')
+      .in('user_id', authorIds)
+    if (!cps) return rawPosts
+    const tradeMap = new Map(cps.map((c: { user_id: string; primary_trade: string | null }) => [c.user_id, c.primary_trade]))
+    return rawPosts.map(p => ({ ...p, author_trade: tradeMap.get(p.author_id) ?? null }))
+  }
+
+  async function fetchConnectionIds(): Promise<Set<string>> {
+    if (!profile) return new Set()
+    const { data } = await supabase
+      .from('connections')
+      .select('requester_id, recipient_id')
+      .or(`requester_id.eq.${profile.id},recipient_id.eq.${profile.id}`)
+      .eq('status', 'accepted')
+    if (!data) return new Set()
+    const ids = new Set<string>()
+    data.forEach((c: { requester_id: string; recipient_id: string }) => {
+      ids.add(c.requester_id === profile.id ? c.recipient_id : c.requester_id)
+    })
+    return ids
+  }
+
+  const fetchPosts = useCallback(async (reset: boolean) => {
+    const currentPage = reset ? 0 : pageRef.current
     if (!reset) setLoadingMore(true)
     else setLoading(true)
 
@@ -104,15 +146,19 @@ export default function Feed() {
         const filtered = activeFilter === 'all'
           ? mockPosts
           : mockPosts.filter(p => p.post_type === activeFilter)
-        setPosts(filtered.map(mockToFeedPost))
+        const mapped = filtered.map(mockToFeedPost)
+        const scored = [...mapped].sort((a, b) =>
+          compositeScore(b, connectedAuthorIds) - compositeScore(a, connectedAuthorIds)
+        )
+        setPosts(scored)
       }
       setLoading(false)
       setLoadingMore(false)
       return
     }
 
-    const mapped: FeedPost[] = data.map((row: Record<string, unknown>) => {
-      const u = row.users as { display_name: string; handle: string; avatar_url: string | null; account_type: string } | null
+    const rawMapped: FeedPost[] = data.map((row: Record<string, unknown>) => {
+      const u = (row.users as unknown) as { display_name: string; handle: string; avatar_url: string | null; account_type: string } | null
       return {
         id: row.id as string,
         post_type: row.post_type as FeedPost['post_type'],
@@ -138,37 +184,77 @@ export default function Feed() {
       }
     })
 
+    const enriched = await enrichWithContractorProfiles(
+      rawMapped.length > 0 ? rawMapped : (activeFilter === 'all' ? mockPosts : mockPosts.filter(p => p.post_type === activeFilter)).map(mockToFeedPost)
+    )
+
+    const scored = [...enriched].sort(
+      (a, b) => compositeScore(b, connectedAuthorIds) - compositeScore(a, connectedAuthorIds)
+    )
+
     if (reset) {
-      setPosts(mapped.length > 0 ? mapped : mockPosts.filter(p => activeFilter === 'all' || p.post_type === activeFilter).map(mockToFeedPost))
-      setPage(1)
+      setPosts(scored)
+      pageRef.current = 1
     } else {
-      setPosts(prev => [...prev, ...mapped])
-      setPage(p => p + 1)
+      setPosts(prev => [...prev, ...scored])
+      pageRef.current = currentPage + 1
     }
     setHasMore(data.length === PAGE_SIZE)
     setLoading(false)
     setLoadingMore(false)
-  }, [activeFilter, page])
+  }, [activeFilter, connectedAuthorIds])
 
   useEffect(() => {
+    pageRef.current = 0
     void fetchPosts(true)
-    setPage(0)
   }, [activeFilter])
 
   useEffect(() => {
-    void loadSidebar()
+    if (!profile) return
+    void (async () => {
+      const ids = await fetchConnectionIds()
+      setConnectedAuthorIds(ids)
+    })()
     void loadStats()
-    void loadTrending()
+    void loadMyProfile()
   }, [profile])
+
+  useEffect(() => {
+    if (myTrade !== null) void loadSidebar()
+  }, [myTrade, myLocation])
+
+  useEffect(() => {
+    void loadTrending()
+  }, [])
+
+  async function loadMyProfile() {
+    if (!profile || !isContractor) return
+    const { data } = await supabase
+      .from('contractor_profiles')
+      .select('primary_trade, location')
+      .eq('user_id', profile.id)
+      .single()
+    if (data) {
+      setMyTrade((data as { primary_trade: string | null; location: string | null }).primary_trade)
+      setMyLocation((data as { primary_trade: string | null; location: string | null }).location)
+    } else {
+      setMyTrade('')
+    }
+  }
 
   async function loadSidebar() {
     if (!profile) return
-    const { data } = await supabase
-      .from('users')
-      .select('id, display_name, handle, avatar_url, account_type')
-      .eq('account_type', 'contractor')
-      .neq('id', profile.id)
+
+    let query = supabase
+      .from('contractor_profiles')
+      .select('user_id, primary_trade, location, users!user_id (id, display_name, handle, avatar_url, account_type)')
+      .neq('user_id', profile.id)
       .limit(4)
+
+    if (myTrade) query = query.eq('primary_trade', myTrade)
+    else if (myLocation) query = query.eq('location', myLocation)
+
+    const { data } = await query
 
     if (!data || data.length === 0) {
       setSidebarUsers(mockUsers.slice(0, 4).map(u => ({
@@ -179,26 +265,23 @@ export default function Feed() {
       return
     }
 
-    const ids = data.map((u: { id: string }) => u.id)
-    const { data: cps } = await supabase
-      .from('contractor_profiles')
-      .select('user_id, primary_trade, location')
-      .in('user_id', ids)
-
-    const cpMap = new Map((cps ?? []).map((c: { user_id: string; primary_trade: string | null; location: string | null }) => [c.user_id, c]))
-
-    setSidebarUsers(data.map((u: { id: string; display_name: string; handle: string; avatar_url: string | null; account_type: string }) => {
-      const cp = cpMap.get(u.id)
+    setSidebarUsers(data.map((cp: Record<string, unknown>) => {
+      const u = (cp.users as unknown) as { id: string; display_name: string; handle: string; avatar_url: string | null; account_type: string } | null
       return {
-        id: u.id, display_name: u.display_name, handle: u.handle,
-        avatar_url: u.avatar_url, account_type: u.account_type,
-        primary_trade: cp?.primary_trade ?? null, location: cp?.location ?? null,
+        id: u?.id ?? cp.user_id as string,
+        display_name: u?.display_name ?? 'Unknown',
+        handle: u?.handle ?? '',
+        avatar_url: u?.avatar_url ?? null,
+        account_type: u?.account_type ?? 'contractor',
+        primary_trade: cp.primary_trade as string | null,
+        location: cp.location as string | null,
       }
     }))
   }
 
   async function loadStats() {
     if (!profile) return
+
     const { count: nc } = await supabase
       .from('connections')
       .select('*', { count: 'exact', head: true })
@@ -206,13 +289,27 @@ export default function Feed() {
       .eq('status', 'accepted')
     setNetworkCount(nc ?? 0)
 
-    if (profile.account_type === 'contractor') {
+    if (isContractor) {
       const { count: bc } = await supabase
         .from('bids')
         .select('*', { count: 'exact', head: true })
         .eq('contractor_id', profile.id)
         .eq('status', 'submitted')
-      setActiveBids(bc ?? 0)
+      setActiveBidsCount(bc ?? 0)
+
+      const { count: jc } = await supabase
+        .from('job_listings')
+        .select('*', { count: 'exact', head: true })
+        .eq('poster_id', profile.id)
+        .eq('status', 'open')
+      setOpenJobsCount(jc ?? 0)
+    } else {
+      const { count: jc } = await supabase
+        .from('job_listings')
+        .select('*', { count: 'exact', head: true })
+        .eq('poster_id', profile.id)
+        .eq('status', 'open')
+      setOpenJobsCount(jc ?? 0)
     }
   }
 
@@ -221,20 +318,30 @@ export default function Feed() {
       .from('posts')
       .select('hashtags')
       .order('created_at', { ascending: false })
-      .limit(50)
+      .limit(60)
 
     if (!data || data.length === 0) {
       const tagMap = new Map<string, number>()
       mockPosts.flatMap(p => p.tags).forEach(t => tagMap.set(t, (tagMap.get(t) ?? 0) + 1))
-      setTrendingTags(Array.from(tagMap.entries()).map(([tag, count]) => ({ tag, count })).sort((a, b) => b.count - a.count).slice(0, 6))
+      setTrendingTags(
+        Array.from(tagMap.entries())
+          .map(([tag, count]) => ({ tag, count }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 6)
+      )
       return
     }
 
     const tagMap = new Map<string, number>()
     data.forEach((row: { hashtags: string[] }) => {
-      (row.hashtags ?? []).forEach(t => tagMap.set(t, (tagMap.get(t) ?? 0) + 1))
+      ;(row.hashtags ?? []).forEach(t => tagMap.set(t, (tagMap.get(t) ?? 0) + 1))
     })
-    setTrendingTags(Array.from(tagMap.entries()).map(([tag, count]) => ({ tag, count })).sort((a, b) => b.count - a.count).slice(0, 6))
+    setTrendingTags(
+      Array.from(tagMap.entries())
+        .map(([tag, count]) => ({ tag, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 6)
+    )
   }
 
   async function handleConnect(userId: string) {
@@ -264,8 +371,6 @@ export default function Feed() {
     ? profile.display_name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
     : '?'
 
-  const isContractor = profile?.account_type === 'contractor'
-
   return (
     <>
       <FeedFilterBar />
@@ -275,7 +380,7 @@ export default function Feed() {
         <aside style={{ width: 240, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16, position: 'sticky', top: 104 }} className="feed-sidebar-left">
           {profile && (
             <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div style={{ height: 48, background: 'var(--color-brand)', opacity: 0.15 }} />
+              <div style={{ height: 44, background: 'linear-gradient(135deg, var(--color-brand) 0%, #C44D00 100%)', opacity: 0.8 }} />
               <div style={{ padding: '0 16px 16px', marginTop: -24 }}>
                 <div style={{
                   width: 48, height: 48, borderRadius: 'var(--radius-sm)',
@@ -291,40 +396,55 @@ export default function Feed() {
                   {profile.account_type?.replace('_', ' ')}
                 </p>
                 {profile.handle && (
-                  <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 2 }}>@{profile.handle}</p>
+                  <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 1 }}>@{profile.handle}</p>
                 )}
-                <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--color-border)' }}>
+
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: isContractor ? '1fr 1fr 1fr' : '1fr 1fr',
+                  gap: 4,
+                  marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--color-border)',
+                }}>
                   <div className="sidebar-stat">
                     <span className="sidebar-stat-value">{networkCount ?? '—'}</span>
                     <span className="sidebar-stat-label">Network</span>
                   </div>
-                  {isContractor ? (
+                  {isContractor && (
                     <div className="sidebar-stat">
-                      <span className="sidebar-stat-value">{activeBids ?? '—'}</span>
-                      <span className="sidebar-stat-label">Active Bids</span>
-                    </div>
-                  ) : (
-                    <div className="sidebar-stat">
-                      <span className="sidebar-stat-value">{profile.credit_balance ?? 0}</span>
-                      <span className="sidebar-stat-label">Credits</span>
+                      <span className="sidebar-stat-value">{activeBidsCount ?? '—'}</span>
+                      <span className="sidebar-stat-label">Bids</span>
                     </div>
                   )}
+                  <div className="sidebar-stat">
+                    <span className="sidebar-stat-value">
+                      {isContractor ? (openJobsCount ?? '—') : (profile.credit_balance ?? 0)}
+                    </span>
+                    <span className="sidebar-stat-label">
+                      {isContractor ? 'Jobs' : 'Credits'}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
           )}
 
           <div className="card" style={{ padding: '14px 16px' }}>
-            <p style={{ fontFamily: 'var(--font-condensed)', fontSize: 13, fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: 'var(--color-text-muted)', marginBottom: 12 }}>
+            <p style={{
+              fontFamily: 'var(--font-condensed)', fontSize: 12, fontWeight: 700,
+              letterSpacing: '0.6px', textTransform: 'uppercase',
+              color: 'var(--color-text-muted)', marginBottom: 10,
+            }}>
               Post Types
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {Object.entries(POST_TYPE_BADGE).filter(([k]) => !['story'].includes(k)).map(([key, b]) => (
-                <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: b.text, flexShrink: 0 }} />
-                  <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{b.label}</span>
-                </div>
-              ))}
+              {Object.entries(POST_TYPE_BADGE)
+                .filter(([k]) => !['story'].includes(k))
+                .map(([key, b]) => (
+                  <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: b.text, flexShrink: 0 }} />
+                    <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{b.label}</span>
+                  </div>
+                ))}
             </div>
           </div>
         </aside>
@@ -343,59 +463,35 @@ export default function Feed() {
                   {initials}
                 </div>
               )}
-              <button
-                className="feed-compose-trigger"
-                onClick={() => setComposeOpen(true)}
-              >
+              <button className="feed-compose-trigger" onClick={() => setComposeOpen(true)}>
                 What's happening on your project?
               </button>
             </div>
-            <div style={{ display: 'flex', gap: 8, marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--color-border)' }}>
-              <button
-                onClick={() => setComposeOpen(true)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 5,
-                  background: 'none', border: 'none',
-                  color: 'var(--color-text-muted)', fontSize: 12, fontWeight: 600,
-                  cursor: 'pointer', padding: '4px 8px', borderRadius: 'var(--radius-sm)',
-                  transition: 'color 0.15s',
-                  fontFamily: 'var(--font-condensed)', letterSpacing: '0.5px', textTransform: 'uppercase',
-                }}
-                onMouseEnter={e => e.currentTarget.style.color = 'var(--color-brand)'}
-                onMouseLeave={e => e.currentTarget.style.color = 'var(--color-text-muted)'}
-              >
-                <Plus size={14} /> Post Update
-              </button>
-              <button
-                onClick={() => navigate('/jobs/post')}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 5,
-                  background: 'none', border: 'none',
-                  color: 'var(--color-text-muted)', fontSize: 12, fontWeight: 600,
-                  cursor: 'pointer', padding: '4px 8px', borderRadius: 'var(--radius-sm)',
-                  transition: 'color 0.15s',
-                  fontFamily: 'var(--font-condensed)', letterSpacing: '0.5px', textTransform: 'uppercase',
-                }}
-                onMouseEnter={e => e.currentTarget.style.color = '#DC2626'}
-                onMouseLeave={e => e.currentTarget.style.color = 'var(--color-text-muted)'}
-              >
-                <Plus size={14} /> Post Job
-              </button>
-              <button
-                onClick={() => navigate('/bids/post')}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 5,
-                  background: 'none', border: 'none',
-                  color: 'var(--color-text-muted)', fontSize: 12, fontWeight: 600,
-                  cursor: 'pointer', padding: '4px 8px', borderRadius: 'var(--radius-sm)',
-                  transition: 'color 0.15s',
-                  fontFamily: 'var(--font-condensed)', letterSpacing: '0.5px', textTransform: 'uppercase',
-                }}
-                onMouseEnter={e => e.currentTarget.style.color = 'var(--color-brand)'}
-                onMouseLeave={e => e.currentTarget.style.color = 'var(--color-text-muted)'}
-              >
-                <Plus size={14} /> Open Bid
-              </button>
+            <div style={{
+              display: 'flex', gap: 8, marginTop: 12, paddingTop: 12,
+              borderTop: '1px solid var(--color-border)',
+            }}>
+              {[
+                { label: '+ Update', color: '#2563EB', onClick: () => setComposeOpen(true) },
+                { label: '+ Job', color: '#DC2626', onClick: () => navigate('/jobs/post') },
+                { label: '+ Open Bid', color: 'var(--color-brand)', onClick: () => navigate('/bids/post') },
+              ].map(btn => (
+                <button
+                  key={btn.label}
+                  onClick={btn.onClick}
+                  style={{
+                    background: 'none', border: 'none',
+                    color: 'var(--color-text-muted)', fontSize: 12, fontWeight: 700,
+                    cursor: 'pointer', padding: '4px 8px', borderRadius: 'var(--radius-sm)',
+                    fontFamily: 'var(--font-condensed)', letterSpacing: '0.5px', textTransform: 'uppercase',
+                    transition: 'color 0.15s', display: 'flex', alignItems: 'center', gap: 4,
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.color = btn.color}
+                  onMouseLeave={e => e.currentTarget.style.color = 'var(--color-text-muted)'}
+                >
+                  <Plus size={12} /> {btn.label.replace('+ ', '')}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -407,7 +503,9 @@ export default function Feed() {
             </>
           ) : posts.length === 0 ? (
             <div className="card" style={{ padding: 40, textAlign: 'center' }}>
-              <p style={{ fontSize: 14, color: 'var(--color-text-muted)' }}>No posts yet. Be the first to share something!</p>
+              <p style={{ fontSize: 14, color: 'var(--color-text-muted)' }}>
+                No posts yet in this category. Be the first to share something!
+              </p>
             </div>
           ) : (
             posts.map(post => (
@@ -425,7 +523,10 @@ export default function Feed() {
               onClick={() => void fetchPosts(false)}
               disabled={loadingMore}
               className="btn btn-secondary"
-              style={{ width: '100%', padding: '10px', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+              style={{
+                width: '100%', padding: '10px', fontSize: 13,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              }}
             >
               {loadingMore ? <Loader size={14} className="spin" /> : <RefreshCw size={14} />}
               {loadingMore ? 'Loading...' : 'Load More'}
@@ -436,28 +537,46 @@ export default function Feed() {
         <aside style={{ width: 256, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16, position: 'sticky', top: 104 }} className="feed-sidebar-right">
           {sidebarUsers.length > 0 && (
             <div className="card" style={{ padding: '14px 16px' }}>
-              <h3 style={{ fontFamily: 'var(--font-condensed)', fontSize: 14, fontWeight: 800, marginBottom: 14, letterSpacing: '-0.2px' }}>
+              <h3 style={{
+                fontFamily: 'var(--font-condensed)', fontSize: 14, fontWeight: 800,
+                marginBottom: 14, letterSpacing: '-0.2px',
+              }}>
                 People to Connect With
+                {myTrade && (
+                  <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--color-text-muted)', marginLeft: 6 }}>
+                    · {myTrade}
+                  </span>
+                )}
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {sidebarUsers.map(u => (
                   <div key={u.id} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                     <AuthorAvatar name={u.display_name} avatar={u.avatar_url} size={36} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontWeight: 600, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <p style={{
+                        fontWeight: 600, fontSize: 12,
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      }}>
                         {u.display_name}
                       </p>
-                      <p style={{ fontSize: 11, color: 'var(--color-text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {u.primary_trade ?? u.account_type}
+                      <p style={{
+                        fontSize: 11, color: 'var(--color-text-muted)',
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      }}>
+                        {[u.primary_trade, u.location].filter(Boolean).join(' · ')}
                       </p>
                     </div>
                     <button
                       onClick={() => void handleConnect(u.id)}
                       disabled={connectedIds.has(u.id)}
                       className="btn btn-secondary"
-                      style={{ padding: '3px 8px', fontSize: 11, display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0 }}
+                      style={{
+                        padding: '3px 8px', fontSize: 11,
+                        display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0,
+                        opacity: connectedIds.has(u.id) ? 0.6 : 1,
+                      }}
                     >
-                      {connectedIds.has(u.id) ? '✓' : <><UserPlus size={10} /> Connect</>}
+                      {connectedIds.has(u.id) ? '✓ Sent' : <><UserPlus size={10} /> Connect</>}
                     </button>
                   </div>
                 ))}
@@ -467,7 +586,11 @@ export default function Feed() {
 
           {trendingTags.length > 0 && (
             <div className="card" style={{ padding: '14px 16px' }}>
-              <h3 style={{ fontFamily: 'var(--font-condensed)', fontSize: 14, fontWeight: 800, marginBottom: 12, letterSpacing: '-0.2px', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <h3 style={{
+                fontFamily: 'var(--font-condensed)', fontSize: 14, fontWeight: 800,
+                marginBottom: 12, letterSpacing: '-0.2px',
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}>
                 <TrendingUp size={14} color="var(--color-brand)" /> Trending
               </h3>
               <div>
@@ -477,8 +600,12 @@ export default function Feed() {
                     className="trending-tag"
                     onClick={() => navigate(`/feed?q=%23${tag}`)}
                   >
-                    <span style={{ fontSize: 13, color: 'var(--color-brand)', fontWeight: 600 }}>#{tag}</span>
-                    <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{count} post{count !== 1 ? 's' : ''}</span>
+                    <span style={{ fontSize: 13, color: 'var(--color-brand)', fontWeight: 600 }}>
+                      #{tag}
+                    </span>
+                    <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
+                      {count} post{count !== 1 ? 's' : ''}
+                    </span>
                   </div>
                 ))}
               </div>

@@ -9,7 +9,7 @@ export default function FeedFilterBar() {
   function handleFilter(key: FilterType) {
     const params = new URLSearchParams()
     if (key !== 'all') params.set('type', key)
-    navigate({ search: params.toString() }, { replace: true })
+    navigate({ search: params.toString() })
   }
 
   return (
