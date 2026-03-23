@@ -170,7 +170,7 @@ export default function Settings() {
       .from('user_notification_prefs')
       .select('prefs')
       .eq('user_id', profile.id)
-      .single()
+      .maybeSingle()
       .then(({ data }) => {
         if (data?.prefs) setNotifPrefs(data.prefs as NotifPrefs)
       })

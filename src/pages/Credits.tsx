@@ -82,12 +82,14 @@ export default function Credits() {
 
     if (canceled === 'true') {
       setBanner('canceled')
+      window.history.replaceState(null, '', '/credits')
       return
     }
 
     if (success !== 'true' || !sessionId) return
 
     setBanner('success')
+    window.history.replaceState(null, '', '/credits')
 
     // Poll the session status endpoint until the purchase is completed
     async function pollUntilFulfilled() {
