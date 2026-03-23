@@ -26,6 +26,14 @@ const AVAIL_OPTIONS = [
   { label: 'Busy', value: 'busy' },
 ]
 
+const RADIUS_OPTIONS = [
+  { label: 'Any distance', value: 0 },
+  { label: '25+ miles', value: 25 },
+  { label: '50+ miles', value: 50 },
+  { label: '100+ miles', value: 100 },
+  { label: '200+ miles', value: 200 },
+]
+
 const US_STATES = [
   'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA',
   'KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ',
@@ -43,6 +51,7 @@ interface ContractorRow {
   rating_avg: number
   rating_count: number
   projects_completed: number
+  service_radius_miles: number
   availability_status: string
   available_from: string | null
   user: {
@@ -94,8 +103,9 @@ export default function Explore() {
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [tradeFilters, setTradeFilters] = useState<Set<string>>(new Set())
   const [availFilter, setAvailFilter] = useState('')
-  const [availByDate, setAvailByDate] = useState('')  // ISO date string
+  const [availByDate, setAvailByDate] = useState('')
   const [locationState, setLocationState] = useState('')
+  const [radiusMiles, setRadiusMiles] = useState(0)
   const [ratingMin, setRatingMin] = useState(0)
   const [verifiedOnly, setVerifiedOnly] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -116,16 +126,18 @@ export default function Explore() {
       .from('contractor_profiles')
       .select(`
         id, user_id, primary_trade, business_name, bio, years_experience,
-        rating_avg, rating_count, projects_completed, availability_status, available_from,
+        rating_avg, rating_count, projects_completed, service_radius_miles,
+        availability_status, available_from,
         user:users!user_id (display_name, handle, avatar_url, location_city, location_state),
         credentials (id, verified_at)
       `)
       .eq('visible_to_owners', true)
 
     if (tradeFilters.size > 0) q = q.in('primary_trade', [...tradeFilters])
-    if (availFilter)          q = q.eq('availability_status', availFilter)
-    if (ratingMin > 0)        q = q.gte('rating_avg', ratingMin)
-    if (availByDate)          q = q.lte('available_from', availByDate)
+    if (availFilter)           q = q.eq('availability_status', availFilter)
+    if (ratingMin > 0)         q = q.gte('rating_avg', ratingMin)
+    if (availByDate)           q = q.lte('available_from', availByDate)
+    if (radiusMiles > 0)       q = q.gte('service_radius_miles', radiusMiles)
 
     q = q.order('rating_avg', { ascending: false }).limit(200)
 
@@ -137,7 +149,7 @@ export default function Explore() {
 
     setAllContractors(rows)
     setLoading(false)
-  }, [tradeFilters, availFilter, ratingMin, availByDate, profile])
+  }, [tradeFilters, availFilter, ratingMin, availByDate, radiusMiles, profile])
 
   const loadConnections = useCallback(async () => {
     if (!profile) return
@@ -194,13 +206,14 @@ export default function Explore() {
     setAvailFilter('')
     setAvailByDate('')
     setLocationState('')
+    setRadiusMiles(0)
     setRatingMin(0)
     setVerifiedOnly(false)
     setSearch('')
   }
 
   const hasActiveFilters =
-    tradeFilters.size > 0 || availFilter || availByDate || locationState || ratingMin > 0 || verifiedOnly || search
+    tradeFilters.size > 0 || availFilter || availByDate || locationState || radiusMiles > 0 || ratingMin > 0 || verifiedOnly || search
 
   function AvailabilityBadge({ status }: { status: string }) {
     const cfg = status === 'available'
@@ -248,6 +261,18 @@ export default function Explore() {
           <option value="">Any State</option>
           {US_STATES.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
+      </div>
+
+      {/* Service radius */}
+      <div style={{ marginBottom: 18 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 10 }}>Service Radius</div>
+        <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: 8, lineHeight: 1.4 }}>Show contractors willing to serve at least this distance</p>
+        {RADIUS_OPTIONS.map(opt => (
+          <label key={opt.label} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, cursor: 'pointer', fontSize: 13 }}>
+            <input type="radio" name="radius" checked={radiusMiles === opt.value} onChange={() => setRadiusMiles(opt.value)} style={{ accentColor: 'var(--color-brand)', width: 15, height: 15 }} />
+            {opt.label}
+          </label>
+        ))}
       </div>
 
       {/* Availability status */}
@@ -431,9 +456,10 @@ export default function Explore() {
                       </p>
                     )}
 
-                    <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+                    <div style={{ display: 'flex', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
                       <span className="badge badge-gray">{c.years_experience}yr exp</span>
                       <span className="badge badge-gray">{c.projects_completed} projects</span>
+                      <span className="badge badge-gray">{c.service_radius_miles}mi radius</span>
                     </div>
 
                     <div style={{ display: 'flex', gap: 8 }}>
