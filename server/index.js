@@ -57,14 +57,28 @@ app.post('/api/webhooks/stripe',
       const creditsNum = parseInt(credits, 10)
 
       // ── IDEMPOTENCY GUARD ────────────────────────────────────────────────────
-      // Atomically move the purchase from 'pending' → 'completed'.
-      // If the row is already 'completed' (replay/duplicate event), this update
-      // affects 0 rows and we return early — preventing double-crediting.
+      // Upsert the purchase row: if the checkout session already has a pending row
+      // (created by /create-checkout-session), this updates it to completed.
+      // If the row was missing (e.g. the insert failed earlier), we create it now
+      // so fulfilled payments are never lost.
+      // The key idempotency check: only apply credits if the row transitions
+      // from pending → completed. If status is already 'completed', the update
+      // affects 0 rows and we short-circuit.
+      const bundle = BUNDLES.find(b => b.id === bundleId)
+      const upsertData = {
+        user_id: userId,
+        stripe_session_id: session.id,
+        credits: creditsNum,
+        amount_cents: bundle?.cents ?? 0,
+        status: 'completed',
+      }
+
+      // First try to update an existing pending row (atomic guard against double-processing)
       const { count, error: updateErr } = await supabaseAdmin
         .from('purchases')
         .update({ status: 'completed' })
         .eq('stripe_session_id', session.id)
-        .eq('status', 'pending')  // Only update if still pending
+        .eq('status', 'pending')
         .select('id', { count: 'exact', head: true })
 
       if (updateErr) {
@@ -73,8 +87,26 @@ app.post('/api/webhooks/stripe',
       }
 
       if ((count ?? 0) === 0) {
-        console.log(`[webhook] Session ${session.id} already processed — skipping`)
-        return res.json({ received: true, skipped: true })
+        // Either already completed (duplicate event) or the row was never inserted.
+        // Check if it exists at all.
+        const { data: existing } = await supabaseAdmin
+          .from('purchases')
+          .select('status')
+          .eq('stripe_session_id', session.id)
+          .single()
+
+        if (existing?.status === 'completed') {
+          console.log(`[webhook] Session ${session.id} already processed — skipping`)
+          return res.json({ received: true, skipped: true })
+        }
+
+        // Row missing entirely — insert as completed now (safety net for failed pre-inserts)
+        const { error: insertErr } = await supabaseAdmin.from('purchases').insert(upsertData)
+        if (insertErr) {
+          console.error('[webhook] Purchase insert error:', insertErr.message)
+          return res.status(500).json({ error: 'DB error' })
+        }
+        // Fall through to credit the user
       }
       // ────────────────────────────────────────────────────────────────────────
 
@@ -180,14 +212,19 @@ app.post('/api/create-checkout-session', requireAuth, async (req, res) => {
       },
     })
 
-    // Insert pending purchase record
-    await supabaseAdmin.from('purchases').insert({
+    // Insert pending purchase record — if this fails, webhook will still
+    // insert+fulfill when Stripe fires (safety net in webhook handler)
+    const { error: purchaseErr } = await supabaseAdmin.from('purchases').insert({
       user_id: userId,
       stripe_session_id: session.id,
       credits: bundle.credits,
       amount_cents: bundle.cents,
       status: 'pending',
     })
+    if (purchaseErr) {
+      console.error('[create-checkout-session] Purchase insert failed:', purchaseErr.message)
+      // Non-fatal: webhook will create+fulfill the purchase when payment completes
+    }
 
     res.json({ url: session.url })
   } catch (err) {

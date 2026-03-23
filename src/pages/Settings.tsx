@@ -88,12 +88,13 @@ export default function Settings() {
   const [emailErr, setEmailErr] = useState('')
   const [sendingVerif, setSendingVerif] = useState(false)
   const [currentEmail, setCurrentEmail] = useState('')
+  const [newEmail, setNewEmail] = useState('')
+  const [changingEmail, setChangingEmail] = useState(false)
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setCurrentEmail(data.user?.email ?? '')
-    })
-  }, [])
+    // Use the `user` from AuthContext (avoids extra network call)
+    setCurrentEmail(user?.email ?? '')
+  }, [user])
 
   async function handleResendVerification() {
     setSendingVerif(true)
@@ -103,6 +104,23 @@ export default function Settings() {
     setSendingVerif(false)
     if (error) setEmailErr(error.message)
     else setEmailMsg('Verification email sent — check your inbox.')
+  }
+
+  async function handleChangeEmail(e: React.FormEvent) {
+    e.preventDefault()
+    setEmailMsg('')
+    setEmailErr('')
+    if (!newEmail || newEmail === currentEmail) { setEmailErr('Please enter a different email address.'); return }
+    setChangingEmail(true)
+    const { error } = await supabase.auth.updateUser({ email: newEmail })
+    setChangingEmail(false)
+    if (error) {
+      setEmailErr(error.message)
+    } else {
+      setEmailMsg(`Confirmation sent to ${newEmail}. Check your inbox and click the link to confirm the change.`)
+      await refreshProfile()
+      setNewEmail('')
+    }
   }
 
   // ── Password ──
@@ -313,13 +331,35 @@ export default function Settings() {
             {currentEmail || '—'}
           </div>
         </div>
-        <button
-          onClick={handleResendVerification}
-          disabled={sendingVerif || !currentEmail}
-          style={{ ...btnGhost, opacity: sendingVerif ? 0.6 : 1 }}
-        >
-          {sendingVerif ? 'Sending…' : 'Resend Verification Email'}
-        </button>
+
+        {/* Change email with re-verification */}
+        <form onSubmit={handleChangeEmail} style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
+          <div>
+            <label style={{ fontSize: 12, color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>
+              New email address
+            </label>
+            <input
+              type="email"
+              value={newEmail}
+              onChange={e => setNewEmail(e.target.value)}
+              placeholder="Enter new email"
+              style={inputStyle}
+            />
+          </div>
+          <button type="submit" disabled={changingEmail || !newEmail} style={{ ...btnGhost, opacity: (changingEmail || !newEmail) ? 0.6 : 1 }}>
+            {changingEmail ? 'Sending…' : 'Change Email'}
+          </button>
+        </form>
+
+        <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 14 }}>
+          <button
+            onClick={handleResendVerification}
+            disabled={sendingVerif || !currentEmail}
+            style={{ ...btnGhost, opacity: sendingVerif ? 0.6 : 1, fontSize: 12 }}
+          >
+            {sendingVerif ? 'Sending…' : 'Resend Verification Email'}
+          </button>
+        </div>
         {emailMsg && <SavedBanner msg={emailMsg} />}
         {emailErr && <ErrorBanner msg={emailErr} />}
       </SectionCard>
