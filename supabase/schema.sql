@@ -512,47 +512,108 @@ as $$
 $$;
 
 -- ============================================================
--- POLICY: Allow authenticated users to insert notifications
--- (needed for bid submission → notify poster)
+-- FUNCTION: submit_bid
+-- Inserts bid and notifies RFQ poster atomically. Security definer so the
+-- notification INSERT bypasses RLS without granting broad table-level access.
 -- ============================================================
-do $$ begin
-  if not exists (
-    select 1 from pg_policies where tablename = 'notifications' and policyname = 'Authenticated users can insert notifications'
-  ) then
-    execute 'create policy "Authenticated users can insert notifications" on public.notifications
-      for insert with check (auth.uid() is not null)';
+create or replace function public.submit_bid(
+  p_rfq_id        uuid,
+  p_amount        numeric,
+  p_timeline_weeks integer,
+  p_cover_note    text,
+  p_document_url  text
+) returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_bid_id      uuid;
+  v_poster_id   uuid;
+  v_rfq_title   text;
+  v_rfq_status  text;
+  v_bidder_name text;
+begin
+  -- Fetch RFQ
+  select poster_id, title, status
+  into   v_poster_id, v_rfq_title, v_rfq_status
+  from   public.rfqs
+  where  id = p_rfq_id;
+
+  if v_poster_id is null then
+    raise exception 'RFQ not found';
   end if;
-end $$;
+
+  if v_rfq_status != 'open' then
+    raise exception 'RFQ is not open';
+  end if;
+
+  -- Poster cannot bid on their own RFQ
+  if auth.uid() = v_poster_id then
+    raise exception 'You cannot bid on your own RFQ';
+  end if;
+
+  -- Bidder display name for the notification body
+  select display_name into v_bidder_name
+  from   public.users
+  where  id = auth.uid();
+
+  -- Insert bid (unique constraint on (rfq_id, bidder_id) prevents duplicates)
+  insert into public.bids
+    (rfq_id, bidder_id, amount, timeline_weeks, cover_note, document_url, status)
+  values
+    (p_rfq_id, auth.uid(), p_amount, p_timeline_weeks, p_cover_note, p_document_url, 'pending')
+  returning id into v_bid_id;
+
+  -- Notify poster — bypasses notification RLS intentionally via security definer
+  insert into public.notifications (user_id, type, title, body, entity_id, entity_type)
+  values (
+    v_poster_id,
+    'new_bid',
+    'New bid received',
+    coalesce(v_bidder_name, 'A contractor') || ' submitted a bid of $' ||
+      round(p_amount)::text || ' on "' || v_rfq_title || '"',
+    p_rfq_id,
+    'rfq'
+  );
+
+  return v_bid_id;
+end;
+$$;
+
+revoke execute on function public.submit_bid(uuid, numeric, integer, text, text) from public;
+grant  execute on function public.submit_bid(uuid, numeric, integer, text, text) to authenticated;
 
 -- ============================================================
--- FUNCTION: Award a bid (security definer to bypass bidder RLS)
--- Caller must be the RFQ poster; RFQ must be open; bid must belong to RFQ.
+-- FUNCTION: award_bid
+-- Awards a bid: verifies caller is RFQ poster, RFQ is open, and derives
+-- the winning bidder from the bid row (never trusts client-supplied id).
 -- ============================================================
 create or replace function public.award_bid(
   p_bid_id uuid,
-  p_rfq_id uuid,
-  p_bidder_id uuid
+  p_rfq_id uuid
 ) returns void
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
-  v_poster_id uuid;
+  v_poster_id  uuid;
   v_rfq_status text;
   v_bid_rfq_id uuid;
+  v_bidder_id  uuid;
 begin
-  -- Verify RFQ exists and get poster + status
+  -- Fetch RFQ
   select poster_id, status
-  into v_poster_id, v_rfq_status
-  from public.rfqs
-  where id = p_rfq_id;
+  into   v_poster_id, v_rfq_status
+  from   public.rfqs
+  where  id = p_rfq_id;
 
   if v_poster_id is null then
     raise exception 'RFQ not found';
   end if;
 
-  -- Only the RFQ poster may award a bid
+  -- Caller must be the RFQ poster
   if auth.uid() != v_poster_id then
     raise exception 'Unauthorized: only the RFQ poster can award a bid';
   end if;
@@ -562,11 +623,11 @@ begin
     raise exception 'RFQ is not open — cannot award a bid';
   end if;
 
-  -- The supplied bid must belong to this RFQ
-  select rfq_id
-  into v_bid_rfq_id
-  from public.bids
-  where id = p_bid_id;
+  -- Derive bidder from the bid row — never trust a client-supplied value
+  select rfq_id, bidder_id
+  into   v_bid_rfq_id, v_bidder_id
+  from   public.bids
+  where  id = p_bid_id;
 
   if v_bid_rfq_id is null or v_bid_rfq_id != p_rfq_id then
     raise exception 'Bid does not belong to this RFQ';
@@ -575,11 +636,12 @@ begin
   -- Execute the award
   update public.bids set status = 'awarded'     where id = p_bid_id;
   update public.bids set status = 'not_awarded' where rfq_id = p_rfq_id and id != p_bid_id;
-  update public.rfqs set status = 'awarded', awarded_to = p_bidder_id where id = p_rfq_id;
+  update public.rfqs set status = 'awarded', awarded_to = v_bidder_id where id = p_rfq_id;
 
+  -- Notify the winning bidder
   insert into public.notifications (user_id, type, title, body, entity_id, entity_type)
   values (
-    p_bidder_id,
+    v_bidder_id,
     'bid_awarded',
     'Your bid was awarded!',
     'Congratulations — your bid has been selected for this project.',
@@ -589,6 +651,5 @@ begin
 end;
 $$;
 
--- Revoke broad execute grant; only authenticated roles may call it
-revoke execute on function public.award_bid(uuid, uuid, uuid) from public;
-grant  execute on function public.award_bid(uuid, uuid, uuid) to authenticated;
+revoke execute on function public.award_bid(uuid, uuid) from public;
+grant  execute on function public.award_bid(uuid, uuid) to authenticated;

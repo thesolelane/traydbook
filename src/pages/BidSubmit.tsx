@@ -92,34 +92,23 @@ export default function BidSubmit() {
     setSubmitting(true)
     setSubmitError('')
 
-    const { error: bidError } = await supabase.from('bids').insert({
-      rfq_id: rfq.id,
-      bidder_id: profile.id,
-      amount: numAmount,
-      timeline_weeks: timelineWeeks ? parseInt(timelineWeeks) : null,
-      cover_note: coverNote.trim() || null,
-      document_url: documentUrl.trim() || null,
-      status: 'pending',
+    const { error: bidError } = await supabase.rpc('submit_bid', {
+      p_rfq_id: rfq.id,
+      p_amount: numAmount,
+      p_timeline_weeks: timelineWeeks ? parseInt(timelineWeeks) : null,
+      p_cover_note: coverNote.trim() || null,
+      p_document_url: documentUrl.trim() || null,
     })
 
     if (bidError) {
-      if (bidError.code === '23505') {
+      if (bidError.message.includes('duplicate') || bidError.message.includes('unique') || bidError.code === '23505') {
         setSubmitError('You have already submitted a bid for this RFQ.')
       } else {
-        setSubmitError('Failed to submit bid. Please try again.')
+        setSubmitError(bidError.message || 'Failed to submit bid. Please try again.')
       }
       setSubmitting(false)
       return
     }
-
-    await supabase.from('notifications').insert({
-      user_id: rfq.poster_id,
-      type: 'new_bid',
-      title: 'New bid received',
-      body: `${profile.display_name} submitted a bid of $${numAmount.toLocaleString()} on "${rfq.title}"`,
-      entity_id: rfq.id,
-      entity_type: 'rfq',
-    }).then(() => { })
 
     setSubmitted(true)
     setSubmitting(false)

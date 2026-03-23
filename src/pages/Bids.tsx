@@ -191,13 +191,14 @@ function RFQCard({ rfq, isContractor }: { rfq: RFQ; isContractor: boolean }) {
                 Submit Bid
               </Link>
             )}
-            <button
-              onClick={e => { e.stopPropagation(); void 0 }}
+            <Link
+              to={`/bids/${rfq.id}`}
+              onClick={e => e.stopPropagation()}
               className="btn btn-secondary"
               style={{ fontSize: 12, padding: '6px 10px', display: 'flex', alignItems: 'center', gap: 4 }}
             >
               View <ArrowRight size={11} />
-            </button>
+            </Link>
           </div>
         </div>
       </div>
@@ -226,9 +227,13 @@ export default function Bids() {
   const [archivedLoading, setArchivedLoading] = useState(false)
 
   const [myPendingCount, setMyPendingCount] = useState(0)
+  const [statOpenCount, setStatOpenCount] = useState(0)
+  const [statClosingCount, setStatClosingCount] = useState(0)
+  const [statTotalBudget, setStatTotalBudget] = useState(0)
 
   useEffect(() => {
     void loadOpenRfqs()
+    void loadStats()
     if (profile && isContractor) {
       void loadPendingCount()
     }
@@ -239,6 +244,27 @@ export default function Bids() {
     if (activeTab === 'awarded' && awardedItems.length === 0 && !awardedLoading) void loadAwarded()
     if (activeTab === 'archived' && archivedRfqs.length === 0 && !archivedLoading) void loadArchived()
   }, [activeTab])
+
+  async function loadStats() {
+    const now = new Date().toISOString()
+    const weekAhead = new Date(Date.now() + 7 * 86400000).toISOString()
+
+    const [countRes, closingRes, budgetRes] = await Promise.all([
+      supabase.from('rfqs').select('*', { count: 'exact', head: true }).eq('status', 'open'),
+      supabase.from('rfqs').select('*', { count: 'exact', head: true })
+        .eq('status', 'open')
+        .gte('bid_deadline', now)
+        .lte('bid_deadline', weekAhead),
+      supabase.from('rfqs').select('budget_max').eq('status', 'open').not('budget_max', 'is', null),
+    ])
+
+    setStatOpenCount(countRes.count ?? 0)
+    setStatClosingCount(closingRes.count ?? 0)
+    if (budgetRes.data) {
+      const total = (budgetRes.data as { budget_max: number }[]).reduce((s, r) => s + (r.budget_max ?? 0), 0)
+      setStatTotalBudget(total)
+    }
+  }
 
   async function loadOpenRfqs() {
     setOpenLoading(true)
@@ -372,13 +398,6 @@ export default function Bids() {
     matchesSizeFilter(r, sizeFilter)
   )
 
-  const closingThisWeek = openRfqs.filter(r => {
-    const d = daysUntil(r.bid_deadline)
-    return d !== null && d >= 0 && d <= 7
-  }).length
-
-  const totalBudget = openRfqs.reduce((sum, r) => sum + (r.budget_max ?? r.budget_min ?? 0), 0)
-
   const TABS: { key: BidTab; label: string; icon: React.ReactNode }[] = [
     { key: 'open', label: 'Open RFQs', icon: <TrendingUp size={13} /> },
     { key: 'mybids', label: isContractor ? 'My Bids' : 'My RFQs', icon: <FileText size={13} /> },
@@ -404,9 +423,9 @@ export default function Bids() {
 
       {/* Stats strip */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-        <StatBox icon={<FileText size={14} />} value={openRfqs.length} label="Open RFQs" color="var(--color-brand)" />
-        <StatBox icon={<DollarSign size={14} />} value={totalBudget >= 1000000 ? `$${(totalBudget / 1000000).toFixed(1)}M` : totalBudget >= 1000 ? `$${Math.round(totalBudget / 1000)}K` : `$${totalBudget}`} label="Budget Available" color="#059669" />
-        <StatBox icon={<Clock size={14} />} value={closingThisWeek} label="Closing This Week" color="#D97706" />
+        <StatBox icon={<FileText size={14} />} value={statOpenCount} label="Open RFQs" color="var(--color-brand)" />
+        <StatBox icon={<DollarSign size={14} />} value={statTotalBudget >= 1000000 ? `$${(statTotalBudget / 1000000).toFixed(1)}M` : statTotalBudget >= 1000 ? `$${Math.round(statTotalBudget / 1000)}K` : `$${statTotalBudget}`} label="Budget Available" color="#059669" />
+        <StatBox icon={<Clock size={14} />} value={statClosingCount} label="Closing This Week" color="#D97706" />
         {isContractor && <StatBox icon={<AlertCircle size={14} />} value={myPendingCount} label="My Pending Bids" color="#2563EB" />}
       </div>
 

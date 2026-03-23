@@ -237,7 +237,6 @@ export default function BidDetail() {
     const { error } = await supabase.rpc('award_bid', {
       p_bid_id: bid.id,
       p_rfq_id: rfq.id,
-      p_bidder_id: bid.bidder_id,
     })
     if (error) {
       setAwardError('Failed to award bid. Please try again.')
