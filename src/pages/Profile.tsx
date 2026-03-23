@@ -352,7 +352,10 @@ export default function Profile() {
     if (tab === 'bids') {
       const canView = isOwn || (authProfile?.account_type === 'contractor' && connectionStatus === 'connected')
       setCanViewBidsJobs(canView)
-      if (!canView) return
+      if (!canView) {
+        loadedTabs.current.delete(tab)
+        return
+      }
       setBidsJobsLoading(true)
       const [{ data: jobs }, { data: bidsData }] = await Promise.all([
         supabase
@@ -934,7 +937,7 @@ export default function Profile() {
       )}
 
       {activeTab === 'about' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 14, alignItems: 'flex-start' }}>
+        <div className="profile-about-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 14, alignItems: 'flex-start' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {cp?.bio && (
               <div className="card" style={{ padding: '16px 20px' }}>
@@ -1032,7 +1035,7 @@ export default function Profile() {
 
           <style>{`
             @media (max-width: 700px) {
-              [data-about-grid] { grid-template-columns: 1fr !important; }
+              .profile-about-grid { grid-template-columns: 1fr !important; }
             }
           `}</style>
         </div>
