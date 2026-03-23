@@ -14,8 +14,10 @@ if (!SUPABASE_SERVICE_ROLE_KEY) console.warn('[server] WARNING: SUPABASE_SERVICE
 const stripe = new Stripe(STRIPE_SECRET_KEY)
 // Service-role client: used only in webhook handler (server-to-server, no user JWT)
 const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-// Anon client: used to verify user JWTs from the frontend
-const supabaseAnon = createClient(SUPABASE_URL, process.env.VITE_SUPABASE_ANON_KEY ?? SUPABASE_SERVICE_ROLE_KEY)
+const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY ?? ''
+if (!SUPABASE_ANON_KEY) console.warn('[server] WARNING: VITE_SUPABASE_ANON_KEY not set — JWT verification will fail')
+// Anon client: used only to verify user JWTs from the frontend (not privileged)
+const supabaseAnon = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 const BUNDLES = [
   { id: 'starter',      credits: 25,  cents: 900,  name: 'Starter' },
@@ -57,11 +59,14 @@ app.post('/api/webhooks/stripe',
       const creditsNum = parseInt(credits, 10)
       const bundle = BUNDLES.find(b => b.id === bundleId)
 
-      // ── ATOMIC IDEMPOTENCY via DB RPC ────────────────────────────────────────
-      // fulfill_stripe_purchase() uses UPDATE + INSERT ON CONFLICT on a UNIQUE
-      // stripe_session_id column. Exactly one concurrent call can return true;
-      // all others see 0 affected rows and get false. This prevents double-crediting
-      // even under Stripe retries, concurrent webhook deliveries, or missing pre-inserts.
+      // ── ATOMIC FULFILLMENT via single DB transaction ──────────────────────────
+      // fulfill_stripe_purchase() atomically:
+      //   1. Updates pending→completed OR inserts completed (ON CONFLICT DO NOTHING)
+      //   2. Atomically increments credit_balance (balance + p_credits, no race)
+      //   3. Inserts credit_ledger row
+      //   4. Inserts credits_added notification
+      // Returns false if session already processed → we skip and return 200.
+      // Returns non-2xx on error → Stripe will retry delivery automatically.
       const { data: shouldCredit, error: fulfillErr } = await supabaseAdmin.rpc(
         'fulfill_stripe_purchase',
         {
@@ -80,41 +85,10 @@ app.post('/api/webhooks/stripe',
 
       if (!shouldCredit) {
         console.log(`[webhook] Session ${session.id} already processed — skipping`)
-        return res.json({ received: true, skipped: true })
+      } else {
+        console.log(`[webhook] Fulfilled ${creditsNum} credits for user ${userId}`)
       }
-      // ────────────────────────────────────────────────────────────────────────
-
-      // Apply credits: read current balance then update + ledger atomically
-      const { data: currentUser } = await supabaseAdmin
-        .from('users')
-        .select('credit_balance')
-        .eq('id', userId)
-        .single()
-
-      const newBalance = (currentUser?.credit_balance ?? 0) + creditsNum
-
-      await supabaseAdmin
-        .from('users')
-        .update({ credit_balance: newBalance })
-        .eq('id', userId)
-
-      await supabaseAdmin.from('credit_ledger').insert({
-        user_id: userId,
-        delta: creditsNum,
-        balance_after: newBalance,
-        transaction_type: 'purchase',
-        description: `Purchased ${creditsNum} credits (${bundleId} bundle)`,
-      })
-
-      await supabaseAdmin.from('notifications').insert({
-        user_id: userId,
-        type: 'credits_added',
-        title: 'Credits added!',
-        body: `${creditsNum} credits have been added to your account.`,
-        entity_type: 'credit_purchase',
-      })
-
-      console.log(`[webhook] Fulfilled ${creditsNum} credits for user ${userId}`)
+      // ─────────────────────────────────────────────────────────────────────────
     }
 
     res.json({ received: true })

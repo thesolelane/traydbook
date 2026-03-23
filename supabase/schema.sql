@@ -392,15 +392,14 @@ alter table public.purchases enable row level security;
 create policy "Users see own purchases" on public.purchases
   for select using (auth.uid() = user_id);
 
--- ── RPC: fulfill a Stripe purchase exactly once ────────────────────────────
--- Called by the webhook handler. Uses a CTE with INSERT ... ON CONFLICT to
--- atomically insert or mark the purchase row as completed. Returns whether
--- this call actually did the work (inserted=true or transitioned pending→completed),
--- so the caller can decide whether to apply credits.
--- The CTE `upsert` handles three cases:
---   1. Row doesn't exist yet  → inserts with status='completed'; returns 1 row
---   2. Row exists as 'pending' → updates to 'completed'; returns 1 row
---   3. Row already 'completed' → no change; returns 0 rows (DO NOTHING on conflict if already completed)
+-- ── RPC: fulfill a Stripe purchase atomically in a single transaction ─────────
+-- Handles all three cases in one DB round-trip:
+--   1. Pending row exists  → updates to completed, increments balance, inserts ledger + notif
+--   2. No row at all       → inserts completed row via ON CONFLICT, then credits
+--   3. Already completed   → short-circuits, returns false (no double-crediting)
+-- Returns true if credits were applied, false if already processed.
+-- The entire operation is in one transaction — either all steps succeed or none do.
+-- Stripe must retry if a non-2xx is returned (server checks return value for error).
 create or replace function public.fulfill_stripe_purchase(
   p_stripe_session_id text,
   p_user_id           uuid,
@@ -408,13 +407,14 @@ create or replace function public.fulfill_stripe_purchase(
   p_amount_cents      int,
   p_bundle_id         text
 )
-returns boolean  -- true = credits should be applied, false = already processed
+returns boolean
 language plpgsql security definer
 as $$
 declare
-  v_affected int;
+  v_affected   int;
+  v_new_balance int;
 begin
-  -- Attempt to update an existing pending row → completed
+  -- Step 1: try to transition existing pending row → completed
   update public.purchases
   set status = 'completed'
   where stripe_session_id = p_stripe_session_id
@@ -422,21 +422,47 @@ begin
 
   get diagnostics v_affected = row_count;
 
-  if v_affected > 0 then
-    return true;  -- Transitioned pending → completed; apply credits
+  if v_affected = 0 then
+    -- Row either already completed or missing; try insert with ON CONFLICT guard
+    insert into public.purchases (user_id, stripe_session_id, credits, amount_cents, status)
+    values (p_user_id, p_stripe_session_id, p_credits, p_amount_cents, 'completed')
+    on conflict (stripe_session_id) do nothing;
+
+    get diagnostics v_affected = row_count;
+
+    if v_affected = 0 then
+      -- Row already existed as completed — duplicate event, skip
+      return false;
+    end if;
   end if;
 
-  -- Row either already completed or doesn't exist yet
-  -- Try to insert as completed; ON CONFLICT (unique stripe_session_id) → do nothing
-  insert into public.purchases (user_id, stripe_session_id, credits, amount_cents, status)
-  values (p_user_id, p_stripe_session_id, p_credits, p_amount_cents, 'completed')
-  on conflict (stripe_session_id) do nothing;
+  -- Step 2: atomically increment credit balance (no read-compute-write race)
+  update public.users
+  set credit_balance = credit_balance + p_credits
+  where id = p_user_id
+  returning credit_balance into v_new_balance;
 
-  get diagnostics v_affected = row_count;
+  -- Step 3: insert ledger entry
+  insert into public.credit_ledger (user_id, delta, balance_after, transaction_type, description)
+  values (
+    p_user_id,
+    p_credits,
+    v_new_balance,
+    'purchase',
+    'Purchased ' || p_credits || ' credits (' || p_bundle_id || ' bundle)'
+  );
 
-  -- v_affected = 1 means we just inserted a brand-new completed row (pre-insert failed earlier)
-  -- v_affected = 0 means ON CONFLICT fired = row already existed as completed → skip
-  return v_affected > 0;
+  -- Step 4: insert notification
+  insert into public.notifications (user_id, type, title, body, entity_type)
+  values (
+    p_user_id,
+    'credits_added',
+    'Credits added!',
+    p_credits || ' credits have been added to your account.',
+    'credit_purchase'
+  );
+
+  return true;
 end;
 $$;
 
