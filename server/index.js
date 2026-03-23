@@ -6,17 +6,15 @@ const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY ?? ''
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET ?? ''
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? ''
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
+const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY ?? ''
 
-if (!STRIPE_SECRET_KEY) console.warn('[server] WARNING: STRIPE_SECRET_KEY not set — Stripe calls will fail')
-if (!STRIPE_WEBHOOK_SECRET) console.warn('[server] WARNING: STRIPE_WEBHOOK_SECRET not set — webhook verification disabled')
-if (!SUPABASE_SERVICE_ROLE_KEY) console.warn('[server] WARNING: SUPABASE_SERVICE_ROLE_KEY not set — DB writes from server will fail')
+if (!STRIPE_SECRET_KEY) console.warn('[server] STRIPE_SECRET_KEY not set')
+if (!STRIPE_WEBHOOK_SECRET) console.warn('[server] STRIPE_WEBHOOK_SECRET not set')
+if (!SUPABASE_SERVICE_ROLE_KEY) console.warn('[server] SUPABASE_SERVICE_ROLE_KEY not set')
+if (!SUPABASE_ANON_KEY) console.warn('[server] VITE_SUPABASE_ANON_KEY not set')
 
 const stripe = new Stripe(STRIPE_SECRET_KEY)
-// Service-role client: used only in webhook handler (server-to-server, no user JWT)
 const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY ?? ''
-if (!SUPABASE_ANON_KEY) console.warn('[server] WARNING: VITE_SUPABASE_ANON_KEY not set — JWT verification will fail')
-// Anon client: used only to verify user JWTs from the frontend (not privileged)
 const supabaseAnon = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 const BUNDLES = [
@@ -26,14 +24,11 @@ const BUNDLES = [
   { id: 'power',        credits: 500, cents: 9900, name: 'Power' },
 ]
 
-// Derive the app origin from Replit env or fall back to localhost
-const APP_ORIGIN = process.env.REPLIT_DEV_DOMAIN
-  ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-  : 'http://localhost:5000'
+const APP_ORIGIN = process.env.APP_ORIGIN
+  ?? (process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'http://localhost:5000')
 
 const app = express()
 
-// ─── Webhook — raw body required for Stripe signature verification ────────────
 app.post('/api/webhooks/stripe',
   express.raw({ type: 'application/json' }),
   async (req, res) => {
@@ -59,14 +54,6 @@ app.post('/api/webhooks/stripe',
       const creditsNum = parseInt(credits, 10)
       const bundle = BUNDLES.find(b => b.id === bundleId)
 
-      // ── ATOMIC FULFILLMENT via single DB transaction ──────────────────────────
-      // fulfill_stripe_purchase() atomically:
-      //   1. Updates pending→completed OR inserts completed (ON CONFLICT DO NOTHING)
-      //   2. Atomically increments credit_balance (balance + p_credits, no race)
-      //   3. Inserts credit_ledger row
-      //   4. Inserts credits_added notification
-      // Returns false if session already processed → we skip and return 200.
-      // Returns non-2xx on error → Stripe will retry delivery automatically.
       const { data: shouldCredit, error: fulfillErr } = await supabaseAdmin.rpc(
         'fulfill_stripe_purchase',
         {
@@ -79,51 +66,41 @@ app.post('/api/webhooks/stripe',
       )
 
       if (fulfillErr) {
-        console.error('[webhook] fulfill_stripe_purchase RPC error:', fulfillErr.message)
-        return res.status(500).json({ error: 'DB error during fulfillment' })
+        console.error('[webhook] fulfill_stripe_purchase error:', fulfillErr.message)
+        return res.status(500).json({ error: 'DB error' })
       }
 
-      if (!shouldCredit) {
-        console.log(`[webhook] Session ${session.id} already processed — skipping`)
-      } else {
+      if (shouldCredit) {
         console.log(`[webhook] Fulfilled ${creditsNum} credits for user ${userId}`)
+      } else {
+        console.log(`[webhook] Session ${session.id} already processed`)
       }
-      // ─────────────────────────────────────────────────────────────────────────
     }
 
     res.json({ received: true })
   }
 )
 
-// ─── JSON middleware for all other routes ─────────────────────────────────────
 app.use(express.json())
 
-// ─── Auth middleware: verifies the Supabase JWT from Authorization header ─────
 async function requireAuth(req, res, next) {
   const authHeader = req.headers.authorization ?? ''
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
-  if (!token) return res.status(401).json({ error: 'Unauthorized — missing token' })
-
-  // Use the anon client to verify the user's JWT (validates against Supabase JWKS)
+  if (!token) return res.status(401).json({ error: 'Unauthorized' })
   const { data, error } = await supabaseAnon.auth.getUser(token)
-  if (error || !data?.user) return res.status(401).json({ error: 'Unauthorized — invalid token' })
-
+  if (error || !data?.user) return res.status(401).json({ error: 'Unauthorized' })
   req.user = data.user
   next()
 }
 
-// ─── Create Checkout Session ──────────────────────────────────────────────────
-// User identity is derived from the verified JWT — never trusted from the request body.
-// Return URL is always built server-side from APP_ORIGIN — never from client input.
 app.post('/api/create-checkout-session', requireAuth, async (req, res) => {
   const { bundleId } = req.body ?? {}
-  const userId = req.user.id  // Derived from verified JWT — not from request body
+  const userId = req.user.id
   const bundle = BUNDLES.find(b => b.id === bundleId)
 
   if (!bundle) return res.status(400).json({ error: 'Invalid bundle' })
   if (!STRIPE_SECRET_KEY) return res.status(503).json({ error: 'Stripe not configured' })
 
-  // Server-side account type check: contractors do not use credits and cannot purchase
   const { data: userRow } = await supabaseAdmin
     .from('users')
     .select('account_type')
@@ -149,7 +126,6 @@ app.post('/api/create-checkout-session', requireAuth, async (req, res) => {
         quantity: 1,
       }],
       mode: 'payment',
-      // Return URLs built entirely server-side from trusted APP_ORIGIN env var
       success_url: `${APP_ORIGIN}/credits?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${APP_ORIGIN}/credits?canceled=true`,
       metadata: {
@@ -159,8 +135,6 @@ app.post('/api/create-checkout-session', requireAuth, async (req, res) => {
       },
     })
 
-    // Insert pending purchase record — if this fails, webhook will still
-    // insert+fulfill when Stripe fires (safety net in webhook handler)
     const { error: purchaseErr } = await supabaseAdmin.from('purchases').insert({
       user_id: userId,
       stripe_session_id: session.id,
@@ -169,19 +143,16 @@ app.post('/api/create-checkout-session', requireAuth, async (req, res) => {
       status: 'pending',
     })
     if (purchaseErr) {
-      console.error('[create-checkout-session] Purchase insert failed:', purchaseErr.message)
-      // Non-fatal: webhook will create+fulfill the purchase when payment completes
+      console.error('[checkout] Purchase pre-insert failed:', purchaseErr.message)
     }
 
     res.json({ url: session.url })
   } catch (err) {
-    console.error('[create-checkout-session] Error:', err.message)
+    console.error('[checkout] Error:', err.message)
     res.status(500).json({ error: err.message })
   }
 })
 
-// ─── Poll credit balance by session_id (for post-checkout balance refresh) ────
-// Frontend polls this after returning from Stripe to detect when webhook fires.
 app.get('/api/session-status', requireAuth, async (req, res) => {
   const sessionId = req.query.session_id
   const userId = req.user.id
@@ -202,13 +173,8 @@ app.get('/api/session-status', requireAuth, async (req, res) => {
     .eq('id', userId)
     .single()
 
-  res.json({
-    status: purchase.status,
-    credit_balance: user?.credit_balance ?? 0,
-  })
+  res.json({ status: purchase.status, credit_balance: user?.credit_balance ?? 0 })
 })
 
 const PORT = process.env.API_PORT ?? 3001
-app.listen(PORT, () => {
-  console.log(`[server] API ready on http://localhost:${PORT}`)
-})
+app.listen(PORT, () => console.log(`[server] API ready on http://localhost:${PORT}`))

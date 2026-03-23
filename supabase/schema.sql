@@ -392,14 +392,8 @@ alter table public.purchases enable row level security;
 create policy "Users see own purchases" on public.purchases
   for select using (auth.uid() = user_id);
 
--- ── RPC: fulfill a Stripe purchase atomically in a single transaction ─────────
--- Handles all three cases in one DB round-trip:
---   1. Pending row exists  → updates to completed, increments balance, inserts ledger + notif
---   2. No row at all       → inserts completed row via ON CONFLICT, then credits
---   3. Already completed   → short-circuits, returns false (no double-crediting)
--- Returns true if credits were applied, false if already processed.
--- The entire operation is in one transaction — either all steps succeed or none do.
--- Stripe must retry if a non-2xx is returned (server checks return value for error).
+-- Atomically fulfills a Stripe purchase: idempotency via UNIQUE stripe_session_id,
+-- atomic balance increment, ledger + notification insert. Returns true if credits applied.
 create or replace function public.fulfill_stripe_purchase(
   p_stripe_session_id text,
   p_user_id           uuid,
@@ -415,7 +409,6 @@ declare
   v_affected   int;
   v_new_balance int;
 begin
-  -- Step 1: try to transition existing pending row → completed
   update public.purchases
   set status = 'completed'
   where stripe_session_id = p_stripe_session_id
@@ -424,7 +417,6 @@ begin
   get diagnostics v_affected = row_count;
 
   if v_affected = 0 then
-    -- Row either already completed or missing; try insert with ON CONFLICT guard
     insert into public.purchases (user_id, stripe_session_id, credits, amount_cents, status)
     values (p_user_id, p_stripe_session_id, p_credits, p_amount_cents, 'completed')
     on conflict (stripe_session_id) do nothing;
@@ -432,18 +424,15 @@ begin
     get diagnostics v_affected = row_count;
 
     if v_affected = 0 then
-      -- Row already existed as completed — duplicate event, skip
       return false;
     end if;
   end if;
 
-  -- Step 2: atomically increment credit balance (no read-compute-write race)
   update public.users
   set credit_balance = credit_balance + p_credits
   where id = p_user_id
   returning credit_balance into v_new_balance;
 
-  -- Step 3: insert ledger entry
   insert into public.credit_ledger (user_id, delta, balance_after, transaction_type, description)
   values (
     p_user_id,
@@ -453,7 +442,6 @@ begin
     'Purchased ' || p_credits || ' credits (' || p_bundle_id || ' bundle)'
   );
 
-  -- Step 4: insert notification
   insert into public.notifications (user_id, type, title, body, entity_type)
   values (
     p_user_id,
@@ -467,8 +455,6 @@ begin
 end;
 $$;
 
--- Restrict execution: only the service_role (webhook server) may call this function.
--- Authenticated end-users cannot mint credits by calling this directly.
 revoke execute on function public.fulfill_stripe_purchase(text, uuid, int, int, text) from public;
 revoke execute on function public.fulfill_stripe_purchase(text, uuid, int, int, text) from anon;
 revoke execute on function public.fulfill_stripe_purchase(text, uuid, int, int, text) from authenticated;
