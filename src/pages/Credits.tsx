@@ -110,9 +110,11 @@ export default function Credits() {
             await refreshProfile()
             return
           }
-        } catch {}
+        } catch (err) {
+          console.warn('[credits] Session status poll error:', err)
+        }
       }
-      // Fallback: refresh even if we didn't confirm completion
+      // Fallback: refresh even if polling timed out
       await refreshProfile()
     }
 

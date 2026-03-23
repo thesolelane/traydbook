@@ -187,10 +187,13 @@ export default function Settings() {
       .from('user_notification_prefs')
       .upsert({ user_id: profile.id, prefs: updated, updated_at: new Date().toISOString() })
     setSavingNotif(false)
-    if (!error) {
+    if (error) {
+      setNotifPrefs(notifPrefs)
+      setNotifSavedMsg('Failed to save. Please try again.')
+    } else {
       setNotifSavedMsg('Preferences saved.')
-      setTimeout(() => setNotifSavedMsg(''), 2000)
     }
+    setTimeout(() => setNotifSavedMsg(''), 2500)
   }
 
   // ── Privacy (contractors only) ──
@@ -428,7 +431,7 @@ export default function Settings() {
         <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span>Choose which notifications you receive. Preferences are saved to your account.</span>
-            {notifSavedMsg && <span style={{ color: 'var(--color-success, #22c55e)', fontSize: 12, fontWeight: 600 }}>{notifSavedMsg}</span>}
+            {notifSavedMsg && <span style={{ color: notifSavedMsg.startsWith('Failed') ? 'var(--color-danger, #ef4444)' : 'var(--color-success, #22c55e)', fontSize: 12, fontWeight: 600 }}>{notifSavedMsg}</span>}
           </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
