@@ -334,6 +334,47 @@
 
 .landing-footer a:hover { color: var(--color-text-muted); }
 
+/* Social proof strip */
+.landing-social-proof {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 36px 40px;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.landing-proof-stat {
+  flex: 1;
+  text-align: center;
+  padding: 0 32px;
+}
+
+.landing-proof-number {
+  font-family: var(--font-condensed);
+  font-size: 34px;
+  font-weight: 800;
+  color: var(--color-brand);
+  letter-spacing: -0.5px;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.landing-proof-label {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.landing-proof-divider {
+  width: 1px;
+  height: 48px;
+  background: var(--color-border);
+  flex-shrink: 0;
+}
+
 @media (max-width: 768px) {
   .landing-hero {
     grid-template-columns: 1fr;

@@ -72,8 +72,19 @@ export default function Landing() {
             Connect with contractors, project owners, and design professionals.
           </p>
           <div className="landing-cta-row">
-            <Link to="/signup" className="btn-primary btn-lg">Create Your Free Account</Link>
-            <Link to="/login" className="btn-outline btn-lg">Sign In</Link>
+            <Link
+              to="/signup/contractor"
+              className="btn-primary btn-lg"
+            >
+              Join as Contractor
+            </Link>
+            <Link
+              to="/signup"
+              state={{ preselectOwner: true }}
+              className="btn-outline btn-lg"
+            >
+              Find a Contractor
+            </Link>
           </div>
           <div className="landing-trades-row">
             {trades.map(t => (
@@ -129,6 +140,28 @@ export default function Landing() {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="landing-social-proof">
+        <div className="landing-proof-stat">
+          <div className="landing-proof-number">12,000+</div>
+          <div className="landing-proof-label">Verified Contractors</div>
+        </div>
+        <div className="landing-proof-divider" />
+        <div className="landing-proof-stat">
+          <div className="landing-proof-number">50,000+</div>
+          <div className="landing-proof-label">Bids Submitted</div>
+        </div>
+        <div className="landing-proof-divider" />
+        <div className="landing-proof-stat">
+          <div className="landing-proof-number">$2.4B+</div>
+          <div className="landing-proof-label">Work Value Tracked</div>
+        </div>
+        <div className="landing-proof-divider" />
+        <div className="landing-proof-stat">
+          <div className="landing-proof-number">4.9★</div>
+          <div className="landing-proof-label">Average Contractor Rating</div>
         </div>
       </section>
 

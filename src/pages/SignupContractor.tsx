@@ -41,11 +41,16 @@ interface Step3 {
   serviceRadius: string
 }
 
+interface ContractorLocationState {
+  accountType?: AccountType
+}
+
 export default function SignupContractor() {
   const { signUp } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const accountType = (location.state as any)?.accountType as AccountType || 'contractor'
+  const locationState = location.state as ContractorLocationState | null
+  const accountType: AccountType = locationState?.accountType ?? 'contractor'
 
   const [step, setStep] = useState(1)
   const [error, setError] = useState('')
