@@ -41,6 +41,14 @@ const US_STATES = [
   'VA','WA','WV','WI','WY','DC',
 ]
 
+interface UserShape {
+  display_name: string
+  handle: string
+  avatar_url: string | null
+  location_city: string | null
+  location_state: string | null
+}
+
 interface ContractorRow {
   id: string
   user_id: string
@@ -54,14 +62,18 @@ interface ContractorRow {
   service_radius_miles: number
   availability_status: string
   available_from: string | null
-  user: {
-    display_name: string
-    handle: string
-    avatar_url: string | null
-    location_city: string | null
-    location_state: string | null
-  }
+  user: UserShape
   credentials: { id: string; verified_at: string | null }[]
+}
+
+// Raw Supabase join can return user as object or single-element array depending on version
+interface RawContractorRow extends Omit<ContractorRow, 'user'> {
+  user: UserShape | UserShape[]
+}
+
+function normalizeContractor(raw: RawContractorRow): ContractorRow {
+  const user = Array.isArray(raw.user) ? raw.user[0] : raw.user
+  return { ...raw, user }
 }
 
 interface ConnectionState { [userId: string]: 'none' | 'pending' | 'accepted' }
@@ -142,7 +154,8 @@ export default function Explore() {
     q = q.order('rating_avg', { ascending: false }).limit(200)
 
     const { data } = await q
-    let rows = (data ?? []) as ContractorRow[]
+    // Normalize: Supabase foreign-key join may return `user` as object or array
+    let rows: ContractorRow[] = (data ?? []).map((r) => normalizeContractor(r as RawContractorRow))
 
     // Remove the current user from results
     if (profile) rows = rows.filter(r => r.user_id !== profile.id)
