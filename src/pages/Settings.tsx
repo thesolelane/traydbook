@@ -162,6 +162,7 @@ export default function Settings() {
   // ── Notifications ──
   const [notifPrefs, setNotifPrefs] = useState<NotifPrefs>({})
   const [savingNotif, setSavingNotif] = useState(false)
+  const [notifSavedMsg, setNotifSavedMsg] = useState('')
 
   useEffect(() => {
     if (!profile) return
@@ -181,10 +182,15 @@ export default function Settings() {
     const updated = { ...notifPrefs, [type]: !current }
     setNotifPrefs(updated)
     setSavingNotif(true)
-    await supabase
+    setNotifSavedMsg('')
+    const { error } = await supabase
       .from('user_notification_prefs')
       .upsert({ user_id: profile.id, prefs: updated, updated_at: new Date().toISOString() })
     setSavingNotif(false)
+    if (!error) {
+      setNotifSavedMsg('Preferences saved.')
+      setTimeout(() => setNotifSavedMsg(''), 2000)
+    }
   }
 
   // ── Privacy (contractors only) ──
@@ -420,7 +426,10 @@ export default function Settings() {
       {/* Notification preferences */}
       <SectionCard title="Notifications" icon={<Bell size={16} />}>
         <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 14 }}>
-          Choose which notifications you receive. Preferences are saved to your account.
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span>Choose which notifications you receive. Preferences are saved to your account.</span>
+            {notifSavedMsg && <span style={{ color: 'var(--color-success, #22c55e)', fontSize: 12, fontWeight: 600 }}>{notifSavedMsg}</span>}
+          </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {NOTIF_LABELS.map(({ type, label, description }) => {
