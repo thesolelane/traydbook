@@ -273,17 +273,18 @@ export interface Database {
         Insert: Omit<Database['public']['Tables']['reviews']['Row'], 'id' | 'created_at'>
         Update: Partial<Database['public']['Tables']['reviews']['Insert']>
       }
-      interaction_events: {
+      dwell_events: {
         Row: {
           id: string
-          user_id: string
-          event_type: string
-          entity_id: string | null
-          entity_type: string | null
+          user_id: string | null
+          entity_type: 'post' | 'rfq' | 'job' | 'profile' | 'bid'
+          entity_id: string
+          dwell_ms: number
+          session_id: string | null
           created_at: string
         }
-        Insert: Omit<Database['public']['Tables']['interaction_events']['Row'], 'id' | 'created_at'>
-        Update: Partial<Database['public']['Tables']['interaction_events']['Insert']>
+        Insert: Omit<Database['public']['Tables']['dwell_events']['Row'], 'id' | 'created_at'>
+        Update: Partial<Database['public']['Tables']['dwell_events']['Insert']>
       }
     }
   }

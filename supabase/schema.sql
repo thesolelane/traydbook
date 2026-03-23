@@ -470,3 +470,29 @@ drop trigger if exists on_comment_inserted on public.comments;
 create trigger on_comment_inserted
   after insert on public.comments
   for each row execute function increment_comment_count();
+
+-- ============================================================
+-- DWELL EVENTS (engagement / time-on-content analytics)
+-- ============================================================
+create table if not exists public.dwell_events (
+  id            uuid primary key default uuid_generate_v4(),
+  user_id       uuid references public.users(id) on delete set null,
+  entity_type   text not null check (entity_type in ('post','rfq','job','profile','bid')),
+  entity_id     uuid not null,
+  dwell_ms      integer not null,
+  session_id    text,
+  created_at    timestamptz not null default now()
+);
+
+alter table public.dwell_events enable row level security;
+
+create policy "Users can insert own dwell events" on public.dwell_events
+  for insert with check (auth.uid() = user_id);
+
+create policy "Admins can read dwell events" on public.dwell_events
+  for select using (
+    exists (
+      select 1 from public.users
+      where id = auth.uid() and account_type = 'admin'
+    )
+  );

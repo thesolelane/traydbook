@@ -1,4 +1,4 @@
-import { Star, MapPin, CheckCircle, Briefcase } from 'lucide-react';
+import { Star, MapPin, CheckCircle } from 'lucide-react';
 import { User } from '../data/mockData';
 import { useState } from 'react';
 

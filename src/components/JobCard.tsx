@@ -1,4 +1,4 @@
-import { MapPin, Clock, DollarSign, Users, Star, Zap } from 'lucide-react';
+import { MapPin, Clock, DollarSign, Users, Zap } from 'lucide-react';
 import { Job } from '../data/mockData';
 import { useState } from 'react';
 

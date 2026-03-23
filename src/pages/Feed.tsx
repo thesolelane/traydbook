@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Image, Send } from 'lucide-react';
 import PostCard from '../components/PostCard';
-import UserCard from '../components/UserCard';
 import { posts, users, currentUser } from '../data/mockData';
 
 export default function Feed() {

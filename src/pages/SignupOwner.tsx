@@ -26,20 +26,67 @@ const CREDIT_INFO: Record<string, string> = {
   homeowner: 'Post service requests (5 credits) and message contractors (3 credits).',
 }
 
+const PROJECT_TYPES = [
+  'New Construction',
+  'Renovation / Remodel',
+  'Repair / Maintenance',
+  'Commercial Build-Out',
+  'Historic Restoration',
+  'Landscaping / Exterior',
+  'Other',
+]
+
+const BUDGET_RANGES = [
+  'Under $5,000',
+  '$5,000 – $25,000',
+  '$25,000 – $100,000',
+  '$100,000 – $500,000',
+  '$500,000+',
+  'Prefer not to say',
+]
+
+const TIMELINE_OPTIONS = [
+  'ASAP',
+  '1–3 months',
+  '3–6 months',
+  '6–12 months',
+  'Flexible / not sure yet',
+]
+
+const TRADE_CATEGORIES = [
+  'General Contractor','Electrician','Plumber','HVAC','Carpenter','Mason',
+  'Roofer','Painter','Flooring','Landscaper','Ironworker','Concrete','Other',
+]
+
+interface LocationState {
+  accountType?: AccountType
+}
+
 export default function SignupOwner() {
   const { signUp } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const accountType = (location.state as any)?.accountType as AccountType || 'project_owner'
+  const state = location.state as LocationState | null
+  const accountType: AccountType = state?.accountType ?? 'project_owner'
 
+  const totalSteps = 3
   const [step, setStep] = useState(1)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
 
+  // Step 1 — credentials
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+
+  // Step 2 — project preferences
+  const [projectType, setProjectType] = useState('')
+  const [budgetRange, setBudgetRange] = useState('')
+  const [timeline, setTimeline] = useState('')
+  const [tradesNeeded, setTradesNeeded] = useState<string[]>([])
+
+  // Step 3 — profile info
   const [displayName, setDisplayName] = useState('')
   const [handle, setHandle] = useState('')
   const [locationCity, setLocationCity] = useState('')
@@ -47,6 +94,12 @@ export default function SignupOwner() {
 
   function slugify(s: string) {
     return s.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30)
+  }
+
+  function toggleTrade(trade: string) {
+    setTradesNeeded(prev =>
+      prev.includes(trade) ? prev.filter(t => t !== trade) : [...prev, trade]
+    )
   }
 
   async function handleStep1(e: FormEvent) {
@@ -62,7 +115,14 @@ export default function SignupOwner() {
     setStep(2)
   }
 
-  async function handleStep2(e: FormEvent) {
+  function handleStep2(e: FormEvent) {
+    e.preventDefault()
+    setError('')
+    if (!projectType) { setError('Please select a project type.'); return }
+    setStep(3)
+  }
+
+  async function handleStep3(e: FormEvent) {
     e.preventDefault()
     setError('')
     setLoading(true)
@@ -97,8 +157,8 @@ export default function SignupOwner() {
       })
 
       navigate('/feed')
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred.')
     } finally {
       setLoading(false)
     }
@@ -106,7 +166,7 @@ export default function SignupOwner() {
 
   return (
     <div className="auth-page">
-      <div className="auth-card" style={{ maxWidth: 460 }}>
+      <div className="auth-card" style={{ maxWidth: 480 }}>
         <Link to="/" className="auth-logo">
           <div className="auth-logo-icon">
             <svg viewBox="0 0 17 17" fill="none" width={16} height={16}>
@@ -119,7 +179,7 @@ export default function SignupOwner() {
         </Link>
 
         <div className="signup-steps">
-          {[1, 2].map(s => (
+          {Array.from({ length: totalSteps }, (_, i) => i + 1).map(s => (
             <div
               key={s}
               className={`signup-step ${s === step ? 'active' : s < step ? 'done' : ''}`}
@@ -127,13 +187,14 @@ export default function SignupOwner() {
           ))}
         </div>
 
+        {/* ── STEP 1: Credentials ── */}
         {step === 1 && (
           <>
             <h1 className="auth-title">Create your account</h1>
-            <p className="auth-subtitle">Step 1 of 2 · Account credentials</p>
+            <p className="auth-subtitle">Step 1 of {totalSteps} · Account credentials</p>
             <div style={{
-              background: 'rgba(232, 93, 38, 0.08)',
-              border: '1px solid rgba(232, 93, 38, 0.2)',
+              background: 'rgba(232, 93, 4, 0.08)',
+              border: '1px solid rgba(232, 93, 4, 0.2)',
               borderRadius: 10, padding: '12px 14px', marginBottom: 20,
             }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-brand)', marginBottom: 4 }}>
@@ -179,11 +240,80 @@ export default function SignupOwner() {
           </>
         )}
 
+        {/* ── STEP 2: Project Preferences ── */}
         {step === 2 && (
           <>
-            <h1 className="auth-title">Your profile</h1>
-            <p className="auth-subtitle">Step 2 of 2 · Basic info</p>
+            <h1 className="auth-title">Project preferences</h1>
+            <p className="auth-subtitle">Step 2 of {totalSteps} · Help us match you with the right contractors</p>
             <form onSubmit={handleStep2} className="auth-form">
+              {error && <div className="auth-error">{error}</div>}
+
+              <div className="form-group">
+                <label>Type of project</label>
+                <select value={projectType} onChange={e => setProjectType(e.target.value)} required>
+                  <option value="">Select project type</option>
+                  {PROJECT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Typical budget range</label>
+                <select value={budgetRange} onChange={e => setBudgetRange(e.target.value)}>
+                  <option value="">Select budget range</option>
+                  {BUDGET_RANGES.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Typical timeline</label>
+                <select value={timeline} onChange={e => setTimeline(e.target.value)}>
+                  <option value="">Select timeline</option>
+                  {TIMELINE_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Trades you typically need <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--color-text-muted)' }}>(select all that apply)</span></label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
+                  {TRADE_CATEGORIES.map(trade => (
+                    <button
+                      key={trade}
+                      type="button"
+                      onClick={() => toggleTrade(trade)}
+                      style={{
+                        padding: '5px 12px',
+                        borderRadius: 20,
+                        border: `1.5px solid ${tradesNeeded.includes(trade) ? 'var(--color-brand)' : 'var(--color-border)'}`,
+                        background: tradesNeeded.includes(trade) ? 'rgba(232,93,4,0.1)' : 'var(--color-bg)',
+                        color: tradesNeeded.includes(trade) ? 'var(--color-brand)' : 'var(--color-text-muted)',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      {trade}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="step-nav">
+                <button type="button" className="btn-secondary" onClick={() => setStep(1)}>Back</button>
+                <button type="submit" className="btn-primary" style={{ flex: 1 }}>
+                  Continue
+                </button>
+              </div>
+            </form>
+          </>
+        )}
+
+        {/* ── STEP 3: Profile Info ── */}
+        {step === 3 && (
+          <>
+            <h1 className="auth-title">Your profile</h1>
+            <p className="auth-subtitle">Step 3 of {totalSteps} · Basic info</p>
+            <form onSubmit={handleStep3} className="auth-form">
               {error && <div className="auth-error">{error}</div>}
               <div className="form-group">
                 <label>Full Name</label>
@@ -219,7 +349,7 @@ export default function SignupOwner() {
                 </div>
               </div>
               <div className="step-nav">
-                <button type="button" className="btn-secondary" onClick={() => setStep(1)}>Back</button>
+                <button type="button" className="btn-secondary" onClick={() => setStep(2)}>Back</button>
                 <button type="submit" className="btn-primary" style={{ flex: 1 }} disabled={loading}>
                   {loading ? 'Creating profile...' : 'Finish Setup'}
                 </button>
