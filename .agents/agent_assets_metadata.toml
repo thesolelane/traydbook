@@ -12,3 +12,9 @@ id = "IikdeKDzKCHNzBNI_nMI0"
 uri = "file://docs/traydbook-feature-comparison.md"
 type = "text"
 title = "TraydBook Feature Comparison"
+
+[[outputs]]
+id = "9svSifSuCyxDj7Pe-SfaT"
+uri = "file://docs/traydbook-feature-comparison.pdf"
+type = "pdf"
+title = "TraydBook Feature Comparison (PDF)"
