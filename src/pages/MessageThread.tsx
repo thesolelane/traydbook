@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom'
-import { Send, ArrowLeft, AlertCircle } from 'lucide-react'
+import { Send, ArrowLeft, AlertCircle, FileText } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import ProjectInquiryModal from '../components/ProjectInquiryModal'
 
 interface Message {
   id: string
@@ -46,6 +47,7 @@ export default function MessageThread() {
   const [sending, setSending] = useState(false)
   const [sendError, setSendError] = useState('')
   const [isFirstContact, setIsFirstContact] = useState(false)
+  const [showInquiryModal, setShowInquiryModal] = useState(false)
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -140,33 +142,38 @@ export default function MessageThread() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  async function handleSend() {
-    if (!profile || !otherUser || !threadId || !body.trim() || sending) return
+  async function handleSend(overrideBody?: string) {
+    const messageBody = overrideBody ?? body.trim()
+    if (!profile || !otherUser || !threadId || !messageBody || sending) return
     setSending(true)
     setSendError('')
 
     const { error } = await supabase.rpc('send_message', {
       p_recipient_id: otherUser.id,
       p_thread_id: threadId,
-      p_body: body.trim(),
+      p_body: messageBody,
     })
 
     if (error) {
       if (error.message.includes('Insufficient credits')) {
-        // Redirect to credits page per spec
         navigate('/credits')
         return
       }
       setSendError(error.message)
       setSending(false)
-      return
+      throw new Error(error.message)
     }
 
     setBody('')
     setIsFirstContact(false)
+    setShowInquiryModal(false)
     await loadMessages()
     setSending(false)
     inputRef.current?.focus()
+  }
+
+  async function handleInquirySubmit(formattedBody: string) {
+    await handleSend(formattedBody)
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -218,16 +225,52 @@ export default function MessageThread() {
         )}
       </div>
 
-      {/* Credit gate notice */}
+      {/* First-contact inquiry prompt for non-contractors messaging contractors */}
       {isNonContractorToContractor && isFirstContact && (
         <div style={{
-          background: 'var(--color-brand-light)',
-          border: '1px solid rgba(232,93,4,0.25)',
-          borderRadius: 8, padding: '10px 14px', marginBottom: 12, fontSize: 13,
-          color: 'var(--color-brand)', display: 'flex', gap: 8, alignItems: 'center',
+          background: 'var(--color-surface)',
+          border: '1px solid var(--color-border)',
+          borderRadius: 12, padding: '20px 20px', marginBottom: 12,
+          textAlign: 'center',
         }}>
-          <AlertCircle size={14} style={{ flexShrink: 0 }} />
-          Your first message to this contractor costs {COLD_MSG_COST} credits. You have {profile?.credit_balance ?? 0} credits.
+          <div style={{
+            width: 44, height: 44, borderRadius: '50%',
+            background: 'var(--color-brand-light)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 12px',
+          }}>
+            <FileText size={20} color="var(--color-brand)" />
+          </div>
+          <div style={{
+            fontFamily: 'var(--font-condensed)', fontSize: 16, fontWeight: 800,
+            color: 'var(--color-text)', marginBottom: 6,
+          }}>
+            Send a Project Inquiry
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--color-text-muted)', lineHeight: 1.5, marginBottom: 16, maxWidth: 380, margin: '0 auto 16px' }}>
+            Fill out a structured request — trade, location, timeline, and budget — so {otherUser?.display_name ?? 'this contractor'} gets everything they need to give you a real answer.
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 16 }}>
+            <span style={{
+              fontFamily: 'var(--font-condensed)', fontSize: 12, fontWeight: 700,
+              letterSpacing: '0.5px', textTransform: 'uppercase',
+              color: 'var(--color-brand)',
+              background: 'var(--color-brand-light)',
+              borderRadius: 99, padding: '3px 10px',
+            }}>
+              {COLD_MSG_COST} credits to send
+            </span>
+            <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+              Balance: {profile?.credit_balance ?? 0} credits
+            </span>
+          </div>
+          <button
+            onClick={() => setShowInquiryModal(true)}
+            className="btn btn-primary"
+            style={{ padding: '10px 28px' }}
+          >
+            Fill out project inquiry →
+          </button>
         </div>
       )}
 
@@ -271,47 +314,58 @@ export default function MessageThread() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Send area */}
-      <div style={{ flexShrink: 0, borderTop: '1px solid var(--color-border)', paddingTop: 12 }}>
-        {sendError && (
-          <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, padding: '8px 12px', marginBottom: 10, fontSize: 13, color: '#DC2626', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <AlertCircle size={14} /> {sendError}
-            {sendError.includes('credits') && (
-              <Link to="/credits" style={{ color: 'var(--color-brand)', fontWeight: 600, textDecoration: 'none', marginLeft: 4 }}>Buy credits →</Link>
-            )}
+      {/* Send area — hidden when waiting for inquiry submission */}
+      {!(isNonContractorToContractor && isFirstContact) && (
+        <div style={{ flexShrink: 0, borderTop: '1px solid var(--color-border)', paddingTop: 12 }}>
+          {sendError && (
+            <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, padding: '8px 12px', marginBottom: 10, fontSize: 13, color: '#DC2626', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <AlertCircle size={14} /> {sendError}
+              {sendError.includes('credits') && (
+                <Link to="/credits" style={{ color: 'var(--color-brand)', fontWeight: 600, textDecoration: 'none', marginLeft: 4 }}>Buy credits →</Link>
+              )}
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+            <textarea
+              ref={inputRef}
+              value={body}
+              onChange={e => setBody(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Type a message… (Enter to send)"
+              rows={2}
+              style={{
+                flex: 1, padding: '9px 12px',
+                border: '1.5px solid var(--color-border)', borderRadius: 10,
+                fontSize: 14, resize: 'none', outline: 'none', lineHeight: 1.5,
+                background: 'var(--color-surface)', color: 'var(--color-text)',
+                fontFamily: 'var(--font-sans)',
+              }}
+            />
+            <button
+              onClick={() => handleSend()}
+              disabled={sending || !body.trim()}
+              className="btn btn-primary"
+              style={{ padding: '10px 14px', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}
+            >
+              <Send size={15} /> {sending ? '…' : 'Send'}
+            </button>
           </div>
-        )}
-        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-          <textarea
-            ref={inputRef}
-            value={body}
-            onChange={e => setBody(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type a message… (Enter to send)"
-            rows={2}
-            style={{
-              flex: 1, padding: '9px 12px',
-              border: '1.5px solid var(--color-border)', borderRadius: 10,
-              fontSize: 14, resize: 'none', outline: 'none', lineHeight: 1.5,
-              background: 'var(--color-surface)', color: 'var(--color-text)',
-              fontFamily: 'var(--font-sans)',
-            }}
-          />
-          <button
-            onClick={handleSend}
-            disabled={sending || !body.trim()}
-            className="btn btn-primary"
-            style={{ padding: '10px 14px', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}
-          >
-            <Send size={15} /> {sending ? '…' : 'Send'}
-          </button>
-        </div>
-        {isNonContractorToContractor && isFirstContact && (
           <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 6 }}>
-            First message costs {COLD_MSG_COST} credits · Shift+Enter for new line
+            Shift+Enter for new line
           </p>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Project Inquiry Modal */}
+      {showInquiryModal && otherUser && (
+        <ProjectInquiryModal
+          contractorName={otherUser.display_name}
+          creditCost={COLD_MSG_COST}
+          creditBalance={profile?.credit_balance ?? 0}
+          onSubmit={handleInquirySubmit}
+          onCancel={() => setShowInquiryModal(false)}
+        />
+      )}
     </div>
   )
 }
