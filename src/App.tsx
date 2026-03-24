@@ -24,7 +24,6 @@ import EditProfile from './pages/EditProfile'
 import Messages from './pages/Messages'
 import MessageThread from './pages/MessageThread'
 import Notifications from './pages/Notifications'
-import Credits from './pages/Credits'
 import Settings from './pages/Settings'
 import ResetPassword from './pages/ResetPassword'
 
@@ -184,13 +183,9 @@ export default function App() {
             </ProtectedRoute>
           } />
 
-          {/* /settings/credits and /credits both go to Credits page */}
-          <Route path="/settings/credits" element={<Navigate to="/credits" replace />} />
-          <Route path="/credits" element={
-            <ProtectedRoute>
-              <AppLayout><Credits /></AppLayout>
-            </ProtectedRoute>
-          } />
+          {/* /credits and /settings/credits redirect to Billing tab in Settings */}
+          <Route path="/credits" element={<Navigate to="/settings?tab=billing" replace />} />
+          <Route path="/settings/credits" element={<Navigate to="/settings?tab=billing" replace />} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

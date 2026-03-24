@@ -163,8 +163,8 @@ app.post('/api/create-checkout-session', requireAuth, async (req, res) => {
         quantity: 1,
       }],
       mode: 'payment',
-      success_url: `${APP_ORIGIN}/credits?success=true&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${APP_ORIGIN}/credits?canceled=true`,
+      success_url: `${APP_ORIGIN}/settings?tab=billing&success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${APP_ORIGIN}/settings?tab=billing&canceled=true`,
       metadata: {
         userId,
         credits:  String(bundle.credits),

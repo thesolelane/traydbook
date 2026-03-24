@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  ArrowLeft, Save, Camera, Plus, X, Loader, CheckCircle, AlertCircle, Award,
+  ArrowLeft, Save, Camera, Loader, CheckCircle, AlertCircle, ShieldCheck,
   Globe, Instagram, Linkedin, Youtube, Facebook,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { ContractorProfile, Credential, SocialLinks } from '../types/profile'
+import { ContractorProfile, SocialLinks } from '../types/profile'
 import { sanitizeSocialLinks } from '../lib/urlUtils'
 import { tradeOptions } from '../data/mockData'
 
@@ -17,23 +17,6 @@ const AVAILABILITY_OPTIONS = [
   { value: 'busy', label: 'Busy' },
   { value: 'not_available', label: 'Not Available' },
 ]
-
-function maskLicenseNumber(raw: string): string {
-  const clean = raw.replace(/[^a-zA-Z0-9]/g, '')
-  if (clean.length <= 4) return '****'
-  const prefix = clean.slice(0, Math.max(1, clean.length - 4)).replace(/./g, '*')
-  const suffix = clean.slice(-4)
-  return `${prefix}${suffix}`
-}
-
-interface CredentialModal {
-  credential_type: string
-  license_number_raw: string
-  issuing_state: string
-  expiry_date: string
-}
-
-const EMPTY_CRED: CredentialModal = { credential_type: '', license_number_raw: '', issuing_state: '', expiry_date: '' }
 
 export default function EditProfile() {
   const { profile, refreshProfile } = useAuth()
@@ -54,7 +37,6 @@ export default function EditProfile() {
   const [visibleToOwners, setVisibleToOwners] = useState(true)
 
   const [cp, setCp] = useState<ContractorProfile | null>(null)
-  const [credentials, setCredentials] = useState<Credential[]>([])
 
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
@@ -66,12 +48,6 @@ export default function EditProfile() {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [saveSuccess, setSaveSuccess] = useState(false)
-
-  const [showCredModal, setShowCredModal] = useState(false)
-  const [credForm, setCredForm] = useState<CredentialModal>(EMPTY_CRED)
-  const [credSaving, setCredSaving] = useState(false)
-  const [credError, setCredError] = useState('')
-  const [deletingCredId, setDeletingCredId] = useState<string | null>(null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const isContractor = profile?.account_type === 'contractor'
@@ -116,13 +92,6 @@ export default function EditProfile() {
         setAvailabilityStatus(c.availability_status)
         setAvailableFrom(c.available_from ?? '')
         setVisibleToOwners(c.visible_to_owners)
-
-        const { data: creds } = await supabase
-          .from('credentials')
-          .select('id, contractor_id, credential_type, masked_display, issuing_state, expiry_date, verified_at, status, created_at')
-          .eq('contractor_id', c.id)
-          .order('created_at', { ascending: false })
-        if (creds) setCredentials(creds as Credential[])
       }
     }
   }
@@ -213,43 +182,6 @@ export default function EditProfile() {
     setSaveSuccess(true)
     setSaving(false)
     setTimeout(() => setSaveSuccess(false), 3000)
-  }
-
-  async function handleAddCredential() {
-    if (!cp || !credForm.credential_type.trim() || !credForm.license_number_raw.trim()) {
-      setCredError('Credential type and license number are required.')
-      return
-    }
-    setCredSaving(true)
-    setCredError('')
-    const masked = `${credForm.credential_type.slice(0, 3).toUpperCase()}-${maskLicenseNumber(credForm.license_number_raw)}`
-    const { data, error } = await supabase
-      .from('credentials')
-      .insert({
-        contractor_id: cp.id,
-        credential_type: credForm.credential_type.trim(),
-        masked_display: masked,
-        issuing_state: credForm.issuing_state.trim() || null,
-        expiry_date: credForm.expiry_date || null,
-        status: 'pending',
-      })
-      .select('id, contractor_id, credential_type, masked_display, issuing_state, expiry_date, verified_at, status, created_at')
-      .single()
-    if (error || !data) {
-      setCredError('Failed to add credential. Please try again.')
-    } else {
-      setCredentials(prev => [data as Credential, ...prev])
-      setShowCredModal(false)
-      setCredForm(EMPTY_CRED)
-    }
-    setCredSaving(false)
-  }
-
-  async function handleDeleteCredential(credId: string) {
-    setDeletingCredId(credId)
-    await supabase.from('credentials').delete().eq('id', credId)
-    setCredentials(prev => prev.filter(c => c.id !== credId))
-    setDeletingCredId(null)
   }
 
   function toggleSecondaryTrade(trade: string) {
@@ -453,51 +385,17 @@ export default function EditProfile() {
             </div>
           </div>
 
-          {/* Credentials */}
+          {/* Verification notice */}
           <div className="card" style={{ padding: 20, marginBottom: 16 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <h2 style={{ fontFamily: 'var(--font-condensed)', fontWeight: 800, fontSize: 15, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Award size={14} color="var(--color-brand)" /> Licenses & Credentials
-              </h2>
-              <button onClick={() => { setShowCredModal(true); setCredForm(EMPTY_CRED); setCredError('') }} className="btn btn-secondary" style={{ fontSize: 12, padding: '5px 12px', display: 'flex', alignItems: 'center', gap: 5 }}>
-                <Plus size={12} /> Add Credential
-              </button>
-            </div>
-
-            {credentials.length === 0 ? (
-              <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>No credentials added yet. Add licenses to build trust with clients.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {credentials.map(cred => (
-                  <div key={cred.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: 'var(--color-bg)', borderRadius: 8, border: '1px solid var(--color-border)' }}>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <p style={{ fontWeight: 700, fontSize: 13 }}>{cred.credential_type}</p>
-                        <span style={{
-                          fontSize: 10, fontWeight: 700,
-                          color: cred.verified_at ? '#059669' : cred.status === 'pending' ? '#D97706' : '#DC2626',
-                          background: (cred.verified_at ? '#059669' : cred.status === 'pending' ? '#D97706' : '#DC2626') + '18',
-                          borderRadius: 10, padding: '1px 7px',
-                        }}>
-                          {cred.verified_at ? 'Verified' : cred.status}
-                        </span>
-                      </div>
-                      <p style={{ fontSize: 12, color: 'var(--color-brand)', fontFamily: 'monospace', marginTop: 2 }}>{cred.masked_display}</p>
-                      <p style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
-                        {[cred.issuing_state, cred.expiry_date ? `Expires ${new Date(cred.expiry_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}` : null].filter(Boolean).join(' · ')}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => void handleDeleteCredential(cred.id)}
-                      disabled={deletingCredId === cred.id}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', padding: 6 }}
-                    >
-                      {deletingCredId === cred.id ? <Loader size={13} className="spin" /> : <X size={13} />}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+            <h2 style={{ fontFamily: 'var(--font-condensed)', fontWeight: 800, fontSize: 15, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <ShieldCheck size={14} color="var(--color-brand)" /> Licenses & Credentials
+            </h2>
+            <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 12, lineHeight: 1.6 }}>
+              Manage your licenses, insurance certificates, and verification badges in Account Settings.
+            </p>
+            <Link to="/settings?tab=verification" className="btn btn-secondary" style={{ fontSize: 12, padding: '6px 14px', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <ShieldCheck size={12} /> Go to Verification Settings
+            </Link>
           </div>
         </>
       )}
@@ -544,66 +442,6 @@ export default function EditProfile() {
         </button>
       </div>
 
-      {showCredModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div className="card" style={{ width: '100%', maxWidth: 440, padding: 0, overflow: 'hidden' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--color-border)' }}>
-              <h3 style={{ fontFamily: 'var(--font-condensed)', fontWeight: 800, fontSize: 17 }}>Add Credential</h3>
-              <button onClick={() => setShowCredModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}><X size={16} /></button>
-            </div>
-            <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {credError && (
-                <div style={{ background: '#DC262618', border: '1px solid #DC2626', borderRadius: 6, padding: '8px 12px', fontSize: 12, color: '#DC2626', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <AlertCircle size={12} /> {credError}
-                </div>
-              )}
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-muted)' }}>Credential Type *</label>
-                <input
-                  value={credForm.credential_type}
-                  onChange={e => setCredForm(f => ({ ...f, credential_type: e.target.value }))}
-                  placeholder="e.g. Master Electrician, OSHA 30"
-                  style={{ width: '100%', border: '1.5px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '8px 12px', fontSize: 13, background: 'var(--color-bg)', color: 'var(--color-text)', boxSizing: 'border-box' }}
-                />
-              </div>
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-muted)' }}>License / Certificate Number *</label>
-                <input
-                  value={credForm.license_number_raw}
-                  onChange={e => setCredForm(f => ({ ...f, license_number_raw: e.target.value }))}
-                  placeholder="e.g. E12345678"
-                  style={{ width: '100%', border: '1.5px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '8px 12px', fontSize: 13, background: 'var(--color-bg)', color: 'var(--color-text)', boxSizing: 'border-box' }}
-                />
-                {credForm.license_number_raw && (
-                  <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>
-                    Will display as: <code style={{ color: 'var(--color-brand)', fontSize: 12 }}>{credForm.credential_type.slice(0, 3).toUpperCase() || 'XXX'}-{maskLicenseNumber(credForm.license_number_raw)}</code>
-                  </p>
-                )}
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <div>
-                  <label style={{ fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-muted)' }}>Issuing State</label>
-                  <input value={credForm.issuing_state} onChange={e => setCredForm(f => ({ ...f, issuing_state: e.target.value }))} placeholder="TX" maxLength={2} style={{ width: '100%', border: '1.5px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '8px 12px', fontSize: 13, background: 'var(--color-bg)', color: 'var(--color-text)', boxSizing: 'border-box' }} />
-                </div>
-                <div>
-                  <label style={{ fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-muted)' }}>Expiry Date</label>
-                  <input type="date" value={credForm.expiry_date} onChange={e => setCredForm(f => ({ ...f, expiry_date: e.target.value }))} style={{ width: '100%', border: '1.5px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '8px 12px', fontSize: 13, background: 'var(--color-bg)', color: 'var(--color-text)', boxSizing: 'border-box' }} />
-                </div>
-              </div>
-              <p style={{ fontSize: 11, color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
-                Only the masked version is stored publicly. Full credential numbers are verified offline by the TraydBook team — you will be contacted after submission.
-              </p>
-              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                <button onClick={() => setShowCredModal(false)} className="btn btn-ghost" style={{ fontSize: 13 }}>Cancel</button>
-                <button onClick={() => void handleAddCredential()} disabled={credSaving} className="btn btn-primary" style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  {credSaving ? <Loader size={13} className="spin" /> : <Plus size={13} />}
-                  Add Credential
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
