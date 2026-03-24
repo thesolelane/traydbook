@@ -4,12 +4,13 @@ import {
   Mail, Lock, Bell, Eye, User, Trash2, CheckCircle,
   AlertTriangle, ShieldCheck, CreditCard, Coins, Zap,
   TrendingUp, Award, Star, CheckCircle as CheckCircleIcon,
-  XCircle,
+  XCircle, ChevronRight, Users,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import type { NotificationType } from '../lib/database.types'
 import VerifiedBadge from '../components/VerifiedBadge'
+import TeamPanel from '../components/TeamPanel'
 import type { BadgeTier } from '../types/profile'
 
 const NOTIF_LABELS: { type: NotificationType; label: string; description: string }[] = [
@@ -52,7 +53,7 @@ interface LedgerRow {
   created_at: string
 }
 
-type Tab = 'account' | 'notifications' | 'privacy' | 'billing' | 'verification' | 'danger'
+type Tab = 'account' | 'notifications' | 'privacy' | 'billing' | 'verification' | 'danger' | 'team'
 
 interface TabDef {
   id: Tab
@@ -115,7 +116,7 @@ const btnGhost: React.CSSProperties = {
 }
 
 export default function Settings() {
-  const { profile, user, signOut, refreshProfile } = useAuth()
+  const { profile, user, signOut, refreshProfile, delegateSession } = useAuth()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const isContractor = profile?.account_type === 'contractor'
@@ -139,6 +140,7 @@ export default function Settings() {
     { id: 'privacy',       label: 'Privacy',        icon: <Eye size={15} />, contractorOnly: true },
     { id: 'billing',       label: 'Billing',        icon: <CreditCard size={15} />, ownerOnly: true },
     { id: 'verification',  label: 'Verification',   icon: <ShieldCheck size={15} />, contractorOnly: true },
+    { id: 'team',          label: 'Team',           icon: <Users size={15} />, ownerOnly: true },
     { id: 'danger',        label: 'Danger Zone',    icon: <Trash2 size={15} /> },
   ]
 
@@ -482,9 +484,9 @@ export default function Settings() {
     <div className="container" style={{ padding: '32px 0', maxWidth: 900 }}>
       <h1 style={{
         fontFamily: 'var(--font-condensed)', fontSize: 26, fontWeight: 800,
-        letterSpacing: '0.3px', color: 'var(--color-text)', marginBottom: 24,
+        letterSpacing: '0.3px', color: 'var(--color-text)', marginBottom: 20,
       }}>
-        Account Settings
+        Settings
       </h1>
 
       <div style={{ display: 'flex', gap: 0, alignItems: 'flex-start' }}>
@@ -564,6 +566,22 @@ export default function Settings() {
               <div>
                 <TabHeading>Account</TabHeading>
 
+                {/* Delegate session notice */}
+                {delegateSession && (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    background: 'rgba(232,93,4,0.06)', border: '1px solid rgba(232,93,4,0.2)',
+                    borderRadius: 8, padding: '10px 14px', marginBottom: 20, fontSize: 13,
+                    color: 'var(--color-text-muted)',
+                  }}>
+                    <Users size={14} color="var(--color-brand)" style={{ flexShrink: 0 }} />
+                    <span>
+                      You are operating as a <strong style={{ color: 'var(--color-text)' }}>{delegateSession.role === 'admin' ? 'Team Admin' : 'Contributor'}</strong>.
+                      Billing, email, and password settings are restricted to the account owner.
+                    </span>
+                  </div>
+                )}
+
                 {/* Profile summary */}
                 <Section>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
@@ -601,8 +619,8 @@ export default function Settings() {
                   </div>
                 </Section>
 
-                {/* Change email */}
-                <SectionHeading>Email</SectionHeading>
+                {/* Change email — hidden for delegates */}
+                {!delegateSession && <><SectionHeading>Email</SectionHeading>
                 <Section>
                   <div style={{ marginBottom: 14 }}>
                     <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 4 }}>Current email</div>
@@ -640,10 +658,10 @@ export default function Settings() {
                   </div>
                   {emailMsg && <SavedBanner msg={emailMsg} />}
                   {emailErr && <ErrorBanner msg={emailErr} />}
-                </Section>
+                </Section></>}
 
-                {/* Change password */}
-                <SectionHeading>Password</SectionHeading>
+                {/* Change password — hidden for delegates */}
+                {!delegateSession && <><SectionHeading>Password</SectionHeading>
                 <Section>
                   <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     <div>
@@ -694,7 +712,15 @@ export default function Settings() {
                     {pwdMsg && <SavedBanner msg={pwdMsg} />}
                     {pwdErr && <ErrorBanner msg={pwdErr} />}
                   </form>
-                </Section>
+                </Section></>}
+              </div>
+            )}
+
+            {/* ── TEAM TAB ── */}
+            {activeTab === 'team' && (
+              <div>
+                <TabHeading>Team</TabHeading>
+                <TeamPanel />
               </div>
             )}
 

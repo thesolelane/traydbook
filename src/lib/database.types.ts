@@ -1,6 +1,8 @@
 export type AccountType = 'contractor' | 'project_owner' | 'agent' | 'homeowner' | 'admin'
 export type AvailabilityStatus = 'available' | 'busy' | 'not_available'
 export type ConnectionStatus = 'pending' | 'accepted' | 'rejected'
+export type DelegationStatus = 'pending' | 'active' | 'revoked'
+export type DelegationRole = 'admin' | 'contributor'
 export type PostType = 'project_update' | 'job_post' | 'bid_post' | 'trade_tip' | 'safety_alert' | 'referral' | 'story'
 export type JobType = 'full_time' | 'contract' | 'per_diem' | 'subcontract'
 export type RfqStatus = 'open' | 'awarded' | 'closed' | 'archived'
@@ -284,6 +286,36 @@ export interface Database {
         }
         Insert: Omit<Database['public']['Tables']['dwell_events']['Row'], 'id' | 'created_at'>
         Update: Partial<Database['public']['Tables']['dwell_events']['Insert']>
+      }
+      account_delegations: {
+        Row: {
+          id: string
+          principal_id: string
+          delegate_id: string | null
+          role: DelegationRole
+          invite_email: string
+          invite_token: string | null
+          invite_expires_at: string | null
+          status: DelegationStatus
+          responsibility_accepted_at: string
+          responsibility_terms_version: string
+          created_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['account_delegations']['Row'], 'id' | 'created_at'>
+        Update: Partial<Database['public']['Tables']['account_delegations']['Insert']>
+      }
+      delegate_audit_log: {
+        Row: {
+          id: string
+          delegation_id: string
+          actual_user_id: string
+          acting_as_user_id: string
+          action_type: string
+          action_detail: Record<string, unknown> | null
+          created_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['delegate_audit_log']['Row'], 'id' | 'created_at'>
+        Update: Partial<Database['public']['Tables']['delegate_audit_log']['Insert']>
       }
     }
   }

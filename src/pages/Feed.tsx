@@ -58,7 +58,7 @@ function SkeletonCard() {
 const PAGE_SIZE = 10
 
 export default function Feed() {
-  const { profile } = useAuth()
+  const { profile, canDelegate, delegateSession } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   const activeFilter = (searchParams.get('type') ?? 'all') as FilterType
@@ -562,10 +562,10 @@ export default function Feed() {
               borderTop: '1px solid var(--color-border)',
             }}>
               {[
-                { label: 'Update', color: '#2563EB', onClick: () => setComposeOpen(true) },
-                { label: 'Post Job', color: '#DC2626', onClick: () => navigate('/jobs/post') },
-                { label: 'Open Bid', color: 'var(--color-brand)', onClick: () => navigate('/bids/post') },
-              ].map(btn => (
+                { label: 'Update', color: '#2563EB', onClick: () => setComposeOpen(true), allowed: true },
+                { label: 'Post Job', color: '#DC2626', onClick: () => navigate('/jobs/post'), allowed: canDelegate('job_post') },
+                { label: 'Open Bid', color: 'var(--color-brand)', onClick: () => navigate('/bids/post'), allowed: canDelegate('bid') },
+              ].filter(btn => btn.allowed).map(btn => (
                 <button
                   key={btn.label}
                   onClick={btn.onClick}

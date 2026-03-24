@@ -67,6 +67,7 @@ The professional network for the construction trades. Contractors, tradespeople,
 - `supabase/migrations/008_badge_system.sql` — Migration for badge_tier + vouches table
 - `supabase/migrations/009_storage_avatars.sql` — Migration for avatars storage bucket + policies
 - `supabase/migrations/010_social_links.sql` — Migration for social_links JSONB column on users
+- `supabase/migrations/011_team_delegation.sql` — Migration for team delegation: account_delegations table, delegate_audit_log table, is_delegate + delegate_principal_id columns on users
 
 ## Social Login
 - Google, Apple, LinkedIn OAuth via Supabase (requires enabling in Supabase dashboard)
@@ -149,6 +150,19 @@ APP_ORIGIN                 ← https://yourdomain.com (controls Stripe redirect 
 NODE_ENV=production
 ```
 
+## Team Delegation & Ghost Sub-Accounts (Task #12)
+Non-public delegate accounts let company staff manage a company's TraydBook presence without shared passwords.
+- Delegate accounts are flagged `is_delegate=true` + `delegate_principal_id` on the users table
+- Delegates are invisible: excluded from Explore, no public profile page, no public handle
+- When a delegate logs in, they operate entirely as the principal's account
+- Two roles: **Admin** (post, message, bid, manage jobs) and **Contributor** (post only)
+- Settings > Team tab: invite form with responsibility agreement, shows active members, pending invites, audit log, revoke button
+- Invite link: `/join/:token` — simplified registration (name + password only, no public handle)
+- Audit log: all delegate write actions recorded in `delegate_audit_log` (actual_user_id + acting_as_user_id)
+- Server endpoints: `POST /api/team/invite`, `POST /api/team/revoke`, `GET /api/team`
+- Responsibility agreement stored permanently with invitation record (admin user ID + timestamp + terms version)
+- Key files: `src/pages/JoinDelegate.tsx`, `src/components/TeamPanel.tsx`
+
 ## Task Status
 - ✅ Task #1: Auth, Database & Routing Foundation — DONE
 - ✅ Task #2: Feed Overhaul (post types, compose, filters) — DONE
@@ -160,3 +174,4 @@ NODE_ENV=production
 - ✅ Task #8: Social Login + Verified Badge System — DONE
 - ✅ Task #8 (Profile Polish): Social Links & Avatar Validation — DONE
 - 🔄 Task #9: SMS Message Alerts (Telnyx, two-tier subscription) — IN PROGRESS
+- ✅ Task #12: Team Delegation & Ghost Sub-Accounts — DONE

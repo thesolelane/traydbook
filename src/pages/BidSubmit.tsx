@@ -15,7 +15,7 @@ function formatBudget(min: number | null, max: number | null): string {
 
 export default function BidSubmit() {
   const { id } = useParams<{ id: string }>()
-  const { profile } = useAuth()
+  const { profile, canDelegate, logDelegateAction, delegateSession } = useAuth()
   const navigate = useNavigate()
 
   const [rfq, setRfq] = useState<RFQ | null>(null)
@@ -41,6 +41,12 @@ export default function BidSubmit() {
     setLoading(true)
 
     if (!profile || profile.account_type !== 'contractor') {
+      setNotEligible(true)
+      setLoading(false)
+      return
+    }
+
+    if (!canDelegate('bid')) {
       setNotEligible(true)
       setLoading(false)
       return
@@ -112,6 +118,9 @@ export default function BidSubmit() {
 
     setSubmitted(true)
     setSubmitting(false)
+    if (delegateSession) {
+      void logDelegateAction('submit_bid', { rfq_id: id })
+    }
   }
 
   if (loading) {

@@ -7,7 +7,7 @@ import { TRADE_OPTIONS, JOB_TYPE_DISPLAY_OPTIONS, CERT_OPTIONS, JOB_CREDIT_COST 
 
 export default function PostJob() {
   const navigate = useNavigate()
-  const { profile, refreshProfile } = useAuth()
+  const { profile, refreshProfile, canDelegate, logDelegateAction, delegateSession } = useAuth()
   const isContractor = profile?.account_type === 'contractor'
   const creditBalance = profile?.credit_balance ?? 0
   const canAfford = isContractor || creditBalance >= JOB_CREDIT_COST
@@ -51,6 +51,7 @@ export default function PostJob() {
     if (!profile) return
     setError('')
 
+    if (!canDelegate('job_post')) { setError('As a Contributor, you do not have permission to post jobs.'); return }
     if (!title.trim()) { setError('Job title is required.'); return }
     if (!description.trim()) { setError('Job description is required.'); return }
     if (!locationCity.trim() || !locationState.trim()) { setError('Location city and state are required.'); return }
@@ -81,6 +82,9 @@ export default function PostJob() {
       return
     }
 
+    if (delegateSession) {
+      void logDelegateAction('post_job', { job_id: newId, title: title.trim() })
+    }
     await refreshProfile()
     navigate(`/jobs/${newId as string}`)
   }

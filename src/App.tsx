@@ -26,6 +26,7 @@ import MessageThread from './pages/MessageThread'
 import Notifications from './pages/Notifications'
 import Settings from './pages/Settings'
 import ResetPassword from './pages/ResetPassword'
+import JoinDelegate from './pages/JoinDelegate'
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -186,6 +187,9 @@ export default function App() {
           {/* /credits and /settings/credits redirect to Billing tab in Settings */}
           <Route path="/credits" element={<Navigate to="/settings?tab=billing" replace />} />
           <Route path="/settings/credits" element={<Navigate to="/settings?tab=billing" replace />} />
+
+          {/* Delegate join — public, linked from invite email */}
+          <Route path="/join/:token" element={<JoinDelegate />} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -198,12 +198,18 @@ export default function Profile() {
 
     const { data: userData, error } = await supabase
       .from('users')
-      .select('id, display_name, handle, avatar_url, account_type, location_city, location_state, location_zip, credit_balance, social_links, created_at')
+      .select('id, display_name, handle, avatar_url, account_type, location_city, location_state, location_zip, credit_balance, social_links, created_at, is_delegate')
       .eq('handle', handle)
       .is('deleted_at', null)
       .single()
 
     if (error || !userData) {
+      setNotFound(true)
+      setLoading(false)
+      return
+    }
+
+    if ((userData as { is_delegate?: boolean }).is_delegate) {
       setNotFound(true)
       setLoading(false)
       return

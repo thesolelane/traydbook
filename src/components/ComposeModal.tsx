@@ -22,7 +22,7 @@ const POST_TYPES: { type: PostType | 'refer'; label: string; desc: string; icon:
 ]
 
 export default function ComposeModal({ onClose, onPosted }: ComposeModalProps) {
-  const { profile } = useAuth()
+  const { profile, delegateSession, logDelegateAction, canDelegate } = useAuth()
   const navigate = useNavigate()
   const [view, setView] = useState<ComposeView>('main')
   const [selectedType, setSelectedType] = useState<PostType>('project_update')
@@ -47,8 +47,14 @@ export default function ComposeModal({ onClose, onPosted }: ComposeModalProps) {
   }, [onClose])
 
   function handleTypeClick(type: PostType | 'refer') {
-    if (type === 'job_post') { onClose(); navigate('/jobs/post'); return }
-    if (type === 'bid_post') { onClose(); navigate('/bids/post'); return }
+    if (type === 'job_post') {
+      if (!canDelegate('job_post')) return
+      onClose(); navigate('/jobs/post'); return
+    }
+    if (type === 'bid_post') {
+      if (!canDelegate('bid')) return
+      onClose(); navigate('/bids/post'); return
+    }
     if (type === 'refer') { setView('refer'); return }
     setSelectedType(type as PostType)
     setView('update')
@@ -105,6 +111,9 @@ export default function ComposeModal({ onClose, onPosted }: ComposeModalProps) {
       author_verified: false,
     }
 
+    if (delegateSession) {
+      void logDelegateAction('create_post', { post_id: data.id, post_type: selectedType })
+    }
     onPosted(feedPost)
     onClose()
   }
@@ -143,7 +152,11 @@ export default function ComposeModal({ onClose, onPosted }: ComposeModalProps) {
             <div style={{ padding: 20 }}>
               <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 16 }}>What would you like to share?</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                {POST_TYPES.map(pt => (
+                {POST_TYPES.filter(pt => {
+                  if (pt.type === 'job_post') return canDelegate('job_post')
+                  if (pt.type === 'bid_post') return canDelegate('bid')
+                  return true
+                }).map(pt => (
                   <button
                     key={String(pt.type)}
                     onClick={() => handleTypeClick(pt.type)}

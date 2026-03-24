@@ -37,7 +37,7 @@ export default function MessageThread() {
   const { threadId } = useParams<{ threadId: string }>()
   const [searchParams] = useSearchParams()
   const withId = searchParams.get('with')
-  const { profile } = useAuth()
+  const { profile, canDelegate, logDelegateAction, delegateSession } = useAuth()
   const navigate = useNavigate()
 
   const [messages, setMessages] = useState<Message[]>([])
@@ -145,6 +145,12 @@ export default function MessageThread() {
   async function handleSend(overrideBody?: string) {
     const messageBody = overrideBody ?? body.trim()
     if (!profile || !otherUser || !threadId || !messageBody || sending) return
+
+    if (!canDelegate('message')) {
+      setSendError('As a Contributor, you do not have permission to send messages.')
+      return
+    }
+
     setSending(true)
     setSendError('')
 
@@ -170,6 +176,9 @@ export default function MessageThread() {
     await loadMessages()
     setSending(false)
     inputRef.current?.focus()
+    if (delegateSession) {
+      void logDelegateAction('send_message', { thread_id: threadId, recipient_id: otherUser?.id })
+    }
   }
 
   async function handleInquirySubmit(formattedBody: string) {
