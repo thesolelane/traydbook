@@ -415,7 +415,7 @@ export default function Feed() {
     <>
       <FeedFilterBar />
 
-      <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', maxWidth: 1100, margin: '0 auto', padding: '24px 20px' }}>
+      <div className="feed-layout" style={{ display: 'flex', gap: 24, alignItems: 'flex-start', maxWidth: 1100, margin: '0 auto', padding: '24px 20px' }}>
 
         <aside style={{ width: 240, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16, position: 'sticky', top: 104 }} className="feed-sidebar-left">
           {profile && (
@@ -634,9 +634,40 @@ export default function Feed() {
         <ComposeModal onClose={() => setComposeOpen(false)} onPosted={handlePosted} />
       )}
 
+      {/* Mobile FAB — only visible on mobile, only for contractors */}
+      {profile && isContractor && (
+        <button
+          className="mobile-fab"
+          onClick={() => setComposeOpen(true)}
+          style={{
+            display: 'none',
+            position: 'fixed',
+            bottom: 'calc(var(--bottom-nav-height) + 16px)',
+            right: 16,
+            width: 52,
+            height: 52,
+            borderRadius: '50%',
+            background: 'var(--color-brand)',
+            border: 'none',
+            color: '#fff',
+            cursor: 'pointer',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 16px rgba(232,93,4,0.5)',
+            zIndex: 90,
+          }}
+        >
+          <Plus size={22} />
+        </button>
+      )}
+
       <style>{`
         @media (max-width: 1024px) { .feed-sidebar-right { display: none !important; } }
-        @media (max-width: 768px) { .feed-sidebar-left { display: none !important; } }
+        @media (max-width: 767px) {
+          .feed-sidebar-left { display: none !important; }
+          .feed-layout { padding: 12px !important; }
+          .mobile-fab { display: flex !important; }
+        }
       `}</style>
     </>
   )

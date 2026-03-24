@@ -464,7 +464,7 @@ export default function Explore() {
               </p>
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 14 }}>
+            <div className="explore-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 14 }}>
               {contractors.map(c => {
                 const u = c.user
                 const initials = u.display_name.slice(0, 2).toUpperCase()

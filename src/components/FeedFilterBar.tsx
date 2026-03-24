@@ -1,3 +1,4 @@
+import React from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { FILTER_OPTIONS, FilterType } from '../types/feed'
 
@@ -20,7 +21,7 @@ export default function FeedFilterBar() {
       top: 56,
       zIndex: 90,
     }}>
-      <div className="container" style={{ display: 'flex', gap: 4, paddingTop: 10, paddingBottom: 10, overflowX: 'auto' }}>
+      <div className="container feed-filter-inner" style={{ display: 'flex', gap: 4, paddingTop: 10, paddingBottom: 10, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
         {FILTER_OPTIONS.map(opt => {
           const isActive = active === opt.key
           return (
