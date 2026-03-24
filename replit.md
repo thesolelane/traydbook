@@ -94,6 +94,43 @@ Pro Verified contractors can vouch for others via the Vouch button on their prof
 - `safety_alert` → yellow badge "Safety Alert"
 - `referral` → purple badge "Referral"
 
+## Stripe
+- **Keys**: LIVE keys in use (`sk_live_...`) — real payments are charged
+- `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` stored as Replit secrets
+- **Webhook**: Must be registered in the Stripe dashboard under Developers → Webhooks
+  - Dev (Replit): point to `https://<replit-dev-domain>/api/webhooks/stripe`
+  - Production (own server): point to `https://yourdomain.com/api/webhooks/stripe`
+  - Each environment needs its own webhook endpoint + its own `STRIPE_WEBHOOK_SECRET`
+- **Credit bundles**: Starter 25cr/$9, Builder 75cr/$24, Professional 200cr/$54, Power 500cr/$99
+- ⚠️ Since live keys are active in Replit, avoid triggering the checkout flow during development — it will charge real cards
+
+## Deployment
+All deployment files live in `deploy/` and must be updated as the app evolves (new env vars, new services, etc.):
+- `deploy/UBUNTU_SETUP.md` — full Ubuntu 22.04 server setup guide (Node, PM2, Nginx, SSL)
+- `deploy/WINDOWS_SETUP.md` — full Windows Server setup guide (same stack, Windows paths)
+- `deploy/deploy.sh` — one-command Linux deploy script (git pull → build → PM2 reload)
+- `deploy/deploy.ps1` — one-command Windows deploy script (PowerShell)
+- `deploy/nginx.conf` — Nginx config for Ubuntu (static SPA + /api proxy + SSL-ready)
+- `deploy/nginx-windows.conf` — same config for Windows paths
+- `deploy/ecosystem.config.js` — PM2 process config (auto-restart, log paths)
+- `deploy/.env.example` — template of every env var the server needs
+
+### Deployment roadmap
+1. **Now**: Replit (development + active builds)
+2. **Beta**: Local Ubuntu or Windows server — run `deploy.sh` or `deploy.ps1` after each push
+3. **Production**: Hetzner (or equivalent non-US VPS) — same scripts, live domain + SSL via Let's Encrypt
+
+### Required env vars on any server
+```
+VITE_SUPABASE_URL
+VITE_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY
+STRIPE_SECRET_KEY          ← live key
+STRIPE_WEBHOOK_SECRET      ← from Stripe dashboard for that server's webhook URL
+APP_ORIGIN                 ← https://yourdomain.com (controls Stripe redirect URLs)
+NODE_ENV=production
+```
+
 ## Task Status
 - ✅ Task #1: Auth, Database & Routing Foundation — DONE
 - ✅ Task #2: Feed Overhaul (post types, compose, filters) — DONE
@@ -104,3 +141,4 @@ Pro Verified contractors can vouch for others via the Vouch button on their prof
 - ✅ Task #7: Credits, Stripe & Settings — DONE
 - ✅ Task #8: Social Login + Verified Badge System — DONE
 - ✅ Task #8 (Profile Polish): Social Links & Avatar Validation — DONE
+- 🔄 Task #9: SMS Message Alerts (Telnyx, two-tier subscription) — IN PROGRESS
