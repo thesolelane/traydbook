@@ -82,7 +82,7 @@ export default function ProjectInquiryModal({
 
   const filled =
     form.tradeType && form.propertyType && form.location &&
-    form.timeline && form.budget && form.description.trim().length >= 20
+    form.timeline && form.budget && form.description.trim().length >= 80
 
   async function handleSend() {
     setSubmitting(true)
@@ -215,8 +215,8 @@ export default function ProjectInquiryModal({
                   rows={4}
                   style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.5 }}
                 />
-                <span style={{ fontSize: 11, color: form.description.length >= 20 ? 'var(--color-text-muted)' : '#DC2626', textAlign: 'right' }}>
-                  {form.description.length} / 20 min
+                <span style={{ fontSize: 11, color: form.description.length >= 80 ? 'var(--color-text-muted)' : '#DC2626', textAlign: 'right' }}>
+                  {form.description.length} / 80 min
                 </span>
               </label>
             </div>
