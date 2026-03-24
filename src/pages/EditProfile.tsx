@@ -2,11 +2,15 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ArrowLeft, Save, Camera, Plus, X, Loader, CheckCircle, AlertCircle, Award,
+  Globe, Instagram, Linkedin, Youtube, Facebook,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { ContractorProfile, Credential } from '../types/profile'
+import { ContractorProfile, Credential, SocialLinks } from '../types/profile'
+import { sanitizeSocialLinks } from '../lib/urlUtils'
 import { tradeOptions } from '../data/mockData'
+
+const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024
 
 const AVAILABILITY_OPTIONS = [
   { value: 'available', label: 'Available' },
@@ -55,6 +59,9 @@ export default function EditProfile() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [avatarUploading, setAvatarUploading] = useState(false)
+  const [avatarError, setAvatarError] = useState('')
+
+  const [socialLinks, setSocialLinks] = useState<SocialLinks>({})
 
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
@@ -78,16 +85,17 @@ export default function EditProfile() {
     if (!profile) return
     const { data: userData } = await supabase
       .from('users')
-      .select('display_name, location_city, location_state, location_zip, avatar_url')
+      .select('display_name, location_city, location_state, location_zip, avatar_url, social_links')
       .eq('id', profile.id)
       .single()
     if (userData) {
-      const u = userData as { display_name: string; location_city: string | null; location_state: string | null; location_zip: string | null; avatar_url: string | null }
+      const u = userData as { display_name: string; location_city: string | null; location_state: string | null; location_zip: string | null; avatar_url: string | null; social_links: SocialLinks | null }
       setDisplayName(u.display_name)
       setLocationCity(u.location_city ?? '')
       setLocationState(u.location_state ?? '')
       setLocationZip(u.location_zip ?? '')
       setAvatarPreview(u.avatar_url)
+      setSocialLinks(u.social_links ?? {})
     }
 
     if (isContractor) {
@@ -122,6 +130,17 @@ export default function EditProfile() {
   function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    setAvatarError('')
+    if (!file.type.startsWith('image/')) {
+      setAvatarError('Invalid file type — please upload an image (JPG, PNG, GIF, etc).')
+      e.target.value = ''
+      return
+    }
+    if (file.size > MAX_AVATAR_SIZE_BYTES) {
+      setAvatarError('File too large — max 5 MB.')
+      e.target.value = ''
+      return
+    }
     setAvatarFile(file)
     setAvatarPreview(URL.createObjectURL(file))
   }
@@ -152,7 +171,12 @@ export default function EditProfile() {
       }
     }
 
-    const userUpdate: Record<string, unknown> = { display_name: displayName.trim() }
+    const sanitizedLinks = sanitizeSocialLinks(socialLinks as Record<string, string | undefined>)
+
+    const userUpdate: Record<string, unknown> = {
+      display_name: displayName.trim(),
+      social_links: sanitizedLinks,
+    }
     if (locationCity.trim()) userUpdate.location_city = locationCity.trim()
     if (locationState.trim()) userUpdate.location_state = locationState.trim()
     if (locationZip.trim()) userUpdate.location_zip = locationZip.trim()
@@ -294,6 +318,11 @@ export default function EditProfile() {
             <button onClick={() => fileInputRef.current?.click()} className="btn btn-secondary" style={{ marginTop: 8, fontSize: 12, padding: '5px 12px' }}>
               Choose File
             </button>
+            {avatarError && (
+              <p style={{ fontSize: 12, color: '#DC2626', marginTop: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <AlertCircle size={12} /> {avatarError}
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -473,6 +502,39 @@ export default function EditProfile() {
         </>
       )}
 
+      {/* Social & Web Links */}
+      <div className="card" style={{ padding: 20, marginBottom: 16 }}>
+        <h2 style={{ fontFamily: 'var(--font-condensed)', fontWeight: 800, fontSize: 15, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Globe size={14} color="var(--color-brand)" /> Social &amp; Web Links
+        </h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {([
+            { key: 'website', label: 'Website', placeholder: 'https://yoursite.com', Icon: Globe },
+            { key: 'instagram', label: 'Instagram', placeholder: 'https://instagram.com/yourhandle', Icon: Instagram },
+            { key: 'linkedin', label: 'LinkedIn', placeholder: 'https://linkedin.com/in/yourprofile', Icon: Linkedin },
+            { key: 'tiktok', label: 'TikTok', placeholder: 'https://tiktok.com/@yourhandle', Icon: null },
+            { key: 'facebook', label: 'Facebook', placeholder: 'https://facebook.com/yourpage', Icon: Facebook },
+            { key: 'youtube', label: 'YouTube', placeholder: 'https://youtube.com/@yourchannel', Icon: Youtube },
+          ] as { key: keyof SocialLinks; label: string; placeholder: string; Icon: React.ElementType | null }[]).map(({ key, label, placeholder, Icon }) => (
+            <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 28, display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
+                {Icon ? <Icon size={16} color="var(--color-text-muted)" /> : <span style={{ fontSize: 14 }}>🎵</span>}
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 11, fontWeight: 700, display: 'block', marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-muted)' }}>{label}</label>
+                <input
+                  type="url"
+                  value={socialLinks[key] ?? ''}
+                  onChange={e => setSocialLinks(prev => ({ ...prev, [key]: e.target.value }))}
+                  placeholder={placeholder}
+                  style={{ width: '100%', border: '1.5px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '7px 12px', fontSize: 13, background: 'var(--color-bg)', color: 'var(--color-text)', boxSizing: 'border-box' }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Save button bottom */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 8 }}>
         <Link to={`/profile/${profile.handle}`} className="btn btn-ghost" style={{ fontSize: 13 }}>Cancel</Link>
@@ -482,7 +544,6 @@ export default function EditProfile() {
         </button>
       </div>
 
-      {/* Credential modal */}
       {showCredModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
           <div className="card" style={{ width: '100%', maxWidth: 440, padding: 0, overflow: 'hidden' }}>

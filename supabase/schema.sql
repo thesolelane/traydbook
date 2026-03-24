@@ -17,6 +17,7 @@ create table if not exists public.users (
   location_state text,
   location_zip   text,
   credit_balance integer not null default 0,
+  social_links   jsonb not null default '{}'::jsonb,
   created_at    timestamptz not null default now(),
   deleted_at    timestamptz
 );

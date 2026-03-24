@@ -94,11 +94,25 @@ export default function SignupOwner() {
   const [locationState, setLocationState] = useState('')
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const [avatarError, setAvatarError] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const MAX_AVATAR_SIZE = 5 * 1024 * 1024
 
   function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    setAvatarError('')
+    if (!file.type.startsWith('image/')) {
+      setAvatarError('Invalid file type — please upload an image (JPG, PNG, GIF, etc).')
+      e.target.value = ''
+      return
+    }
+    if (file.size > MAX_AVATAR_SIZE) {
+      setAvatarError('File too large — max 5 MB.')
+      e.target.value = ''
+      return
+    }
     setAvatarFile(file)
     setAvatarPreview(URL.createObjectURL(file))
   }
@@ -370,6 +384,7 @@ export default function SignupOwner() {
                       Choose Photo
                     </button>
                     <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>JPG, PNG or GIF · Max 5MB</p>
+                    {avatarError && <p style={{ fontSize: 11, color: '#DC2626', marginTop: 4 }}>{avatarError}</p>}
                   </div>
                   <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarChange} />
                 </div>

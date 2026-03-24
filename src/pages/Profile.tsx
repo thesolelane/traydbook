@@ -12,9 +12,10 @@ import { AuthorAvatar } from '../components/PostCard'
 import { FeedPost } from '../types/feed'
 import {
   ProfileUser, ContractorProfile, Credential,
-  PortfolioProject, ProfileReview, ConnectionStatus, ProfileTab,
+  PortfolioProject, ProfileReview, ConnectionStatus, ProfileTab, SocialLinks,
 } from '../types/profile'
 import VerifiedBadge from '../components/VerifiedBadge'
+import { safeExternalUrl } from '../lib/urlUtils'
 
 function timeAgo(iso: string): string {
   const diff = (Date.now() - new Date(iso).getTime()) / 1000
@@ -197,7 +198,7 @@ export default function Profile() {
 
     const { data: userData, error } = await supabase
       .from('users')
-      .select('id, display_name, handle, avatar_url, account_type, location_city, location_state, location_zip, credit_balance, created_at')
+      .select('id, display_name, handle, avatar_url, account_type, location_city, location_state, location_zip, credit_balance, social_links, created_at')
       .eq('handle', handle)
       .is('deleted_at', null)
       .single()
@@ -720,6 +721,48 @@ export default function Profile() {
               )}
             </div>
           </div>
+
+          {/* Social links */}
+          {user.social_links && Object.values(user.social_links).some(Boolean) && (() => {
+            const links = user.social_links as SocialLinks
+            const SOCIAL_DEFS: { key: keyof SocialLinks; label: string; emoji: string }[] = [
+              { key: 'website', label: 'Website', emoji: '🌐' },
+              { key: 'instagram', label: 'Instagram', emoji: '📸' },
+              { key: 'linkedin', label: 'LinkedIn', emoji: '💼' },
+              { key: 'tiktok', label: 'TikTok', emoji: '🎵' },
+              { key: 'facebook', label: 'Facebook', emoji: '👥' },
+              { key: 'youtube', label: 'YouTube', emoji: '▶️' },
+            ]
+            const visibleLinks = SOCIAL_DEFS
+              .map(({ key, label, emoji }) => ({ key, label, emoji, href: safeExternalUrl(links[key]) }))
+              .filter(({ href }) => href !== null)
+            if (visibleLinks.length === 0) return null
+            return (
+              <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                {visibleLinks.map(({ key, label, emoji, href }) => (
+                  <a
+                    key={key}
+                    href={href as string}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={label}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 5,
+                      fontSize: 12, fontWeight: 600,
+                      padding: '3px 10px', borderRadius: 20,
+                      border: '1px solid var(--color-border)',
+                      background: 'var(--color-surface)',
+                      color: 'var(--color-text-muted)',
+                      textDecoration: 'none',
+                      transition: 'border-color 0.15s, color 0.15s',
+                    }}
+                  >
+                    <span>{emoji}</span> {label}
+                  </a>
+                ))}
+              </div>
+            )
+          })()}
 
           {/* Stats bar */}
           <div style={{

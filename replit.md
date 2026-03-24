@@ -65,6 +65,8 @@ The professional network for the construction trades. Contractors, tradespeople,
 - `src/index.css` — Global CSS variables + reset
 - `supabase/schema.sql` — Full DB schema with RLS policies + RPCs (send_message, send_connection_request)
 - `supabase/migrations/008_badge_system.sql` — Migration for badge_tier + vouches table
+- `supabase/migrations/009_storage_avatars.sql` — Migration for avatars storage bucket + policies
+- `supabase/migrations/010_social_links.sql` — Migration for social_links JSONB column on users
 
 ## Social Login
 - Google, Apple, LinkedIn OAuth via Supabase (requires enabling in Supabase dashboard)
@@ -101,3 +103,4 @@ Pro Verified contractors can vouch for others via the Vouch button on their prof
 - ✅ Task #6: Explore, Messages & Notifications — DONE
 - ✅ Task #7: Credits, Stripe & Settings — DONE
 - ✅ Task #8: Social Login + Verified Badge System — DONE
+- ✅ Task #8 (Profile Polish): Social Links & Avatar Validation — DONE

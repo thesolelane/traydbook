@@ -1,3 +1,12 @@
+export interface SocialLinks {
+  website?: string
+  instagram?: string
+  linkedin?: string
+  tiktok?: string
+  facebook?: string
+  youtube?: string
+}
+
 export interface ProfileUser {
   id: string
   display_name: string
@@ -8,6 +17,7 @@ export interface ProfileUser {
   location_state: string | null
   location_zip: string | null
   credit_balance: number
+  social_links: SocialLinks | null
   created_at: string
 }
 
