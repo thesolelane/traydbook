@@ -97,11 +97,22 @@ Pro Verified contractors can vouch for others via the Vouch button on their prof
 ## Stripe
 - **Keys**: LIVE keys in use (`sk_live_...`) — real payments are charged
 - `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` stored as Replit secrets
+- **Email**: `customer_email` passed to Stripe checkout — Stripe automatically sends a payment receipt to this address after purchase
 - **Webhook**: Must be registered in the Stripe dashboard under Developers → Webhooks
   - Dev (Replit): point to `https://<replit-dev-domain>/api/webhooks/stripe`
   - Production (own server): point to `https://yourdomain.com/api/webhooks/stripe`
   - Each environment needs its own webhook endpoint + its own `STRIPE_WEBHOOK_SECRET`
-- **Credit bundles**: Starter 25cr/$9, Builder 75cr/$24, Professional 200cr/$54, Power 500cr/$99
+  - Listen for: `checkout.session.completed`
+- **Seed script**: `scripts/seed-stripe-products.js` — run once to create/update products in Stripe (idempotent, safe to re-run)
+
+### Live Stripe Products & Prices
+| Bundle       | Credits | Price  | Stripe Price ID                        | Stripe Product ID         |
+|---|---|---|---|---|
+| Starter      | 25 cr   | $9     | `price_1TEMD8CXFkuyP9oE1vVyWb2D`     | `prod_UClkf2uXvDLFsN`    |
+| Builder      | 75 cr   | $24    | `price_1TEMD9CXFkuyP9oEEtINcbiN`     | `prod_UClkweiFvm2VPM`    |
+| Professional | 200 cr  | $54    | `price_1TEMD9CXFkuyP9oEJKb5PKGL`     | `prod_UClkuhQHCsalUv`    |
+| Power        | 500 cr  | $99    | `price_1TEMDACXFkuyP9oEJxlOr18m`     | `prod_UClksIMbwsf3xh`    |
+
 - ⚠️ Since live keys are active in Replit, avoid triggering the checkout flow during development — it will charge real cards
 
 ## Deployment

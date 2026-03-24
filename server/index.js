@@ -18,10 +18,38 @@ const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 const supabaseAnon = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 const BUNDLES = [
-  { id: 'starter',      credits: 25,  cents: 900,  name: 'Starter' },
-  { id: 'builder',      credits: 75,  cents: 2400, name: 'Builder' },
-  { id: 'professional', credits: 200, cents: 5400, name: 'Professional' },
-  { id: 'power',        credits: 500, cents: 9900, name: 'Power' },
+  {
+    id:         'starter',
+    name:       'Starter',
+    credits:    25,
+    cents:      900,
+    priceId:    'price_1TEMD8CXFkuyP9oE1vVyWb2D',
+    productId:  'prod_UClkf2uXvDLFsN',
+  },
+  {
+    id:         'builder',
+    name:       'Builder',
+    credits:    75,
+    cents:      2400,
+    priceId:    'price_1TEMD9CXFkuyP9oEEtINcbiN',
+    productId:  'prod_UClkweiFvm2VPM',
+  },
+  {
+    id:         'professional',
+    name:       'Professional',
+    credits:    200,
+    cents:      5400,
+    priceId:    'price_1TEMD9CXFkuyP9oEJKb5PKGL',
+    productId:  'prod_UClkuhQHCsalUv',
+  },
+  {
+    id:         'power',
+    name:       'Power',
+    credits:    500,
+    cents:      9900,
+    priceId:    'price_1TEMDACXFkuyP9oEJxlOr18m',
+    productId:  'prod_UClksIMbwsf3xh',
+  },
 ]
 
 const APP_ORIGIN = process.env.APP_ORIGIN
@@ -116,17 +144,10 @@ app.post('/api/create-checkout-session', requireAuth, async (req, res) => {
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      // Intentionally shared with Stripe to pre-fill the checkout form
+      // customer_email pre-fills the checkout form and Stripe uses it to send the payment receipt
       customer_email: emailValid ? rawEmail : undefined,
       line_items: [{
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: `TraydBook ${bundle.name} Credits`,
-            description: `${bundle.credits} credits for posting jobs, RFQs & messaging`,
-          },
-          unit_amount: bundle.cents,
-        },
+        price:    bundle.priceId,
         quantity: 1,
       }],
       mode: 'payment',
@@ -134,8 +155,9 @@ app.post('/api/create-checkout-session', requireAuth, async (req, res) => {
       cancel_url: `${APP_ORIGIN}/credits?canceled=true`,
       metadata: {
         userId,
-        credits: String(bundle.credits),
+        credits:  String(bundle.credits),
         bundleId: bundle.id,
+        priceId:  bundle.priceId,
       },
     })
 
