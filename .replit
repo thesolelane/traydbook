@@ -50,3 +50,7 @@ publicDir = "dist"
 
 [userenv.shared]
 VITE_SUPABASE_URL = "https://tpwrpezsvclzblktgjli.supabase.co"
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 120000
