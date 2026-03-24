@@ -110,10 +110,14 @@ app.post('/api/create-checkout-session', requireAuth, async (req, res) => {
     return res.status(403).json({ error: 'Contractors do not use credits' })
   }
 
+  const rawEmail = req.user.email ?? ''
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail)
+
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      customer_email: req.user.email,
+      // Intentionally shared with Stripe to pre-fill the checkout form
+      customer_email: emailValid ? rawEmail : undefined,
       line_items: [{
         price_data: {
           currency: 'usd',

@@ -152,6 +152,7 @@ export default function Credits() {
       })
       const { url, error } = await res.json()
       if (!res.ok || !url) throw new Error(error ?? 'Failed to create checkout session')
+      if (!url.startsWith('https://checkout.stripe.com/')) throw new Error('Invalid checkout URL')
       window.location.href = url
     } catch (err) {
       setBuyError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
