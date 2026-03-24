@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Search, Star, MapPin, Briefcase, MessageSquare,
   UserPlus, UserCheck, SlidersHorizontal, X, Calendar,
@@ -96,7 +96,20 @@ function formatAvailDate(iso: string | null): string | null {
 export default function Explore() {
   const { profile } = useAuth()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const isContractor = profile?.account_type === 'contractor'
+
+  const activeTab = (searchParams.get('tab') ?? 'contractors') as 'contractors' | 'nearme'
+
+  function setTab(tab: 'contractors' | 'nearme') {
+    const params = new URLSearchParams(searchParams)
+    if (tab === 'contractors') params.delete('tab')
+    else params.set('tab', tab)
+    setSearchParams(params, { replace: true })
+  }
+
+  const [myLocationCity, setMyLocationCity] = useState<string | null>(null)
+  const [myLocationState, setMyLocationState] = useState<string | null>(null)
 
   const [allContractors, setAllContractors] = useState<ContractorRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -121,6 +134,18 @@ export default function Explore() {
     debounceTimer.current = setTimeout(() => setDebouncedSearch(search), 350)
     return () => clearTimeout(debounceTimer.current)
   }, [search])
+
+  useEffect(() => {
+    if (!profile) return
+    supabase.from('users').select('location_city, location_state').eq('id', profile.id).single()
+      .then(({ data }) => {
+        if (data) {
+          const d = data as { location_city: string | null; location_state: string | null }
+          setMyLocationCity(d.location_city)
+          setMyLocationState(d.location_state)
+        }
+      })
+  }, [profile])
 
   const loadContractors = useCallback(async () => {
     setLoading(true)
@@ -245,8 +270,7 @@ export default function Explore() {
   useEffect(() => { loadContractors() }, [loadContractors])
   useEffect(() => { loadConnections() }, [loadConnections])
 
-  // All filtering is now server-side; allContractors is the final result
-  const contractors = allContractors
+  // All filtering is now server-side; allContractors is the final result (sorting applied at render time)
 
   async function handleConnect(c: ContractorRow) {
     if (!profile) return
@@ -391,14 +415,64 @@ export default function Explore() {
 
   const COLORS = ['#2563EB', '#059669', '#7C3AED', '#DC2626', '#D97706', '#0891B2', '#E85D04']
 
+  const nearMeContractors = [...allContractors].sort((a, b) => {
+    const aCity = myLocationCity && a.user.location_city?.toLowerCase() === myLocationCity.toLowerCase() ? 0
+      : myLocationState && a.user.location_state?.toLowerCase() === myLocationState.toLowerCase() ? 1 : 2
+    const bCity = myLocationCity && b.user.location_city?.toLowerCase() === myLocationCity.toLowerCase() ? 0
+      : myLocationState && b.user.location_state?.toLowerCase() === myLocationState.toLowerCase() ? 1 : 2
+    return aCity !== bCity ? aCity - bCity : b.rating_avg - a.rating_avg
+  })
+
+  const contractors = activeTab === 'nearme' ? nearMeContractors : allContractors
+
+  const EXPLORE_TABS: { key: 'contractors' | 'nearme'; label: string }[] = [
+    { key: 'contractors', label: 'Contractors' },
+    { key: 'nearme', label: 'Near Me' },
+  ]
+
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 20px' }}>
-      <div style={{ marginBottom: 20 }}>
+      <div style={{ marginBottom: 16 }}>
         <h1 style={{ fontFamily: 'var(--font-condensed)', fontWeight: 800, fontSize: 28 }}>Explore Contractors</h1>
         <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginTop: 3 }}>
           Discover verified tradespeople and professionals
         </p>
       </div>
+
+      {/* Tab bar */}
+      <div style={{ display: 'flex', gap: 0, marginBottom: 20, borderBottom: '1px solid var(--color-border)' }}>
+        {EXPLORE_TABS.map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setTab(tab.key)}
+            style={{
+              padding: '10px 20px',
+              fontSize: 13,
+              fontWeight: 700,
+              fontFamily: 'var(--font-condensed)',
+              letterSpacing: '0.3px',
+              background: 'none',
+              border: 'none',
+              borderBottom: activeTab === tab.key ? '2px solid var(--color-brand)' : '2px solid transparent',
+              color: activeTab === tab.key ? 'var(--color-brand)' : 'var(--color-text-muted)',
+              cursor: 'pointer',
+              transition: 'color 0.15s, border-color 0.15s',
+              marginBottom: -1,
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'nearme' && (
+        <div style={{ marginBottom: 14, padding: '10px 14px', background: 'var(--color-brand-light)', border: '1px solid rgba(232,93,4,0.2)', borderRadius: 8, fontSize: 13, color: 'var(--color-brand)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <MapPin size={14} />
+          {myLocationCity || myLocationState
+            ? `Sorted by proximity to ${[myLocationCity, myLocationState].filter(Boolean).join(', ')}`
+            : 'Add your city/state in your profile settings to sort by proximity'}
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
         {/* Desktop sidebar */}

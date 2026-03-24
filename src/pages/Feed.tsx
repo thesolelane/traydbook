@@ -59,9 +59,17 @@ const PAGE_SIZE = 10
 
 export default function Feed() {
   const { profile } = useAuth()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   const activeFilter = (searchParams.get('type') ?? 'all') as FilterType
+  const feedMode = (searchParams.get('mode') ?? 'foryou') as 'foryou' | 'following'
+
+  function setFeedMode(mode: 'foryou' | 'following') {
+    const params = new URLSearchParams(searchParams)
+    if (mode === 'foryou') params.delete('mode')
+    else params.set('mode', mode)
+    setSearchParams(params, { replace: true })
+  }
 
   const [posts, setPosts] = useState<FeedPost[]>([])
   const [loading, setLoading] = useState(true)
@@ -116,10 +124,12 @@ export default function Feed() {
     return rawPosts.map(p => ({ ...p, author_trade: tradeMap.get(p.author_id) ?? null }))
   }
 
-  async function doFetchPosts(connIds: Set<string>, filter: FilterType, reset: boolean) {
+  async function doFetchPosts(connIds: Set<string>, filter: FilterType, reset: boolean, mode?: 'foryou' | 'following') {
     const currentPage = reset ? 0 : pageRef.current
     if (!reset) setLoadingMore(true)
     else setLoading(true)
+
+    const effectiveMode = mode ?? feedMode
 
     let query = supabase
       .from('posts')
@@ -134,6 +144,16 @@ export default function Feed() {
       .range(currentPage * PAGE_SIZE, currentPage * PAGE_SIZE + PAGE_SIZE - 1)
 
     if (filter !== 'all') query = query.eq('post_type', filter)
+
+    if (effectiveMode === 'following' && connIds.size > 0) {
+      query = query.in('author_id', [...connIds])
+    } else if (effectiveMode === 'following' && connIds.size === 0) {
+      setPosts([])
+      setHasMore(false)
+      setLoading(false)
+      setLoadingMore(false)
+      return
+    }
 
     const { data, error } = await query
 
@@ -206,8 +226,8 @@ export default function Feed() {
   useEffect(() => {
     if (!profile || !profileInfoLoaded.current) return
     pageRef.current = 0
-    void doFetchPosts(connIdsRef.current, activeFilter, true)
-  }, [activeFilter])
+    void doFetchPosts(connIdsRef.current, activeFilter, true, feedMode)
+  }, [activeFilter, feedMode])
 
   useEffect(() => {
     if (connectedAuthorIds.size > 0 && posts.length > 0) {
@@ -495,6 +515,31 @@ export default function Feed() {
         </aside>
 
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* For You / Following toggle */}
+          <div style={{ display: 'flex', background: 'var(--color-surface)', border: '1.5px solid var(--color-border)', borderRadius: 'var(--radius-sm)', padding: 3, gap: 2, alignSelf: 'flex-start' }}>
+            {(['foryou', 'following'] as const).map(mode => (
+              <button
+                key={mode}
+                onClick={() => setFeedMode(mode)}
+                style={{
+                  padding: '6px 18px',
+                  borderRadius: 'calc(var(--radius-sm) - 2px)',
+                  border: 'none',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  fontFamily: 'var(--font-condensed)',
+                  letterSpacing: '0.3px',
+                  cursor: 'pointer',
+                  background: feedMode === mode ? 'var(--color-brand)' : 'transparent',
+                  color: feedMode === mode ? '#fff' : 'var(--color-text-muted)',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {mode === 'foryou' ? 'For You' : 'Following'}
+              </button>
+            ))}
+          </div>
+
           <div className="card" style={{ padding: 20 }}>
             <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
               {profile && (
@@ -545,7 +590,11 @@ export default function Feed() {
           ) : posts.length === 0 ? (
             <div className="card" style={{ padding: 40, textAlign: 'center' }}>
               <p style={{ fontSize: 14, color: 'var(--color-text-muted)' }}>
-                No posts in this category yet — be the first to share something!
+                {feedMode === 'following'
+                  ? connectedAuthorIds.size === 0
+                    ? "Connect with people to see their posts here."
+                    : "No posts from people you're connected with yet."
+                  : "No posts in this category yet — be the first to share something!"}
               </p>
             </div>
           ) : (

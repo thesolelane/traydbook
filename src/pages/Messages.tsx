@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { MessageSquare } from 'lucide-react'
+import { MessageSquare, Search, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
@@ -39,6 +39,7 @@ export default function Messages() {
   const { profile } = useAuth()
   const [threads, setThreads] = useState<ThreadSummary[]>([])
   const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
 
   const loadThreads = useCallback(async () => {
     if (!profile) return
@@ -119,9 +120,42 @@ export default function Messages() {
 
   const COLORS = ['#2563EB', '#059669', '#7C3AED', '#DC2626', '#D97706', '#0891B2', '#E85D04']
 
+  const filteredThreads = search.trim()
+    ? threads.filter(t => t.otherName.toLowerCase().includes(search.toLowerCase()))
+    : threads
+
   return (
     <div style={{ maxWidth: 680, margin: '0 auto', padding: '24px 20px' }}>
-      <h1 style={{ fontFamily: 'var(--font-condensed)', fontWeight: 800, fontSize: 26, marginBottom: 20 }}>Messages</h1>
+      <h1 style={{ fontFamily: 'var(--font-condensed)', fontWeight: 800, fontSize: 26, marginBottom: 16 }}>Messages</h1>
+
+      {/* Search bar */}
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center', marginBottom: 20 }}>
+        <Search size={14} color="var(--color-text-muted)" style={{ position: 'absolute', left: 12, pointerEvents: 'none' }} />
+        <input
+          type="text"
+          placeholder="Search conversations..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{
+            width: '100%',
+            padding: '10px 36px 10px 36px',
+            border: '1.5px solid var(--color-border)',
+            borderRadius: 'var(--radius-sm)',
+            fontSize: 13,
+            outline: 'none',
+            background: 'var(--color-surface)',
+            color: 'var(--color-text)',
+          }}
+        />
+        {search && (
+          <button
+            onClick={() => setSearch('')}
+            style={{ position: 'absolute', right: 10, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center' }}
+          >
+            <X size={13} />
+          </button>
+        )}
+      </div>
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--color-text-muted)', fontSize: 14 }}>Loading...</div>
@@ -133,9 +167,13 @@ export default function Messages() {
             Start a conversation from the <Link to="/explore" style={{ color: 'var(--color-brand)' }}>Explore</Link> page.
           </p>
         </div>
+      ) : filteredThreads.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--color-text-muted)' }}>
+          <p style={{ fontSize: 14 }}>No conversations match "{search}"</p>
+        </div>
       ) : (
         <div className="card" style={{ overflow: 'hidden' }}>
-          {threads.map((t, i) => {
+          {filteredThreads.map((t, i) => {
             const initials = t.otherName.slice(0, 2).toUpperCase()
             const color = COLORS[t.otherId.charCodeAt(0) % COLORS.length]
             return (
@@ -144,7 +182,7 @@ export default function Messages() {
                 to={`/messages/${t.threadId}?with=${t.otherId}`}
                 style={{
                   display: 'flex', gap: 12, padding: '14px 18px', textDecoration: 'none', alignItems: 'center',
-                  borderBottom: i < threads.length - 1 ? '1px solid var(--color-border)' : 'none',
+                  borderBottom: i < filteredThreads.length - 1 ? '1px solid var(--color-border)' : 'none',
                   background: t.hasUnread ? 'var(--color-brand-light)' : 'transparent',
                   transition: 'background 0.15s',
                 }}

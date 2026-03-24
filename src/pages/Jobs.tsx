@@ -1,15 +1,16 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Link } from 'react-router-dom'
-import { Search, Briefcase, AlertCircle, TrendingUp, DollarSign, Plus, X, SlidersHorizontal, MapPin } from 'lucide-react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { Search, Briefcase, AlertCircle, TrendingUp, DollarSign, Plus, X, SlidersHorizontal, MapPin, Bookmark, CheckCircle, XCircle, Clock } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import JobCard from '../components/JobCard'
 import {
-  JobListing, TRADE_OPTIONS, CERT_OPTIONS, PAY_RANGE_OPTIONS,
-  JOB_TYPE_DISPLAY_OPTIONS, PayRangeOption,
+  JobListing, JobApplication, TRADE_OPTIONS, CERT_OPTIONS, PAY_RANGE_OPTIONS,
+  JOB_TYPE_DISPLAY_OPTIONS, PayRangeOption, formatPay, timeAgo as jobTimeAgo,
 } from '../types/jobs'
 
 type SortMode = 'newest' | 'closest' | 'pay' | 'urgent'
+type JobTab = 'browse' | 'applications' | 'saved'
 
 const PAGE_SIZE = 20
 
@@ -19,6 +20,10 @@ interface Stats {
   urgentCount: number
   payLow: number | null
   payHigh: number | null
+}
+
+interface ApplicationWithListing extends JobApplication {
+  listing: JobListing | null
 }
 
 function StatBox({ icon, value, label, color }: { icon: React.ReactNode; value: string | number; label: string; color: string }) {
@@ -33,9 +38,34 @@ function StatBox({ icon, value, label, color }: { icon: React.ReactNode; value: 
   )
 }
 
+function AppStatusBadge({ status }: { status: JobApplication['status'] }) {
+  const cfg = {
+    applied: { label: 'Applied', color: '#2563EB', bg: 'rgba(37,99,235,0.1)' },
+    reviewed: { label: 'Reviewed', color: '#D97706', bg: 'rgba(217,119,6,0.1)' },
+    accepted: { label: 'Accepted', color: '#059669', bg: 'rgba(5,150,105,0.1)' },
+    rejected: { label: 'Rejected', color: '#DC2626', bg: 'rgba(220,38,38,0.1)' },
+  }[status]
+  const Icon = status === 'accepted' ? CheckCircle : status === 'rejected' ? XCircle : Clock
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: cfg.color, background: cfg.bg, borderRadius: 20, padding: '3px 10px' }}>
+      <Icon size={11} /> {cfg.label}
+    </span>
+  )
+}
+
 export default function Jobs() {
   const { profile } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
   const isContractor = profile?.account_type === 'contractor'
+
+  const activeTab = (searchParams.get('tab') ?? 'browse') as JobTab
+
+  function setTab(tab: JobTab) {
+    const params = new URLSearchParams(searchParams)
+    if (tab === 'browse') params.delete('tab')
+    else params.set('tab', tab)
+    setSearchParams(params, { replace: true })
+  }
 
   const [listings, setListings] = useState<JobListing[]>([])
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
@@ -44,6 +74,12 @@ export default function Jobs() {
   const [hasMore, setHasMore] = useState(false)
   const [page, setPage] = useState(0)
   const [stats, setStats] = useState<Stats>({ totalOpen: 0, postedThisWeek: 0, urgentCount: 0, payLow: null, payHigh: null })
+
+  const [applications, setApplications] = useState<ApplicationWithListing[]>([])
+  const [loadingApps, setLoadingApps] = useState(false)
+
+  const [savedListings, setSavedListings] = useState<JobListing[]>([])
+  const [loadingSaved, setLoadingSaved] = useState(false)
 
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -155,7 +191,7 @@ export default function Jobs() {
     })
   }, [])
 
-  const loadSaved = useCallback(async () => {
+  const loadSavedIds = useCallback(async () => {
     if (!profile) return
     const { data } = await supabase
       .from('interaction_events')
@@ -166,6 +202,60 @@ export default function Jobs() {
     if (data) setSavedIds(new Set(data.map((r: { entity_id: string }) => r.entity_id)))
   }, [profile])
 
+  const loadApplications = useCallback(async () => {
+    if (!profile) return
+    setLoadingApps(true)
+    const { data } = await supabase
+      .from('job_applications')
+      .select('id, listing_id, applicant_id, cover_note, status, created_at')
+      .eq('applicant_id', profile.id)
+      .order('created_at', { ascending: false })
+
+    if (!data) { setLoadingApps(false); return }
+
+    const apps = data as JobApplication[]
+    const listingIds = [...new Set(apps.map(a => a.listing_id))]
+    const { data: listingsData } = await supabase
+      .from('job_listings')
+      .select('*, poster:users!poster_id (display_name, handle, avatar_url)')
+      .in('id', listingIds)
+
+    const listingMap = new Map<string, JobListing>(
+      ((listingsData ?? []) as JobListing[]).map(l => [l.id, l])
+    )
+
+    setApplications(apps.map(app => ({
+      ...app,
+      listing: listingMap.get(app.listing_id) ?? null,
+    })))
+    setLoadingApps(false)
+  }, [profile])
+
+  const loadSavedListings = useCallback(async () => {
+    if (!profile) return
+    setLoadingSaved(true)
+    const { data: savedData } = await supabase
+      .from('interaction_events')
+      .select('entity_id')
+      .eq('user_id', profile.id)
+      .eq('event_type', 'job_save')
+      .eq('entity_type', 'job_listing')
+
+    if (!savedData || savedData.length === 0) { setLoadingSaved(false); return }
+
+    const ids = savedData.map((r: { entity_id: string }) => r.entity_id)
+    setSavedIds(new Set(ids))
+
+    const { data: listingsData } = await supabase
+      .from('job_listings')
+      .select('*, poster:users!poster_id (display_name, handle, avatar_url)')
+      .in('id', ids)
+      .order('created_at', { ascending: false })
+
+    setSavedListings((listingsData ?? []) as JobListing[])
+    setLoadingSaved(false)
+  }, [profile])
+
   useEffect(() => {
     setPage(0)
     loadListings(0)
@@ -173,8 +263,16 @@ export default function Jobs() {
 
   useEffect(() => {
     loadStats()
-    loadSaved()
-  }, [loadStats, loadSaved])
+    loadSavedIds()
+  }, [loadStats, loadSavedIds])
+
+  useEffect(() => {
+    if (activeTab === 'applications') loadApplications()
+  }, [activeTab, loadApplications])
+
+  useEffect(() => {
+    if (activeTab === 'saved') loadSavedListings()
+  }, [activeTab, loadSavedListings])
 
   async function handleLoadMore() {
     const nextPage = page + 1
@@ -228,6 +326,12 @@ export default function Jobs() {
     { key: 'closest', label: 'Closest' },
     { key: 'pay', label: 'Pay' },
     { key: 'urgent', label: 'Urgent' },
+  ]
+
+  const TABS: { key: JobTab; label: string }[] = [
+    { key: 'browse', label: 'Browse Jobs' },
+    { key: 'applications', label: 'My Applications' },
+    { key: 'saved', label: 'Saved Jobs' },
   ]
 
   const SidebarContent = () => (
@@ -318,163 +422,278 @@ export default function Jobs() {
         <StatBox icon={<DollarSign size={14} />} value={payRangeLabel} label="Pay Range" color="#2563EB" />
       </div>
 
-      <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
-        <div className="card" style={{ padding: 20, width: 240, flexShrink: 0, display: 'none' }} id="jobs-sidebar">
-          <SidebarContent />
-        </div>
+      {/* Tab bar */}
+      <div style={{ display: 'flex', gap: 0, marginBottom: 20, borderBottom: '1px solid var(--color-border)' }}>
+        {TABS.map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setTab(tab.key)}
+            style={{
+              padding: '10px 20px',
+              fontSize: 13,
+              fontWeight: 700,
+              fontFamily: 'var(--font-condensed)',
+              letterSpacing: '0.3px',
+              background: 'none',
+              border: 'none',
+              borderBottom: activeTab === tab.key ? '2px solid var(--color-brand)' : '2px solid transparent',
+              color: activeTab === tab.key ? 'var(--color-brand)' : 'var(--color-text-muted)',
+              cursor: 'pointer',
+              transition: 'color 0.15s, border-color 0.15s',
+              marginBottom: -1,
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-        <style>{`
-          @media (min-width: 900px) {
-            #jobs-sidebar { display: block !important; }
-            #jobs-filter-toggle { display: none !important; }
-          }
-        `}</style>
-
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
-            <div style={{ flex: 1, minWidth: 200, position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <Search size={14} color="var(--color-text-muted)" style={{ position: 'absolute', left: 10 }} />
-              <input
-                type="text"
-                placeholder="Search jobs, trades, locations..."
-                value={search}
-                onChange={e => { setSearch(e.target.value); setPage(0) }}
-                style={{
-                  width: '100%', padding: '9px 12px 9px 32px',
-                  border: '1.5px solid var(--color-border)', borderRadius: 'var(--radius-sm)',
-                  fontSize: 13, outline: 'none', background: 'var(--color-surface)',
-                  color: 'var(--color-text)',
-                }}
-              />
-              {search && (
-                <button onClick={() => { setSearch(''); setPage(0) }} style={{ position: 'absolute', right: 8, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}>
-                  <X size={13} />
-                </button>
-              )}
-            </div>
-
-            <button
-              id="jobs-filter-toggle"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="btn btn-ghost"
-              style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, position: 'relative' }}
-            >
-              <SlidersHorizontal size={13} /> Filters
-              {hasActiveFilters && <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--color-brand)', position: 'absolute', top: 5, right: 5 }} />}
-            </button>
+      {activeTab === 'browse' && (
+        <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+          <div className="card" style={{ padding: 20, width: 240, flexShrink: 0, display: 'none' }} id="jobs-sidebar">
+            <SidebarContent />
           </div>
 
-          {sidebarOpen && (
-            <div className="card" style={{ padding: 20, marginBottom: 14 }}>
-              <SidebarContent />
-            </div>
-          )}
+          <style>{`
+            @media (min-width: 900px) {
+              #jobs-sidebar { display: block !important; }
+              #jobs-filter-toggle { display: none !important; }
+            }
+          `}</style>
 
-          <div style={{ display: 'flex', gap: 6, marginBottom: sortMode === 'closest' ? 10 : 14, flexWrap: 'wrap', alignItems: 'center' }}>
-            {SORT_OPTS.map(s => (
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
+              <div style={{ flex: 1, minWidth: 200, position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <Search size={14} color="var(--color-text-muted)" style={{ position: 'absolute', left: 10 }} />
+                <input
+                  type="text"
+                  placeholder="Search jobs, trades, locations..."
+                  value={search}
+                  onChange={e => { setSearch(e.target.value); setPage(0) }}
+                  style={{
+                    width: '100%', padding: '9px 12px 9px 32px',
+                    border: '1.5px solid var(--color-border)', borderRadius: 'var(--radius-sm)',
+                    fontSize: 13, outline: 'none', background: 'var(--color-surface)',
+                    color: 'var(--color-text)',
+                  }}
+                />
+                {search && (
+                  <button onClick={() => { setSearch(''); setPage(0) }} style={{ position: 'absolute', right: 8, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}>
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
+
               <button
-                key={s.key}
-                onClick={() => { setSortMode(s.key); setPage(0) }}
-                className={`btn ${sortMode === s.key ? 'btn-primary' : 'btn-ghost'}`}
-                style={{ fontSize: 12, padding: '5px 12px' }}
+                id="jobs-filter-toggle"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="btn btn-ghost"
+                style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, position: 'relative' }}
               >
-                {s.label}
+                <SlidersHorizontal size={13} /> Filters
+                {hasActiveFilters && <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--color-brand)', position: 'absolute', top: 5, right: 5 }} />}
               </button>
-            ))}
-            <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--color-text-muted)' }}>
-              {listings.length}{hasMore ? '+' : ''} result{listings.length !== 1 ? 's' : ''}
-            </span>
-          </div>
+            </div>
 
-          {sortMode === 'closest' && (
-            <div style={{ marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <MapPin size={13} color="var(--color-text-muted)" />
-              <input
-                type="text"
-                placeholder="Your city, state (e.g. Austin, TX)"
-                value={locationInput}
-                onChange={e => { setLocationInput(e.target.value); setPage(0) }}
-                style={{
-                  padding: '7px 12px', border: '1.5px solid var(--color-border)',
-                  borderRadius: 'var(--radius-sm)', fontSize: 13, outline: 'none',
-                  background: 'var(--color-surface)', color: 'var(--color-text)', width: 240,
-                }}
-              />
-              <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-                Sorted by city/state match
+            {sidebarOpen && (
+              <div className="card" style={{ padding: 20, marginBottom: 14 }}>
+                <SidebarContent />
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: 6, marginBottom: sortMode === 'closest' ? 10 : 14, flexWrap: 'wrap', alignItems: 'center' }}>
+              {SORT_OPTS.map(s => (
+                <button
+                  key={s.key}
+                  onClick={() => { setSortMode(s.key); setPage(0) }}
+                  className={`btn ${sortMode === s.key ? 'btn-primary' : 'btn-ghost'}`}
+                  style={{ fontSize: 12, padding: '5px 12px' }}
+                >
+                  {s.label}
+                </button>
+              ))}
+              <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--color-text-muted)' }}>
+                {listings.length}{hasMore ? '+' : ''} result{listings.length !== 1 ? 's' : ''}
               </span>
             </div>
-          )}
 
-          {hasActiveFilters && (
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
-              {[...tradeFilters].map(t => (
-                <button key={t} onClick={() => toggleTrade(t)} className="badge badge-brand" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  {t} <X size={10} />
-                </button>
-              ))}
-              {[...typeFilters].map(t => (
-                <button key={t} onClick={() => toggleType(t)} className="badge badge-blue" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  {JOB_TYPE_DISPLAY_OPTIONS.find(o => o.value === t)?.label ?? t} <X size={10} />
-                </button>
-              ))}
-              {payRange && (
-                <button onClick={() => { setPayRange(null); setPage(0) }} className="badge badge-green" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  {payRange.label} <X size={10} />
-                </button>
-              )}
-              {[...certFilters].map(c => (
-                <button key={c} onClick={() => toggleCert(c)} className="badge badge-yellow" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  {c} <X size={10} />
-                </button>
-              ))}
-            </div>
-          )}
+            {sortMode === 'closest' && (
+              <div style={{ marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <MapPin size={13} color="var(--color-text-muted)" />
+                <input
+                  type="text"
+                  placeholder="Your city, state (e.g. Austin, TX)"
+                  value={locationInput}
+                  onChange={e => { setLocationInput(e.target.value); setPage(0) }}
+                  style={{
+                    padding: '7px 12px', border: '1.5px solid var(--color-border)',
+                    borderRadius: 'var(--radius-sm)', fontSize: 13, outline: 'none',
+                    background: 'var(--color-surface)', color: 'var(--color-text)', width: 240,
+                  }}
+                />
+                <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+                  Sorted by city/state match
+                </span>
+              </div>
+            )}
 
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--color-text-muted)', fontSize: 14 }}>
-              Loading jobs...
-            </div>
-          ) : listings.length === 0 ? (
+            {hasActiveFilters && (
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+                {[...tradeFilters].map(t => (
+                  <button key={t} onClick={() => toggleTrade(t)} className="badge badge-brand" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    {t} <X size={10} />
+                  </button>
+                ))}
+                {[...typeFilters].map(t => (
+                  <button key={t} onClick={() => toggleType(t)} className="badge badge-blue" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    {JOB_TYPE_DISPLAY_OPTIONS.find(o => o.value === t)?.label ?? t} <X size={10} />
+                  </button>
+                ))}
+                {payRange && (
+                  <button onClick={() => { setPayRange(null); setPage(0) }} className="badge badge-green" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    {payRange.label} <X size={10} />
+                  </button>
+                )}
+                {[...certFilters].map(c => (
+                  <button key={c} onClick={() => toggleCert(c)} className="badge badge-yellow" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    {c} <X size={10} />
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--color-text-muted)', fontSize: 14 }}>
+                Loading jobs...
+              </div>
+            ) : listings.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--color-text-muted)' }}>
+                <p style={{ fontSize: 16, fontWeight: 600 }}>No jobs found</p>
+                <p style={{ fontSize: 13, marginTop: 6 }}>
+                  Try adjusting your filters or{' '}
+                  <button onClick={clearFilters} style={{ color: 'var(--color-brand)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13 }}>
+                    clear all
+                  </button>
+                </p>
+              </div>
+            ) : (
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  {listings.map(listing => (
+                    <JobCard
+                      key={listing.id}
+                      listing={listing}
+                      isContractor={isContractor}
+                      saved={savedIds.has(listing.id)}
+                      onSave={() => handleSave(listing.id)}
+                    />
+                  ))}
+                </div>
+
+                {hasMore && (
+                  <div style={{ textAlign: 'center', marginTop: 24 }}>
+                    <button
+                      onClick={handleLoadMore}
+                      disabled={loadingMore}
+                      className="btn btn-ghost"
+                      style={{ fontSize: 13, padding: '10px 28px' }}
+                    >
+                      {loadingMore ? 'Loading…' : 'Load More Jobs'}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'applications' && (
+        <div style={{ maxWidth: 720 }}>
+          {loadingApps ? (
+            <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--color-text-muted)', fontSize: 14 }}>Loading applications...</div>
+          ) : applications.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--color-text-muted)' }}>
-              <p style={{ fontSize: 16, fontWeight: 600 }}>No jobs found</p>
+              <Briefcase size={32} style={{ marginBottom: 12, opacity: 0.3 }} />
+              <p style={{ fontSize: 16, fontWeight: 600 }}>No applications yet</p>
               <p style={{ fontSize: 13, marginTop: 6 }}>
-                Try adjusting your filters or{' '}
-                <button onClick={clearFilters} style={{ color: 'var(--color-brand)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13 }}>
-                  clear all
+                When you apply to jobs, they'll appear here.{' '}
+                <button onClick={() => setTab('browse')} style={{ color: 'var(--color-brand)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13 }}>
+                  Browse jobs
                 </button>
               </p>
             </div>
           ) : (
-            <>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                {listings.map(listing => (
-                  <JobCard
-                    key={listing.id}
-                    listing={listing}
-                    isContractor={isContractor}
-                    saved={savedIds.has(listing.id)}
-                    onSave={() => handleSave(listing.id)}
-                  />
-                ))}
-              </div>
-
-              {hasMore && (
-                <div style={{ textAlign: 'center', marginTop: 24 }}>
-                  <button
-                    onClick={handleLoadMore}
-                    disabled={loadingMore}
-                    className="btn btn-ghost"
-                    style={{ fontSize: 13, padding: '10px 28px' }}
-                  >
-                    {loadingMore ? 'Loading…' : 'Load More Jobs'}
-                  </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {applications.map(app => (
+                <div key={app.id} className="card" style={{ padding: 18 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 10 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      {app.listing ? (
+                        <Link
+                          to={`/jobs/${app.listing_id}`}
+                          style={{ fontWeight: 700, fontSize: 15, color: 'var(--color-text)', textDecoration: 'none' }}
+                        >
+                          {app.listing.title}
+                        </Link>
+                      ) : (
+                        <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--color-text-muted)' }}>Job no longer available</span>
+                      )}
+                      {app.listing && (
+                        <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 3 }}>
+                          {app.listing.poster?.display_name} · {app.listing.location_city}, {app.listing.location_state}
+                          {app.listing.pay_min || app.listing.pay_max ? ` · ${formatPay(app.listing)}` : ''}
+                        </div>
+                      )}
+                    </div>
+                    <AppStatusBadge status={app.status} />
+                  </div>
+                  {app.cover_note && (
+                    <p style={{ fontSize: 13, color: 'var(--color-text-muted)', lineHeight: 1.6, borderTop: '1px solid var(--color-border)', paddingTop: 10, marginTop: 4 }}>
+                      {app.cover_note}
+                    </p>
+                  )}
+                  <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 8 }}>
+                    Applied {jobTimeAgo(app.created_at)}
+                  </div>
                 </div>
-              )}
-            </>
+              ))}
+            </div>
           )}
         </div>
-      </div>
+      )}
+
+      {activeTab === 'saved' && (
+        <div style={{ maxWidth: 720 }}>
+          {loadingSaved ? (
+            <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--color-text-muted)', fontSize: 14 }}>Loading saved jobs...</div>
+          ) : savedListings.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--color-text-muted)' }}>
+              <Bookmark size={32} style={{ marginBottom: 12, opacity: 0.3 }} />
+              <p style={{ fontSize: 16, fontWeight: 600 }}>No saved jobs yet</p>
+              <p style={{ fontSize: 13, marginTop: 6 }}>
+                Bookmark jobs from the{' '}
+                <button onClick={() => setTab('browse')} style={{ color: 'var(--color-brand)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13 }}>
+                  Browse Jobs
+                </button>
+                {' '}tab.
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {savedListings.map(listing => (
+                <JobCard
+                  key={listing.id}
+                  listing={listing}
+                  isContractor={isContractor}
+                  saved={true}
+                  onSave={() => {}}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
