@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react'
+import { useState, useRef, FormEvent } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -65,7 +65,26 @@ export default function SignupContractor() {
     locationCity: '', locationState: '',
   })
   const [step3, setStep3] = useState<Step3>({ businessName: '', bio: '', serviceRadius: '50' })
-  const [avatarUrl, setAvatarUrl] = useState('')
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setAvatarFile(file)
+    setAvatarPreview(URL.createObjectURL(file))
+  }
+
+  async function uploadAvatar(uid: string): Promise<string | null> {
+    if (!avatarFile) return null
+    const ext = avatarFile.name.split('.').pop() ?? 'jpg'
+    const path = `${uid}.${ext}`
+    const { error } = await supabase.storage.from('avatars').upload(path, avatarFile, { upsert: true, contentType: avatarFile.type })
+    if (error) return null
+    const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+    return data.publicUrl
+  }
 
   function slugify(s: string) {
     return s.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30)
@@ -108,11 +127,13 @@ export default function SignupContractor() {
 
       const handle = step2.handle || slugify(step2.displayName) || `user${Date.now()}`
 
+      const uploadedAvatarUrl = await uploadAvatar(uid)
+
       const { error: profileError } = await supabase.from('users').insert({
         id: uid,
         display_name: step2.displayName,
         handle,
-        avatar_url: avatarUrl || null,
+        avatar_url: uploadedAvatarUrl || null,
         account_type: accountType,
         location_city: step2.locationCity || null,
         location_state: step2.locationState || null,
@@ -331,13 +352,30 @@ export default function SignupContractor() {
                 />
               </div>
               <div className="form-group">
-                <label>Profile Photo URL <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--color-text-muted)' }}>(optional)</span></label>
-                <input
-                  type="url"
-                  value={avatarUrl}
-                  onChange={e => setAvatarUrl(e.target.value)}
-                  placeholder="https://example.com/your-photo.jpg"
-                />
+                <label>Profile Photo <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--color-text-muted)' }}>(optional)</span></label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div style={{ position: 'relative', flexShrink: 0 }}>
+                    {avatarPreview ? (
+                      <img src={avatarPreview} alt="Preview" style={{ width: 64, height: 64, borderRadius: 8, objectFit: 'cover', border: '2px solid var(--color-border)' }} />
+                    ) : (
+                      <div style={{ width: 64, height: 64, borderRadius: 8, background: 'var(--color-surface)', border: '2px dashed var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>
+                        📷
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      style={{ position: 'absolute', bottom: -6, right: -6, background: 'var(--color-brand)', border: '2px solid var(--color-bg)', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 10 }}
+                    >✏️</button>
+                  </div>
+                  <div>
+                    <button type="button" onClick={() => fileInputRef.current?.click()} className="btn-secondary" style={{ fontSize: 12, padding: '6px 14px' }}>
+                      Choose Photo
+                    </button>
+                    <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>JPG, PNG or GIF · Max 5MB</p>
+                  </div>
+                  <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarChange} />
+                </div>
               </div>
               <div className="form-group">
                 <label>Service Radius (miles)</label>
