@@ -6,3 +6,9 @@ id = "UHpKx-m6h3QnnnF1sI0kG"
 uri = "file://docs/traydbook-knowledge-base.md"
 type = "text"
 title = "TraydBook Knowledge Base"
+
+[[outputs]]
+id = "IikdeKDzKCHNzBNI_nMI0"
+uri = "file://docs/traydbook-feature-comparison.md"
+type = "text"
+title = "TraydBook Feature Comparison"
