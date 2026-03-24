@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "UHpKx-m6h3QnnnF1sI0kG"
+uri = "file://docs/traydbook-knowledge-base.md"
+type = "text"
+title = "TraydBook Knowledge Base"
