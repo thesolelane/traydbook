@@ -18,3 +18,9 @@ id = "9svSifSuCyxDj7Pe-SfaT"
 uri = "file://docs/traydbook-feature-comparison.pdf"
 type = "pdf"
 title = "TraydBook Feature Comparison (PDF)"
+
+[[outputs]]
+id = "klr-_16jHimRdkHVOz8q3"
+uri = "file://docs/traydbook-marketplace-comparison.pdf"
+type = "pdf"
+title = "TraydBook vs Thumbtack, Angi, HomeAdvisor, Houzz, Bark (PDF)"
