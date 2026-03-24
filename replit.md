@@ -102,16 +102,23 @@ Pro Verified contractors can vouch for others via the Vouch button on their prof
   - Dev (Replit): point to `https://<replit-dev-domain>/api/webhooks/stripe`
   - Production (own server): point to `https://yourdomain.com/api/webhooks/stripe`
   - Each environment needs its own webhook endpoint + its own `STRIPE_WEBHOOK_SECRET`
-  - Listen for: `checkout.session.completed`
+  - Listen for: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`
 - **Seed script**: `scripts/seed-stripe-products.js` — run once to create/update products in Stripe (idempotent, safe to re-run)
 
 ### Live Stripe Products & Prices
-| Bundle       | Credits | Price  | Stripe Price ID                        | Stripe Product ID         |
+
+**One-time credit bundles** (`mode: 'payment'`)
+| Bundle       | Credits | Price | Stripe Price ID                        | Stripe Product ID      |
 |---|---|---|---|---|
-| Starter      | 25 cr   | $9     | `price_1TEMD8CXFkuyP9oE1vVyWb2D`     | `prod_UClkf2uXvDLFsN`    |
-| Builder      | 75 cr   | $24    | `price_1TEMD9CXFkuyP9oEEtINcbiN`     | `prod_UClkweiFvm2VPM`    |
-| Professional | 200 cr  | $54    | `price_1TEMD9CXFkuyP9oEJKb5PKGL`     | `prod_UClkuhQHCsalUv`    |
-| Power        | 500 cr  | $99    | `price_1TEMDACXFkuyP9oEJxlOr18m`     | `prod_UClksIMbwsf3xh`    |
+| Starter      | 25 cr   | $9    | `price_1TEMD8CXFkuyP9oE1vVyWb2D`     | `prod_UClkf2uXvDLFsN` |
+| Builder      | 75 cr   | $24   | `price_1TEMD9CXFkuyP9oEEtINcbiN`     | `prod_UClkweiFvm2VPM` |
+| Professional | 200 cr  | $54   | `price_1TEMD9CXFkuyP9oEJKb5PKGL`     | `prod_UClkuhQHCsalUv` |
+| Power        | 500 cr  | $99   | `price_1TEMDACXFkuyP9oEJxlOr18m`     | `prod_UClksIMbwsf3xh` |
+
+**Monthly subscriptions** (`mode: 'subscription'`)
+| Plan        | Price      | Stripe Price ID                    | Stripe Product ID      |
+|---|---|---|---|
+| SMS Alerts  | $1.99/mo   | `price_1TEMF1CXFkuyP9oESpMHcTBR`  | `prod_UClmMWnPYp7C78` |
 
 - ⚠️ Since live keys are active in Replit, avoid triggering the checkout flow during development — it will charge real cards
 

@@ -17,6 +17,18 @@ const stripe = new Stripe(STRIPE_SECRET_KEY)
 const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 const supabaseAnon = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
+// Monthly SMS alert subscription — $1.99/mo recurring
+const SMS_PLANS = {
+  sms_alerts: {
+    id:        'sms_alerts',
+    priceId:   'price_1TEMF1CXFkuyP9oESpMHcTBR',
+    productId: 'prod_UClmMWnPYp7C78',
+    cents:     199,
+    interval:  'month',
+    label:     'TraydBook SMS Alerts',
+  },
+}
+
 const BUNDLES = [
   {
     id:         'starter',
