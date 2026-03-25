@@ -95,7 +95,11 @@ export default function Onboarding() {
       }
 
       await refreshProfile()
-      navigate('/feed', { replace: true })
+      if (accountType === 'contractor') {
+        navigate('/wallet-setup', { replace: true })
+      } else {
+        navigate('/feed', { replace: true })
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong.')
     } finally {

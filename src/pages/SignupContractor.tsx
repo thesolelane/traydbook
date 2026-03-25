@@ -177,7 +177,7 @@ export default function SignupContractor() {
 
       if (contractorError) throw new Error(contractorError.message)
 
-      navigate('/feed')
+      navigate('/wallet-setup')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred.')
     } finally {

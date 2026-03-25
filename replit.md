@@ -179,6 +179,19 @@ Non-public delegate accounts let company staff manage a company's TraydBook pres
 - Responsibility agreement stored permanently with invitation record (admin user ID + timestamp + terms version)
 - Key files: `src/pages/JoinDelegate.tsx`, `src/components/TeamPanel.tsx`
 
+## Solana Wallet Integration (Task #15)
+Contractor accounts automatically get a Solana wallet after signup/onboarding.
+- Keypair generated **client-side** via `@solana/web3.js` — private key never touches the server
+- `/wallet-setup` — full-page experience: displays wallet address + private key (Base58 + JSON array), copy/download buttons, security warning, required checkbox, beforeunload guard, POST pubkey to API then redirect to /feed
+- Both `SignupContractor.tsx` and `Onboarding.tsx` (contractor path) redirect to `/wallet-setup` instead of `/feed`
+- Non-contractor signups still go to `/feed` as normal
+- **Settings > Crypto Wallet tab** (contractorOnly): active-wallet state (pubkey + QR code + remove/replace actions), no-wallet state (explainer + setup button)
+- **Server endpoints**: `POST /api/wallet/save-pubkey` (validates Base58, contractor-only), `GET /api/wallet/status`, `POST /api/wallet/remove`, `POST /api/wallet/send-reward` (admin-only, uses SOLANA_TREASURY_PRIVATE_KEY from env)
+- **Migration**: `supabase/migrations/015_solana_wallet.sql` — adds `solana_pubkey TEXT UNIQUE NULL` to `users` table
+- **New packages**: `@solana/web3.js`, `qrcode.react`, `buffer` (browser polyfill)
+- **Vite config**: `buffer` polyfill + `global: globalThis` define for @solana/web3.js browser compatibility
+- **Key files**: `src/pages/WalletSetup.tsx`, `server/index.js` (wallet endpoints), `src/pages/Settings.tsx` (wallet tab)
+
 ## Task Status
 - ✅ Task #1: Auth, Database & Routing Foundation — DONE
 - ✅ Task #2: Feed Overhaul (post types, compose, filters) — DONE
@@ -191,3 +204,4 @@ Non-public delegate accounts let company staff manage a company's TraydBook pres
 - ✅ Task #8 (Profile Polish): Social Links & Avatar Validation — DONE
 - ✅ Task #9: SMS Message Alerts (Telnyx, two-tier subscription) — DONE
 - ✅ Task #12: Team Delegation & Ghost Sub-Accounts — DONE
+- ✅ Task #15: Solana Wallet Integration (Contractor Accounts) — DONE
