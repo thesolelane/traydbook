@@ -1,0 +1,166 @@
+[
+  {
+    "tablename": "spatial_ref_sys",
+    "rls_status": "MISSING"
+  },
+  {
+    "tablename": "bids",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "comments",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "connections",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "content_scores",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "contractor_profiles",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "credentials",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "credit_action_costs",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "credit_bundles",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "credit_ledger",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "dwell_events",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "dwell_events_2026_q1",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "dwell_events_2026_q2",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "dwell_events_2026_q3",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "dwell_events_2026_q4",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "dwell_events_2027_q1",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "dwell_events_2027_q2",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "interaction_events",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "interaction_events_2026_q1",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "interaction_events_2026_q2",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "interaction_events_2026_q3",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "interaction_events_2026_q4",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "interaction_events_2027_q1",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "interaction_events_2027_q2",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "job_applications",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "job_listings",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "messages",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "notifications",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "post_likes",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "posts",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "profile_field_sources",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "projects",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "purchases",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "reviews",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "rfqs",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "search_events",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "social_connections",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "social_import_log",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "user_affinity_scores",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "users",
+    "rls_status": "enabled"
+  },
+  {
+    "tablename": "verification_orders",
+    "rls_status": "enabled"
+  }
+]
