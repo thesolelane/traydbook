@@ -28,26 +28,104 @@ const trades = [
   'Masons', 'Painters', 'Roofers', 'Welders', 'General Contractors',
 ]
 
-const features = [
+const WHO_ITS_FOR = [
   {
-    icon: '🏗️',
-    title: 'Post Your Work',
-    desc: 'Share project photos, milestones, and trade tips with a professional network that understands your craft.',
+    icon: '👷',
+    title: 'Contractors',
+    accent: '#e85d04',
+    bullets: [
+      'Always free — no lead fees, ever',
+      'Post work and build a verified portfolio',
+      'Submit bids on real RFQs near you',
+      'Instant credibility with verified badge',
+    ],
   },
   {
+    icon: '🏠',
+    title: 'Homeowners',
+    accent: '#3b82f6',
+    bullets: [
+      'Post jobs and get competing bids',
+      'Browse verified contractor profiles',
+      'Read real reviews from past clients',
+      'No credit card required to post',
+    ],
+  },
+  {
+    icon: '🏢',
+    title: 'Property Investors',
+    accent: '#22c55e',
+    bullets: [
+      'Manage multiple project RFQs at once',
+      'Access vetted contractors in any market',
+      'Track bids and compare quotes',
+      'Delegate to your team with sub-accounts',
+    ],
+  },
+  {
+    icon: '🤝',
+    title: 'Real Estate Agents',
+    accent: '#a855f7',
+    bullets: [
+      'Refer trusted contractors to your clients',
+      'Build a reliable vendor network',
+      'Connect buyers with pre-vetted trades',
+      'Earn referral credits on the platform',
+    ],
+  },
+]
+
+const HOW_IT_WORKS = [
+  {
+    step: '01',
     icon: '📋',
-    title: 'Submit Bids',
-    desc: 'Browse real RFQs posted by verified project owners. Submit structured bids and win more contracts.',
+    title: 'Post Your Work',
+    desc: 'Homeowners and investors post project RFQs in minutes. Contractors share updates from their active jobs to build a visible portfolio.',
   },
   {
+    step: '02',
     icon: '💼',
-    title: 'Find Good Jobs',
-    desc: 'Filter by trade, pay, location, and job type. Apply in seconds with your verified profile.',
+    title: 'Get Bids',
+    desc: 'Verified contractors submit structured bids directly to your project. Compare pricing, credentials, and reviews all in one place.',
   },
   {
-    icon: '⭐',
-    title: 'Build Your Reputation',
-    desc: 'Verified credentials, client reviews, and a portfolio of completed work — all in one place.',
+    step: '03',
+    icon: '🏗️',
+    title: 'Choose & Build',
+    desc: 'Select the right contractor, communicate through the platform, and track your project from bid acceptance to completion.',
+  },
+]
+
+const FEATURES = [
+  {
+    icon: '✅',
+    title: 'Verified Profiles',
+    desc: 'Contractors earn a Pro Verified badge after license and identity checks — so you always know who you\'re hiring.',
+  },
+  {
+    icon: '🆓',
+    title: 'Free for Contractors',
+    desc: 'Trade accounts are always free. No monthly fees, no lead charges, no commission cuts on your earned work.',
+  },
+  {
+    icon: '📊',
+    title: 'Bid Management',
+    desc: 'Post RFQs and manage every bid in a clean dashboard. Compare bids side-by-side and respond directly to contractors.',
+  },
+  {
+    icon: '💬',
+    title: 'Direct Messaging',
+    desc: 'Built-in messaging keeps all project conversations in one place. No phone tag, no lost emails.',
+  },
+  {
+    icon: '📌',
+    title: 'Job Posting',
+    desc: 'Post urgent hires, open positions, and subcontract opportunities. Reach trade professionals actively looking for work.',
+  },
+  {
+    icon: '📱',
+    title: 'Mobile-First Design',
+    desc: 'Built for the job site. The full platform works on any phone — post updates, submit bids, and reply to clients from the field.',
   },
 ]
 
@@ -202,6 +280,7 @@ export default function Landing() {
 
       <ActivityTicker items={tickerItems} />
 
+      {/* ── Hero ── */}
       <section className="landing-hero">
         <div className="landing-hero-content">
           <div className="landing-badge">Free for all trade accounts — always</div>
@@ -215,7 +294,7 @@ export default function Landing() {
           </p>
           <div className="landing-cta-row">
             <Link to="/signup/trade-select" className="btn-primary btn-lg">
-              Join as Contractor
+              Join Free as a Contractor
             </Link>
             <Link to="/signup" state={{ preselectOwner: true }} className="btn-outline btn-lg">
               Find a Contractor
@@ -278,10 +357,16 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ── Stats bar ── */}
       <section className="landing-social-proof">
         <div className="landing-proof-stat">
           <div className="landing-proof-number">12,000+</div>
           <div className="landing-proof-label">Verified Contractors</div>
+        </div>
+        <div className="landing-proof-divider" />
+        <div className="landing-proof-stat">
+          <div className="landing-proof-number">8,400+</div>
+          <div className="landing-proof-label">Projects Posted</div>
         </div>
         <div className="landing-proof-divider" />
         <div className="landing-proof-stat">
@@ -302,20 +387,57 @@ export default function Landing() {
           </>
         )}
         <div className="landing-proof-stat">
-          <div className="landing-proof-number">$2.4B+</div>
-          <div className="landing-proof-label">Work Value Tracked</div>
-        </div>
-        <div className="landing-proof-divider" />
-        <div className="landing-proof-stat">
-          <div className="landing-proof-number">4.9★</div>
-          <div className="landing-proof-label">Avg Contractor Rating</div>
+          <div className="landing-proof-number">38</div>
+          <div className="landing-proof-label">States Covered</div>
         </div>
       </section>
 
+      {/* ── Who It's For ── */}
+      <section className="landing-who">
+        <h2 className="landing-section-title">Built for everyone in the build</h2>
+        <p className="landing-section-sub">Whether you swing a hammer or sign the checks, TraydBook works for you.</p>
+        <div className="landing-who-grid">
+          {WHO_ITS_FOR.map(card => (
+            <div key={card.title} className="landing-who-card">
+              <div className="lwc-icon-row">
+                <span className="lwc-icon">{card.icon}</span>
+                <h3 className="lwc-title" style={{ color: card.accent }}>{card.title}</h3>
+              </div>
+              <ul className="lwc-bullets">
+                {card.bullets.map(b => (
+                  <li key={b}>
+                    <span className="lwc-check" style={{ color: card.accent }}>✓</span>
+                    {b}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── How It Works ── */}
+      <section className="landing-how">
+        <h2 className="landing-section-title">How it works</h2>
+        <p className="landing-section-sub">Three steps from posting to breaking ground.</p>
+        <div className="landing-how-steps">
+          {HOW_IT_WORKS.map((step, i) => (
+            <div key={step.step} className="landing-how-step">
+              <div className="lhs-number">{step.step}</div>
+              <div className="lhs-icon">{step.icon}</div>
+              <h3 className="lhs-title">{step.title}</h3>
+              <p className="lhs-desc">{step.desc}</p>
+              {i < HOW_IT_WORKS.length - 1 && <div className="lhs-connector" />}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Features grid ── */}
       <section className="landing-features">
-        <h2 className="landing-section-title">Everything your trade career needs</h2>
+        <h2 className="landing-section-title">Everything the job needs</h2>
         <div className="landing-features-grid">
-          {features.map(f => (
+          {FEATURES.map(f => (
             <div key={f.title} className="landing-feature-card">
               <div className="lfc-icon">{f.icon}</div>
               <h3>{f.title}</h3>
@@ -358,17 +480,66 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ── Pricing transparency ── */}
+      <section className="landing-pricing">
+        <div className="landing-pricing-inner">
+          <h2 className="landing-section-title" style={{ marginBottom: 12 }}>Simple, transparent pricing</h2>
+          <p className="landing-section-sub" style={{ marginBottom: 48 }}>No surprises. No hidden fees. No pay-to-play lead generation.</p>
+          <div className="landing-pricing-grid">
+            <div className="landing-pricing-card landing-pricing-card--free">
+              <div className="lpc-badge">Always Free</div>
+              <div className="lpc-icon">👷</div>
+              <h3 className="lpc-title">Contractors & Tradespeople</h3>
+              <p className="lpc-desc">
+                Trade accounts are permanently free. Post your work, submit unlimited bids,
+                message clients, and build your verified profile — zero cost, forever.
+              </p>
+              <ul className="lpc-list">
+                <li><span style={{ color: '#e85d04' }}>✓</span> Unlimited bid submissions</li>
+                <li><span style={{ color: '#e85d04' }}>✓</span> Full profile + portfolio</li>
+                <li><span style={{ color: '#e85d04' }}>✓</span> Direct messaging</li>
+                <li><span style={{ color: '#e85d04' }}>✓</span> Verified badge eligibility</li>
+              </ul>
+              <Link to="/signup/trade-select" className="btn-primary" style={{ marginTop: 'auto', alignSelf: 'flex-start' }}>
+                Join Free as a Contractor
+              </Link>
+            </div>
+            <div className="landing-pricing-card">
+              <div className="lpc-badge lpc-badge--credit">Credit-Based</div>
+              <div className="lpc-icon">🏠</div>
+              <h3 className="lpc-title">Homeowners, Investors & Agents</h3>
+              <p className="lpc-desc">
+                Non-contractor accounts use a simple credit system to post jobs and RFQs.
+                Credits keep the platform quality high and contractor inboxes spam-free.
+              </p>
+              <ul className="lpc-list">
+                <li><span style={{ color: '#3b82f6' }}>✓</span> Post jobs & bid requests</li>
+                <li><span style={{ color: '#3b82f6' }}>✓</span> Browse verified contractors</li>
+                <li><span style={{ color: '#3b82f6' }}>✓</span> Manage multiple projects</li>
+                <li><span style={{ color: '#3b82f6' }}>✓</span> Flexible credit top-ups</li>
+              </ul>
+              <Link to="/signup" state={{ preselectOwner: true }} className="btn-outline" style={{ marginTop: 'auto', alignSelf: 'flex-start' }}>
+                Find a Contractor
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Final CTA ── */}
       <section className="landing-cta-section">
         <h2>Ready to grow your trade career?</h2>
         <p>Contractors and tradespeople are always free. No credit card needed.</p>
         <Link to="/signup" className="btn-primary btn-lg">Get Started for Free</Link>
       </section>
 
+      {/* ── Footer ── */}
       <footer className="landing-footer">
         <TraydBookNavLogo />
         <div className="landing-footer-links">
           <Link to="/login">Sign In</Link>
-          <Link to="/signup">Join Free</Link>
+          <Link to="/signup">Sign Up</Link>
+          <a href="#">About</a>
           <a href="#">Blog</a>
           <a href="#">Privacy</a>
           <a href="#">Terms</a>
