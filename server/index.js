@@ -7,11 +7,64 @@ const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET ?? ''
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? ''
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY ?? ''
+const TELNYX_API_KEY = process.env.TELNYX_API_KEY ?? ''
+const TELNYX_PHONE_NUMBER = process.env.TELNYX_PHONE_NUMBER ?? ''
 
 if (!STRIPE_SECRET_KEY) console.warn('[server] STRIPE_SECRET_KEY not set')
 if (!STRIPE_WEBHOOK_SECRET) console.warn('[server] STRIPE_WEBHOOK_SECRET not set')
 if (!SUPABASE_SERVICE_ROLE_KEY) console.warn('[server] SUPABASE_SERVICE_ROLE_KEY not set')
 if (!SUPABASE_ANON_KEY) console.warn('[server] VITE_SUPABASE_ANON_KEY not set')
+if (!TELNYX_API_KEY) console.warn('[server] TELNYX_API_KEY not set — SMS disabled')
+if (!TELNYX_PHONE_NUMBER) console.warn('[server] TELNYX_PHONE_NUMBER not set — SMS disabled')
+
+async function sendSms(to, text) {
+  if (!TELNYX_API_KEY || !TELNYX_PHONE_NUMBER) {
+    console.warn('[sms] Telnyx not configured — skipping SMS to', to)
+    return false
+  }
+  try {
+    const res = await fetch('https://api.telnyx.com/v2/messages', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${TELNYX_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ from: TELNYX_PHONE_NUMBER, to, text }),
+    })
+    if (!res.ok) {
+      const err = await res.text()
+      console.error('[sms] Telnyx error:', err)
+      return false
+    }
+    console.log('[sms] Sent to', to)
+    return true
+  } catch (err) {
+    console.error('[sms] Fetch error:', err.message)
+    return false
+  }
+}
+
+async function sendSmsAlert(userId, alertType, meta = {}) {
+  const { data: prefs } = await supabaseAdmin
+    .from('user_sms_prefs')
+    .select('phone_e164, sms_active')
+    .eq('user_id', userId)
+    .single()
+
+  if (!prefs?.sms_active || !prefs?.phone_e164) return
+
+  const messages = {
+    new_bid:       `TraydBook: You received a new bid of $${meta.amount ?? '?'} on "${meta.title ?? 'your RFQ'}". Log in to review it.`,
+    bid_awarded:   `TraydBook: Your bid was awarded! Log in to see the details.`,
+    new_message:   `TraydBook: You have a new message from ${meta.senderName ?? 'someone'}. Log in to reply.`,
+    job_applied:   `TraydBook: Someone applied to your job listing "${meta.title ?? ''}". Log in to review.`,
+    credits_added: `TraydBook: ${meta.credits ?? ''} credits have been added to your account.`,
+  }
+
+  const text = messages[alertType]
+  if (!text) return
+  await sendSms(prefs.phone_e164, text)
+}
 
 const stripe = new Stripe(STRIPE_SECRET_KEY)
 const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
@@ -86,6 +139,24 @@ app.post('/api/webhooks/stripe',
       const session = event.data.object
       const { userId, credits, bundleId } = session.metadata ?? {}
 
+      // SMS subscription checkout
+      if (session.mode === 'subscription' && userId) {
+        const subId = session.subscription
+        const customerId = session.customer
+        await supabaseAdmin.from('user_sms_prefs').upsert({
+          user_id: userId,
+          sms_active: true,
+          subscription_status: 'active',
+          stripe_customer_id: customerId,
+          stripe_subscription_id: subId,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id' })
+        console.log(`[webhook] SMS subscription activated for user ${userId}`)
+        await sendSmsAlert(userId, 'credits_added', { credits: 'SMS alerts' })
+        return res.json({ received: true })
+      }
+
+      // Credit bundle one-time purchase
       if (!userId || !credits) {
         console.error('[webhook] Missing metadata on session:', session.id)
         return res.status(400).json({ error: 'Missing metadata' })
@@ -112,9 +183,25 @@ app.post('/api/webhooks/stripe',
 
       if (shouldCredit) {
         console.log(`[webhook] Fulfilled ${creditsNum} credits for user ${userId}`)
+        await sendSmsAlert(userId, 'credits_added', { credits: creditsNum })
       } else {
         console.log(`[webhook] Session ${session.id} already processed`)
       }
+    }
+
+    // SMS subscription canceled or lapsed
+    if (event.type === 'customer.subscription.deleted' || event.type === 'customer.subscription.updated') {
+      const sub = event.data.object
+      const status = sub.status // 'active' | 'past_due' | 'canceled' | etc.
+      const isActive = status === 'active'
+      await supabaseAdmin.from('user_sms_prefs')
+        .update({
+          sms_active: isActive,
+          subscription_status: ['active','past_due'].includes(status) ? status : 'canceled',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('stripe_subscription_id', sub.id)
+      console.log(`[webhook] SMS subscription ${sub.id} status → ${status}`)
     }
 
     res.json({ received: true })
@@ -352,6 +439,106 @@ app.get('/api/team', requireAuth, async (req, res) => {
   }
 
   res.json({ delegations: enriched, auditLog })
+})
+
+// ── SMS Subscriptions ─────────────────────────────────────────────────────────
+
+app.get('/api/sms/status', requireAuth, async (req, res) => {
+  const userId = req.user.id
+  const { data } = await supabaseAdmin
+    .from('user_sms_prefs')
+    .select('phone_e164, sms_active, subscription_status, stripe_subscription_id')
+    .eq('user_id', userId)
+    .single()
+  res.json(data ?? { phone_e164: null, sms_active: false, subscription_status: 'inactive' })
+})
+
+app.post('/api/sms/save-phone', requireAuth, async (req, res) => {
+  const userId = req.user.id
+  const { phone } = req.body ?? {}
+  if (!phone) return res.status(400).json({ error: 'Phone number required' })
+
+  const e164 = phone.replace(/\D/g, '')
+  const formatted = e164.startsWith('1') ? `+${e164}` : `+1${e164}`
+  if (formatted.length < 12) return res.status(400).json({ error: 'Invalid phone number' })
+
+  const { error } = await supabaseAdmin.from('user_sms_prefs').upsert(
+    { user_id: userId, phone_e164: formatted, updated_at: new Date().toISOString() },
+    { onConflict: 'user_id' }
+  )
+  if (error) return res.status(500).json({ error: error.message })
+  res.json({ success: true, phone_e164: formatted })
+})
+
+app.post('/api/sms/subscribe', requireAuth, async (req, res) => {
+  const userId = req.user.id
+  const plan = SMS_PLANS.sms_alerts
+
+  const { data: prefs } = await supabaseAdmin
+    .from('user_sms_prefs')
+    .select('phone_e164, sms_active')
+    .eq('user_id', userId)
+    .single()
+
+  if (!prefs?.phone_e164) {
+    return res.status(400).json({ error: 'Please save a phone number first' })
+  }
+  if (prefs.sms_active) {
+    return res.status(400).json({ error: 'SMS subscription is already active' })
+  }
+
+  const rawEmail = req.user.email ?? ''
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail)
+
+  try {
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      customer_email: emailValid ? rawEmail : undefined,
+      line_items: [{ price: plan.priceId, quantity: 1 }],
+      mode: 'subscription',
+      success_url: `${APP_ORIGIN}/settings?tab=notifications&sms=success`,
+      cancel_url: `${APP_ORIGIN}/settings?tab=notifications&sms=canceled`,
+      metadata: { userId },
+    })
+    res.json({ url: session.url })
+  } catch (err) {
+    console.error('[sms/subscribe] Error:', err.message)
+    res.status(500).json({ error: err.message })
+  }
+})
+
+app.post('/api/sms/unsubscribe', requireAuth, async (req, res) => {
+  const userId = req.user.id
+  const { data: prefs } = await supabaseAdmin
+    .from('user_sms_prefs')
+    .select('stripe_subscription_id')
+    .eq('user_id', userId)
+    .single()
+
+  if (!prefs?.stripe_subscription_id) {
+    return res.status(400).json({ error: 'No active SMS subscription found' })
+  }
+
+  try {
+    await stripe.subscriptions.cancel(prefs.stripe_subscription_id)
+    await supabaseAdmin.from('user_sms_prefs').update({
+      sms_active: false,
+      subscription_status: 'canceled',
+      stripe_subscription_id: null,
+      updated_at: new Date().toISOString(),
+    }).eq('user_id', userId)
+    res.json({ success: true })
+  } catch (err) {
+    console.error('[sms/unsubscribe] Error:', err.message)
+    res.status(500).json({ error: err.message })
+  }
+})
+
+app.post('/api/sms/alert', requireAuth, async (req, res) => {
+  const { recipientId, alertType, meta } = req.body ?? {}
+  if (!recipientId || !alertType) return res.status(400).json({ error: 'Missing fields' })
+  await sendSmsAlert(recipientId, alertType, meta ?? {})
+  res.json({ success: true })
 })
 
 const PORT = process.env.API_PORT ?? 3001

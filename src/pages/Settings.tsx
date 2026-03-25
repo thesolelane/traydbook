@@ -4,7 +4,7 @@ import {
   Mail, Lock, Bell, Eye, User, Trash2, CheckCircle,
   AlertTriangle, ShieldCheck, CreditCard, Coins, Zap,
   TrendingUp, Award, Star, CheckCircle as CheckCircleIcon,
-  XCircle, ChevronRight, Users,
+  XCircle, ChevronRight, Users, Smartphone,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -237,6 +237,93 @@ export default function Settings() {
         if (data?.prefs) setNotifPrefs(data.prefs as NotifPrefs)
       })
   }, [profile])
+
+  // ── SMS Alerts ──
+  const [smsPhone, setSmsPhone] = useState('')
+  const [smsActive, setSmsActive] = useState(false)
+  const [smsStatus, setSmsStatus] = useState('inactive')
+  const [phoneInput, setPhoneInput] = useState('')
+  const [savingPhone, setSavingPhone] = useState(false)
+  const [subscribingSms, setSubscribingSms] = useState(false)
+  const [unsubscribingSms, setUnsubscribingSms] = useState(false)
+  const [smsBanner, setSmsBanner] = useState<'success' | 'canceled' | null>(null)
+  const [smsPhoneMsg, setSmsPhoneMsg] = useState('')
+  const [smsPhoneErr, setSmsPhoneErr] = useState('')
+
+  useEffect(() => {
+    if (!user) return
+    const smsParam = searchParams.get('sms')
+    if (smsParam === 'success') setSmsBanner('success')
+    else if (smsParam === 'canceled') setSmsBanner('canceled')
+  }, [searchParams, user])
+
+  useEffect(() => {
+    if (!user) return
+    supabase.auth.getSession().then(async ({ data }) => {
+      const token = data.session?.access_token
+      if (!token) return
+      const res = await fetch('/api/sms/status', { headers: { Authorization: `Bearer ${token}` } })
+      if (!res.ok) return
+      const d = await res.json()
+      setSmsPhone(d.phone_e164 ?? '')
+      setPhoneInput(d.phone_e164 ?? '')
+      setSmsActive(d.sms_active ?? false)
+      setSmsStatus(d.subscription_status ?? 'inactive')
+    })
+  }, [user])
+
+  async function handleSavePhone(e: React.FormEvent) {
+    e.preventDefault()
+    setSavingPhone(true)
+    setSmsPhoneMsg('')
+    setSmsPhoneErr('')
+    const { data } = await supabase.auth.getSession()
+    const token = data.session?.access_token
+    if (!token) { setSavingPhone(false); return }
+    const res = await fetch('/api/sms/save-phone', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ phone: phoneInput }),
+    })
+    const json = await res.json()
+    setSavingPhone(false)
+    if (!res.ok) { setSmsPhoneErr(json.error ?? 'Failed to save'); return }
+    setSmsPhone(json.phone_e164)
+    setSmsPhoneMsg('Phone number saved.')
+    setTimeout(() => setSmsPhoneMsg(''), 3000)
+  }
+
+  async function handleSmsSubscribe() {
+    setSubscribingSms(true)
+    const { data } = await supabase.auth.getSession()
+    const token = data.session?.access_token
+    if (!token) { setSubscribingSms(false); return }
+    const res = await fetch('/api/sms/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    })
+    const json = await res.json()
+    setSubscribingSms(false)
+    if (!res.ok) { setSmsPhoneErr(json.error ?? 'Subscription failed'); return }
+    window.location.href = json.url
+  }
+
+  async function handleSmsUnsubscribe() {
+    if (!confirm('Cancel your SMS alerts subscription? You can re-subscribe any time.')) return
+    setUnsubscribingSms(true)
+    const { data } = await supabase.auth.getSession()
+    const token = data.session?.access_token
+    if (!token) { setUnsubscribingSms(false); return }
+    const res = await fetch('/api/sms/unsubscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    })
+    setUnsubscribingSms(false)
+    if (res.ok) {
+      setSmsActive(false)
+      setSmsStatus('canceled')
+    }
+  }
 
   async function handleNotifToggle(type: NotificationType) {
     if (!profile || savingNotif) return
@@ -780,6 +867,95 @@ export default function Settings() {
                     })}
                   </div>
                 </Section>
+
+                {/* ── SMS Alerts ── */}
+                <div style={{ marginTop: 32 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                    <Smartphone size={16} color="var(--color-brand)" />
+                    <span style={{ fontFamily: 'var(--font-condensed)', fontSize: 16, fontWeight: 700, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      SMS Alerts
+                    </span>
+                    {smsActive && (
+                      <span style={{ background: 'rgba(5,150,105,0.12)', color: '#059669', borderRadius: 99, padding: '2px 10px', fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-condensed)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                        Active
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 18 }}>
+                    Get text messages for new bids, messages, and job activity. <strong style={{ color: 'var(--color-text)' }}>$1.99/month</strong> — cancel any time.
+                  </div>
+
+                  {smsBanner === 'success' && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(5,150,105,0.1)', border: '1px solid rgba(5,150,105,0.3)', borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: 20, color: '#059669' }}>
+                      <CheckCircleIcon size={16} />
+                      <span style={{ fontFamily: 'var(--font-condensed)', fontWeight: 600, fontSize: 14 }}>SMS alerts activated! You'll receive a confirmation text shortly.</span>
+                    </div>
+                  )}
+                  {smsBanner === 'canceled' && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.2)', borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: 20, color: '#DC2626' }}>
+                      <XCircle size={16} />
+                      <span style={{ fontFamily: 'var(--font-condensed)', fontWeight: 600, fontSize: 14 }}>Checkout canceled — no charges were made.</span>
+                    </div>
+                  )}
+
+                  <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '20px 22px' }}>
+                    {/* Phone number input */}
+                    <div style={{ marginBottom: 16 }}>
+                      <label style={{ display: 'block', fontFamily: 'var(--font-condensed)', fontSize: 12, fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: 'var(--color-text-muted)', marginBottom: 6 }}>
+                        Mobile Phone Number
+                      </label>
+                      <form onSubmit={handleSavePhone} style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                        <input
+                          type="tel"
+                          placeholder="(555) 123-4567"
+                          value={phoneInput}
+                          onChange={e => setPhoneInput(e.target.value)}
+                          style={{ ...inputStyle, maxWidth: 220, flex: '1 1 180px' }}
+                        />
+                        <button type="submit" disabled={savingPhone} style={{ ...btnGhost, flexShrink: 0, opacity: savingPhone ? 0.6 : 1, cursor: savingPhone ? 'not-allowed' : 'pointer' }}>
+                          {savingPhone ? 'Saving…' : 'Save Number'}
+                        </button>
+                      </form>
+                      {smsPhoneMsg && <div style={{ fontSize: 12, color: '#059669', marginTop: 6, fontWeight: 600 }}>{smsPhoneMsg}</div>}
+                      {smsPhoneErr && <div style={{ fontSize: 12, color: '#DC2626', marginTop: 6 }}>{smsPhoneErr}</div>}
+                    </div>
+
+                    {/* Subscribe / Unsubscribe */}
+                    {!smsActive ? (
+                      <div>
+                        <button
+                          onClick={handleSmsSubscribe}
+                          disabled={subscribingSms || !smsPhone}
+                          title={!smsPhone ? 'Save a phone number first' : ''}
+                          style={{ ...btnPrimary, opacity: (subscribingSms || !smsPhone) ? 0.6 : 1, cursor: (subscribingSms || !smsPhone) ? 'not-allowed' : 'pointer' }}
+                        >
+                          {subscribingSms ? 'Redirecting…' : 'Subscribe — $1.99/mo'}
+                        </button>
+                        {!smsPhone && (
+                          <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 8 }}>
+                            Save a phone number above to enable subscription.
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <CheckCircleIcon size={16} color="#059669" />
+                          <span style={{ fontFamily: 'var(--font-condensed)', fontSize: 14, fontWeight: 600, color: '#059669' }}>
+                            SMS alerts active — texts go to {smsPhone}
+                          </span>
+                        </div>
+                        <button
+                          onClick={handleSmsUnsubscribe}
+                          disabled={unsubscribingSms}
+                          style={{ ...btnGhost, fontSize: 12, padding: '6px 14px', color: '#DC2626', borderColor: 'rgba(220,38,38,0.3)', opacity: unsubscribingSms ? 0.6 : 1, cursor: unsubscribingSms ? 'not-allowed' : 'pointer' }}
+                        >
+                          {unsubscribingSms ? 'Canceling…' : 'Cancel Subscription'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 
