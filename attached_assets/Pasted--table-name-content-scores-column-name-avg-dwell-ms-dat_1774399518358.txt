@@ -1,0 +1,247 @@
+[
+  {
+    "table_name": "content_scores",
+    "column_name": "avg_dwell_ms",
+    "data_type": "integer"
+  },
+  {
+    "table_name": "content_scores",
+    "column_name": "composite_score",
+    "data_type": "numeric"
+  },
+  {
+    "table_name": "content_scores",
+    "column_name": "computed_at",
+    "data_type": "timestamp with time zone"
+  },
+  {
+    "table_name": "content_scores",
+    "column_name": "content_id",
+    "data_type": "uuid"
+  },
+  {
+    "table_name": "content_scores",
+    "column_name": "content_type",
+    "data_type": "USER-DEFINED"
+  },
+  {
+    "table_name": "content_scores",
+    "column_name": "engagement_score",
+    "data_type": "numeric"
+  },
+  {
+    "table_name": "content_scores",
+    "column_name": "geo_relevance_score",
+    "data_type": "numeric"
+  },
+  {
+    "table_name": "content_scores",
+    "column_name": "is_boosted",
+    "data_type": "boolean"
+  },
+  {
+    "table_name": "content_scores",
+    "column_name": "recency_score",
+    "data_type": "numeric"
+  },
+  {
+    "table_name": "content_scores",
+    "column_name": "urgency_score",
+    "data_type": "numeric"
+  },
+  {
+    "table_name": "post_likes",
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone"
+  },
+  {
+    "table_name": "post_likes",
+    "column_name": "id",
+    "data_type": "uuid"
+  },
+  {
+    "table_name": "post_likes",
+    "column_name": "post_id",
+    "data_type": "uuid"
+  },
+  {
+    "table_name": "post_likes",
+    "column_name": "user_id",
+    "data_type": "uuid"
+  },
+  {
+    "table_name": "profile_field_sources",
+    "column_name": "accepted_at",
+    "data_type": "timestamp with time zone"
+  },
+  {
+    "table_name": "profile_field_sources",
+    "column_name": "field_name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "profile_field_sources",
+    "column_name": "field_value",
+    "data_type": "text"
+  },
+  {
+    "table_name": "profile_field_sources",
+    "column_name": "id",
+    "data_type": "uuid"
+  },
+  {
+    "table_name": "profile_field_sources",
+    "column_name": "imported_at",
+    "data_type": "timestamp with time zone"
+  },
+  {
+    "table_name": "profile_field_sources",
+    "column_name": "source",
+    "data_type": "text"
+  },
+  {
+    "table_name": "profile_field_sources",
+    "column_name": "user_id",
+    "data_type": "uuid"
+  },
+  {
+    "table_name": "search_events",
+    "column_name": "clicked_position",
+    "data_type": "integer"
+  },
+  {
+    "table_name": "search_events",
+    "column_name": "clicked_result_id",
+    "data_type": "uuid"
+  },
+  {
+    "table_name": "search_events",
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone"
+  },
+  {
+    "table_name": "search_events",
+    "column_name": "filters_applied",
+    "data_type": "jsonb"
+  },
+  {
+    "table_name": "search_events",
+    "column_name": "id",
+    "data_type": "bigint"
+  },
+  {
+    "table_name": "search_events",
+    "column_name": "query_text",
+    "data_type": "text"
+  },
+  {
+    "table_name": "search_events",
+    "column_name": "results_count",
+    "data_type": "integer"
+  },
+  {
+    "table_name": "search_events",
+    "column_name": "search_surface",
+    "data_type": "USER-DEFINED"
+  },
+  {
+    "table_name": "search_events",
+    "column_name": "user_id",
+    "data_type": "uuid"
+  },
+  {
+    "table_name": "search_events",
+    "column_name": "zero_results",
+    "data_type": "boolean"
+  },
+  {
+    "table_name": "user_affinity_scores",
+    "column_name": "avg_dwell_ms_by_type",
+    "data_type": "jsonb"
+  },
+  {
+    "table_name": "user_affinity_scores",
+    "column_name": "computed_at",
+    "data_type": "timestamp with time zone"
+  },
+  {
+    "table_name": "user_affinity_scores",
+    "column_name": "conversion_rate",
+    "data_type": "numeric"
+  },
+  {
+    "table_name": "user_affinity_scores",
+    "column_name": "geo_radius_actual",
+    "data_type": "integer"
+  },
+  {
+    "table_name": "user_affinity_scores",
+    "column_name": "peak_active_hours",
+    "data_type": "ARRAY"
+  },
+  {
+    "table_name": "user_affinity_scores",
+    "column_name": "preferred_budget_max",
+    "data_type": "bigint"
+  },
+  {
+    "table_name": "user_affinity_scores",
+    "column_name": "preferred_budget_min",
+    "data_type": "bigint"
+  },
+  {
+    "table_name": "user_affinity_scores",
+    "column_name": "trade_affinities",
+    "data_type": "jsonb"
+  },
+  {
+    "table_name": "user_affinity_scores",
+    "column_name": "user_id",
+    "data_type": "uuid"
+  },
+  {
+    "table_name": "verification_orders",
+    "column_name": "amount_usd",
+    "data_type": "numeric"
+  },
+  {
+    "table_name": "verification_orders",
+    "column_name": "completed_at",
+    "data_type": "timestamp with time zone"
+  },
+  {
+    "table_name": "verification_orders",
+    "column_name": "contractor_id",
+    "data_type": "uuid"
+  },
+  {
+    "table_name": "verification_orders",
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone"
+  },
+  {
+    "table_name": "verification_orders",
+    "column_name": "credential_id",
+    "data_type": "uuid"
+  },
+  {
+    "table_name": "verification_orders",
+    "column_name": "id",
+    "data_type": "uuid"
+  },
+  {
+    "table_name": "verification_orders",
+    "column_name": "notes",
+    "data_type": "text"
+  },
+  {
+    "table_name": "verification_orders",
+    "column_name": "status",
+    "data_type": "USER-DEFINED"
+  },
+  {
+    "table_name": "verification_orders",
+    "column_name": "stripe_payment_id",
+    "data_type": "text"
+  }
+]

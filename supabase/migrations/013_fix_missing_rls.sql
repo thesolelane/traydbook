@@ -142,19 +142,29 @@ END $$;
 
 -- ============================================================
 -- verification_orders
+-- Uses contractor_id (FK to contractor_profiles.id), not user_id directly.
+-- Must join through contractor_profiles to resolve the owning user.
 -- ============================================================
 ALTER TABLE IF EXISTS public.verification_orders ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'verification_orders' AND policyname = 'Users see own verification orders') THEN
-    CREATE POLICY "Users see own verification orders" ON public.verification_orders FOR SELECT USING (auth.uid() = user_id);
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'verification_orders' AND policyname = 'Contractors see own verification orders') THEN
+    CREATE POLICY "Contractors see own verification orders" ON public.verification_orders
+      FOR SELECT USING (
+        auth.uid() = (SELECT user_id FROM public.contractor_profiles WHERE id = contractor_id)
+      );
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'verification_orders' AND policyname = 'Users create own verification orders') THEN
-    CREATE POLICY "Users create own verification orders" ON public.verification_orders FOR INSERT WITH CHECK (auth.uid() = user_id);
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'verification_orders' AND policyname = 'Contractors create own verification orders') THEN
+    CREATE POLICY "Contractors create own verification orders" ON public.verification_orders
+      FOR INSERT WITH CHECK (
+        auth.uid() = (SELECT user_id FROM public.contractor_profiles WHERE id = contractor_id)
+      );
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'verification_orders' AND policyname = 'Admins can manage verification orders') THEN
     CREATE POLICY "Admins can manage verification orders" ON public.verification_orders
-      FOR ALL USING (EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND account_type = 'admin'));
+      FOR ALL USING (
+        EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND account_type = 'admin')
+      );
   END IF;
 END $$;
 
