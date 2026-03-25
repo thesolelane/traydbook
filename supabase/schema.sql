@@ -21,6 +21,16 @@ create table if not exists public.users (
   created_at    timestamptz not null default now(),
   deleted_at    timestamptz
 );
+-- SMS alert fields (phone_number is PII — column-level privileges restrict access)
+alter table public.users add column if not exists phone_number          text;
+alter table public.users add column if not exists phone_verified        boolean not null default false;
+alter table public.users add column if not exists sms_tier              text check (sms_tier in ('starter', 'unlimited'));
+alter table public.users add column if not exists sms_alerts_enabled    boolean not null default true;
+alter table public.users add column if not exists sms_count_this_period integer not null default 0;
+alter table public.users add column if not exists sms_otp_hash          text;
+alter table public.users add column if not exists sms_otp_expires_at    timestamptz;
+alter table public.users add column if not exists stripe_sms_sub_id     text;
+
 -- Note: email is intentionally omitted from public.users.
 -- Email lives in auth.users (Supabase managed) to prevent PII exposure.
 

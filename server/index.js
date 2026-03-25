@@ -1,6 +1,8 @@
 import express from 'express'
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
+import crypto from 'crypto'
+import Telnyx from 'telnyx'
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY ?? ''
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET ?? ''
@@ -9,6 +11,8 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY ?? ''
 const TELNYX_API_KEY = process.env.TELNYX_API_KEY ?? ''
 const TELNYX_PHONE_NUMBER = process.env.TELNYX_PHONE_NUMBER ?? ''
+const SMS_STARTER_PRICE_ID = process.env.SMS_STARTER_PRICE_ID ?? ''
+const SMS_UNLIMITED_PRICE_ID = process.env.SMS_UNLIMITED_PRICE_ID ?? ''
 
 if (!STRIPE_SECRET_KEY) console.warn('[server] STRIPE_SECRET_KEY not set')
 if (!STRIPE_WEBHOOK_SECRET) console.warn('[server] STRIPE_WEBHOOK_SECRET not set')
@@ -16,70 +20,16 @@ if (!SUPABASE_SERVICE_ROLE_KEY) console.warn('[server] SUPABASE_SERVICE_ROLE_KEY
 if (!SUPABASE_ANON_KEY) console.warn('[server] VITE_SUPABASE_ANON_KEY not set')
 if (!TELNYX_API_KEY) console.warn('[server] TELNYX_API_KEY not set — SMS disabled')
 if (!TELNYX_PHONE_NUMBER) console.warn('[server] TELNYX_PHONE_NUMBER not set — SMS disabled')
-
-async function sendSms(to, text) {
-  if (!TELNYX_API_KEY || !TELNYX_PHONE_NUMBER) {
-    console.warn('[sms] Telnyx not configured — skipping SMS to', to)
-    return false
-  }
-  try {
-    const res = await fetch('https://api.telnyx.com/v2/messages', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${TELNYX_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ from: TELNYX_PHONE_NUMBER, to, text }),
-    })
-    if (!res.ok) {
-      const err = await res.text()
-      console.error('[sms] Telnyx error:', err)
-      return false
-    }
-    console.log('[sms] Sent to', to)
-    return true
-  } catch (err) {
-    console.error('[sms] Fetch error:', err.message)
-    return false
-  }
-}
-
-async function sendSmsAlert(userId, alertType, meta = {}) {
-  const { data: prefs } = await supabaseAdmin
-    .from('user_sms_prefs')
-    .select('phone_e164, sms_active')
-    .eq('user_id', userId)
-    .single()
-
-  if (!prefs?.sms_active || !prefs?.phone_e164) return
-
-  const messages = {
-    new_bid:       `TraydBook: You received a new bid of $${meta.amount ?? '?'} on "${meta.title ?? 'your RFQ'}". Log in to review it.`,
-    bid_awarded:   `TraydBook: Your bid was awarded! Log in to see the details.`,
-    new_message:   `TraydBook: You have a new message from ${meta.senderName ?? 'someone'}. Log in to reply.`,
-    job_applied:   `TraydBook: Someone applied to your job listing "${meta.title ?? ''}". Log in to review.`,
-    credits_added: `TraydBook: ${meta.credits ?? ''} credits have been added to your account.`,
-  }
-
-  const text = messages[alertType]
-  if (!text) return
-  await sendSms(prefs.phone_e164, text)
-}
+if (!SMS_STARTER_PRICE_ID) console.warn('[server] SMS_STARTER_PRICE_ID not set')
+if (!SMS_UNLIMITED_PRICE_ID) console.warn('[server] SMS_UNLIMITED_PRICE_ID not set')
 
 const stripe = new Stripe(STRIPE_SECRET_KEY)
 const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 const supabaseAnon = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-// Monthly SMS alert subscription — $1.99/mo recurring
-const SMS_PLANS = {
-  sms_alerts: {
-    id:        'sms_alerts',
-    priceId:   'price_1TEMF1CXFkuyP9oESpMHcTBR',
-    productId: 'prod_UClmMWnPYp7C78',
-    cents:     199,
-    interval:  'month',
-    label:     'TraydBook SMS Alerts',
-  },
+let telnyxClient = null
+if (TELNYX_API_KEY) {
+  telnyxClient = new Telnyx(TELNYX_API_KEY)
 }
 
 const BUNDLES = [
@@ -117,6 +67,11 @@ const BUNDLES = [
   },
 ]
 
+const SMS_PLANS = {
+  starter: { priceId: SMS_STARTER_PRICE_ID, tier: 'starter', cap: 150 },
+  unlimited: { priceId: SMS_UNLIMITED_PRICE_ID, tier: 'unlimited', cap: null },
+}
+
 const APP_ORIGIN = process.env.APP_ORIGIN
   ?? (process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'http://localhost:5000')
 
@@ -137,76 +92,132 @@ app.post('/api/webhooks/stripe',
 
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object
-      const { userId, credits, bundleId } = session.metadata ?? {}
+      const { userId, credits, bundleId, smsTier } = session.metadata ?? {}
 
-      // SMS subscription checkout
-      if (session.mode === 'subscription' && userId) {
-        const subId = session.subscription
-        const customerId = session.customer
-        await supabaseAdmin.from('user_sms_prefs').upsert({
-          user_id: userId,
-          sms_active: true,
-          subscription_status: 'active',
-          stripe_customer_id: customerId,
-          stripe_subscription_id: subId,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'user_id' })
-        console.log(`[webhook] SMS subscription activated for user ${userId}`)
-        await sendSmsAlert(userId, 'credits_added', { credits: 'SMS alerts' })
-        return res.json({ received: true })
-      }
-
-      // Credit bundle one-time purchase
-      if (!userId || !credits) {
-        console.error('[webhook] Missing metadata on session:', session.id)
-        return res.status(400).json({ error: 'Missing metadata' })
-      }
-
-      const creditsNum = parseInt(credits, 10)
-      const bundle = BUNDLES.find(b => b.id === bundleId)
-
-      const { data: shouldCredit, error: fulfillErr } = await supabaseAdmin.rpc(
-        'fulfill_stripe_purchase',
-        {
-          p_stripe_session_id: session.id,
-          p_user_id: userId,
-          p_credits: creditsNum,
-          p_amount_cents: bundle?.cents ?? 0,
-          p_bundle_id: bundleId ?? '',
-        }
-      )
-
-      if (fulfillErr) {
-        console.error('[webhook] fulfill_stripe_purchase error:', fulfillErr.message)
-        return res.status(500).json({ error: 'DB error' })
-      }
-
-      if (shouldCredit) {
-        console.log(`[webhook] Fulfilled ${creditsNum} credits for user ${userId}`)
-        await sendSmsAlert(userId, 'credits_added', { credits: creditsNum })
+      if (smsTier) {
+        await handleSmsSubscriptionActivated(session, userId, smsTier)
       } else {
-        console.log(`[webhook] Session ${session.id} already processed`)
+        if (!userId || !credits) {
+          console.error('[webhook] Missing metadata on session:', session.id)
+          return res.status(400).json({ error: 'Missing metadata' })
+        }
+
+        const creditsNum = parseInt(credits, 10)
+        const bundle = BUNDLES.find(b => b.id === bundleId)
+
+        const { data: shouldCredit, error: fulfillErr } = await supabaseAdmin.rpc(
+          'fulfill_stripe_purchase',
+          {
+            p_stripe_session_id: session.id,
+            p_user_id: userId,
+            p_credits: creditsNum,
+            p_amount_cents: bundle?.cents ?? 0,
+            p_bundle_id: bundleId ?? '',
+          }
+        )
+
+        if (fulfillErr) {
+          console.error('[webhook] fulfill_stripe_purchase error:', fulfillErr.message)
+          return res.status(500).json({ error: 'DB error' })
+        }
+
+        if (shouldCredit) {
+          console.log(`[webhook] Fulfilled ${creditsNum} credits for user ${userId}`)
+        } else {
+          console.log(`[webhook] Session ${session.id} already processed`)
+        }
       }
     }
 
-    // SMS subscription canceled or lapsed
-    if (event.type === 'customer.subscription.deleted' || event.type === 'customer.subscription.updated') {
+    if (event.type === 'customer.subscription.deleted') {
       const sub = event.data.object
-      const status = sub.status // 'active' | 'past_due' | 'canceled' | etc.
-      const isActive = status === 'active'
-      await supabaseAdmin.from('user_sms_prefs')
-        .update({
-          sms_active: isActive,
-          subscription_status: ['active','past_due'].includes(status) ? status : 'canceled',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('stripe_subscription_id', sub.id)
-      console.log(`[webhook] SMS subscription ${sub.id} status → ${status}`)
+      await handleSmsSubscriptionCancelled(sub)
+    }
+
+    if (event.type === 'customer.subscription.updated') {
+      const sub = event.data.object
+      const { userId } = sub.metadata ?? {}
+      if (userId) {
+        if (sub.status === 'active') {
+          await supabaseAdmin
+            .from('users')
+            .update({ sms_count_this_period: 0 })
+            .eq('id', userId)
+            .eq('stripe_sms_sub_id', sub.id)
+          console.log(`[webhook] Reset SMS count for user ${userId} on renewal`)
+        } else if (['past_due', 'unpaid', 'canceled', 'incomplete_expired'].includes(sub.status)) {
+          await supabaseAdmin
+            .from('users')
+            .update({ sms_alerts_enabled: false })
+            .eq('id', userId)
+            .eq('stripe_sms_sub_id', sub.id)
+          console.log(`[webhook] Disabled SMS alerts for user ${userId} — subscription status: ${sub.status}`)
+        }
+      }
+    }
+
+    if (event.type === 'invoice.payment_succeeded') {
+      const invoice = event.data.object
+      const subId = invoice.subscription
+      if (subId && invoice.billing_reason === 'subscription_cycle') {
+        const { data: users } = await supabaseAdmin
+          .from('users')
+          .select('id')
+          .eq('stripe_sms_sub_id', subId)
+        if (users && users.length > 0) {
+          await supabaseAdmin
+            .from('users')
+            .update({ sms_count_this_period: 0 })
+            .eq('stripe_sms_sub_id', subId)
+          console.log(`[webhook] Reset SMS count on invoice payment for subscription ${subId}`)
+        }
+      }
     }
 
     res.json({ received: true })
   }
 )
+
+async function handleSmsSubscriptionActivated(session, userId, smsTier) {
+  if (!userId || !smsTier) {
+    console.error('[sms-webhook] Missing userId or smsTier in session metadata')
+    return
+  }
+  const stripeSubscriptionId = session.subscription
+  const { error } = await supabaseAdmin
+    .from('users')
+    .update({
+      sms_tier: smsTier,
+      sms_alerts_enabled: true,
+      stripe_sms_sub_id: stripeSubscriptionId,
+    })
+    .eq('id', userId)
+  if (error) {
+    console.error('[sms-webhook] Failed to activate SMS tier:', error.message)
+  } else {
+    console.log(`[sms-webhook] Activated ${smsTier} SMS tier for user ${userId}`)
+  }
+}
+
+async function handleSmsSubscriptionCancelled(sub) {
+  const subId = sub.id
+  const { error } = await supabaseAdmin
+    .from('users')
+    .update({
+      sms_tier: null,
+      sms_alerts_enabled: true,
+      phone_verified: false,
+      phone_number: null,
+      sms_count_this_period: 0,
+      stripe_sms_sub_id: null,
+    })
+    .eq('stripe_sms_sub_id', subId)
+  if (error) {
+    console.error('[sms-webhook] Failed to deactivate SMS subscription:', error.message)
+  } else {
+    console.log(`[sms-webhook] Deactivated SMS for subscription ${subId}`)
+  }
+}
 
 app.use(express.json())
 
@@ -243,7 +254,6 @@ app.post('/api/create-checkout-session', requireAuth, async (req, res) => {
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      // customer_email pre-fills the checkout form and Stripe uses it to send the payment receipt
       customer_email: emailValid ? rawEmail : undefined,
       line_items: [{
         price:    bundle.priceId,
@@ -443,103 +453,310 @@ app.get('/api/team', requireAuth, async (req, res) => {
 
 // ── SMS Subscriptions ─────────────────────────────────────────────────────────
 
-app.get('/api/sms/status', requireAuth, async (req, res) => {
+app.post('/api/sms/create-subscription', requireAuth, async (req, res) => {
+  const { plan } = req.body ?? {}
   const userId = req.user.id
-  const { data } = await supabaseAdmin
-    .from('user_sms_prefs')
-    .select('phone_e164, sms_active, subscription_status, stripe_subscription_id')
-    .eq('user_id', userId)
-    .single()
-  res.json(data ?? { phone_e164: null, sms_active: false, subscription_status: 'inactive' })
-})
 
-app.post('/api/sms/save-phone', requireAuth, async (req, res) => {
-  const userId = req.user.id
-  const { phone } = req.body ?? {}
-  if (!phone) return res.status(400).json({ error: 'Phone number required' })
+  const smsPlan = SMS_PLANS[plan]
+  if (!smsPlan) return res.status(400).json({ error: 'Invalid SMS plan' })
+  if (!smsPlan.priceId) return res.status(503).json({ error: 'SMS plan not configured' })
+  if (!STRIPE_SECRET_KEY) return res.status(503).json({ error: 'Stripe not configured' })
 
-  const e164 = phone.replace(/\D/g, '')
-  const formatted = e164.startsWith('1') ? `+${e164}` : `+1${e164}`
-  if (formatted.length < 12) return res.status(400).json({ error: 'Invalid phone number' })
-
-  const { error } = await supabaseAdmin.from('user_sms_prefs').upsert(
-    { user_id: userId, phone_e164: formatted, updated_at: new Date().toISOString() },
-    { onConflict: 'user_id' }
-  )
-  if (error) return res.status(500).json({ error: error.message })
-  res.json({ success: true, phone_e164: formatted })
-})
-
-app.post('/api/sms/subscribe', requireAuth, async (req, res) => {
-  const userId = req.user.id
-  const plan = SMS_PLANS.sms_alerts
-
-  const { data: prefs } = await supabaseAdmin
-    .from('user_sms_prefs')
-    .select('phone_e164, sms_active')
-    .eq('user_id', userId)
+  const { data: userRow } = await supabaseAdmin
+    .from('users')
+    .select('account_type, sms_tier, stripe_sms_sub_id')
+    .eq('id', userId)
     .single()
 
-  if (!prefs?.phone_e164) {
-    return res.status(400).json({ error: 'Please save a phone number first' })
-  }
-  if (prefs.sms_active) {
-    return res.status(400).json({ error: 'SMS subscription is already active' })
-  }
-
-  const rawEmail = req.user.email ?? ''
-  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail)
+  if (!userRow) return res.status(404).json({ error: 'User not found' })
+  if (userRow.account_type !== 'contractor') return res.status(403).json({ error: 'SMS alerts are only available for contractors' })
+  if (userRow.sms_tier) return res.status(400).json({ error: 'Already subscribed to an SMS plan' })
 
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      customer_email: emailValid ? rawEmail : undefined,
-      line_items: [{ price: plan.priceId, quantity: 1 }],
+      customer_email: req.user.email,
+      line_items: [{ price: smsPlan.priceId, quantity: 1 }],
       mode: 'subscription',
-      success_url: `${APP_ORIGIN}/settings?tab=notifications&sms=success`,
-      cancel_url: `${APP_ORIGIN}/settings?tab=notifications&sms=canceled`,
-      metadata: { userId },
+      success_url: `${APP_ORIGIN}/settings?tab=notifications&sms_success=true`,
+      cancel_url: `${APP_ORIGIN}/settings?tab=notifications&sms_canceled=true`,
+      metadata: {
+        userId,
+        smsTier: smsPlan.tier,
+      },
+      subscription_data: {
+        metadata: { userId, smsTier: smsPlan.tier },
+      },
     })
     res.json({ url: session.url })
   } catch (err) {
-    console.error('[sms/subscribe] Error:', err.message)
+    console.error('[sms-checkout] Error:', err.message)
     res.status(500).json({ error: err.message })
   }
 })
 
-app.post('/api/sms/unsubscribe', requireAuth, async (req, res) => {
+app.post('/api/sms/cancel-subscription', requireAuth, async (req, res) => {
   const userId = req.user.id
-  const { data: prefs } = await supabaseAdmin
-    .from('user_sms_prefs')
-    .select('stripe_subscription_id')
-    .eq('user_id', userId)
+
+  const { data: userRow } = await supabaseAdmin
+    .from('users')
+    .select('stripe_sms_sub_id, sms_tier')
+    .eq('id', userId)
     .single()
 
-  if (!prefs?.stripe_subscription_id) {
-    return res.status(400).json({ error: 'No active SMS subscription found' })
+  if (!userRow?.stripe_sms_sub_id) {
+    return res.status(400).json({ error: 'No active SMS subscription' })
   }
 
   try {
-    await stripe.subscriptions.cancel(prefs.stripe_subscription_id)
-    await supabaseAdmin.from('user_sms_prefs').update({
-      sms_active: false,
-      subscription_status: 'canceled',
-      stripe_subscription_id: null,
-      updated_at: new Date().toISOString(),
-    }).eq('user_id', userId)
-    res.json({ success: true })
+    await stripe.subscriptions.cancel(userRow.stripe_sms_sub_id)
+    res.json({ cancelled: true })
   } catch (err) {
-    console.error('[sms/unsubscribe] Error:', err.message)
+    console.error('[sms-cancel] Error:', err.message)
     res.status(500).json({ error: err.message })
   }
 })
 
-app.post('/api/sms/alert', requireAuth, async (req, res) => {
-  const { recipientId, alertType, meta } = req.body ?? {}
-  if (!recipientId || !alertType) return res.status(400).json({ error: 'Missing fields' })
-  await sendSmsAlert(recipientId, alertType, meta ?? {})
-  res.json({ success: true })
+app.post('/api/sms/toggle-alerts', requireAuth, async (req, res) => {
+  const userId = req.user.id
+  const { enabled } = req.body ?? {}
+  if (typeof enabled !== 'boolean') return res.status(400).json({ error: 'enabled must be a boolean' })
+
+  const { data: userRow } = await supabaseAdmin
+    .from('users')
+    .select('sms_tier')
+    .eq('id', userId)
+    .single()
+
+  if (!userRow?.sms_tier) {
+    return res.status(400).json({ error: 'No active SMS subscription' })
+  }
+
+  const { error } = await supabaseAdmin
+    .from('users')
+    .update({ sms_alerts_enabled: enabled })
+    .eq('id', userId)
+
+  if (error) return res.status(500).json({ error: error.message })
+  res.json({ sms_alerts_enabled: enabled })
 })
 
+app.post('/api/sms/send-verification', requireAuth, async (req, res) => {
+  const userId = req.user.id
+  let { phone } = req.body ?? {}
+
+  if (!phone) return res.status(400).json({ error: 'Phone number is required' })
+
+  phone = phone.replace(/\D/g, '')
+  if (phone.length === 10) phone = '1' + phone
+  if (!/^1\d{10}$/.test(phone)) {
+    return res.status(400).json({ error: 'Invalid US phone number' })
+  }
+  phone = '+' + phone
+
+  const { data: userRow } = await supabaseAdmin
+    .from('users')
+    .select('sms_tier')
+    .eq('id', userId)
+    .single()
+
+  if (!userRow?.sms_tier) {
+    return res.status(403).json({ error: 'SMS subscription required' })
+  }
+
+  if (!telnyxClient || !TELNYX_PHONE_NUMBER) {
+    return res.status(503).json({ error: 'SMS service not configured' })
+  }
+
+  const otp = String(Math.floor(100000 + Math.random() * 900000))
+  const otpHash = crypto.createHash('sha256').update(otp).digest('hex')
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString()
+
+  const { error: updateErr } = await supabaseAdmin
+    .from('users')
+    .update({
+      phone_number: phone,
+      phone_verified: false,
+      sms_otp_hash: otpHash,
+      sms_otp_expires_at: expiresAt,
+    })
+    .eq('id', userId)
+
+  if (updateErr) {
+    console.error('[sms-verify] DB update error:', updateErr.message)
+    return res.status(500).json({ error: 'Failed to save phone number' })
+  }
+
+  try {
+    await telnyxClient.messages.create({
+      from: TELNYX_PHONE_NUMBER,
+      to: phone,
+      text: `Your TraydBook verification code is: ${otp}. Valid for 10 minutes.`,
+    })
+    res.json({ sent: true })
+  } catch (err) {
+    console.error('[sms-verify] Telnyx error:', err.message)
+    res.status(500).json({ error: 'Failed to send verification SMS' })
+  }
+})
+
+app.post('/api/sms/verify', requireAuth, async (req, res) => {
+  const userId = req.user.id
+  const { otp } = req.body ?? {}
+
+  if (!otp || typeof otp !== 'string') return res.status(400).json({ error: 'OTP is required' })
+
+  const { data: userRow } = await supabaseAdmin
+    .from('users')
+    .select('sms_otp_hash, sms_otp_expires_at, sms_tier')
+    .eq('id', userId)
+    .single()
+
+  if (!userRow?.sms_tier) return res.status(403).json({ error: 'SMS subscription required' })
+  if (!userRow.sms_otp_hash) return res.status(400).json({ error: 'No pending verification' })
+
+  const now = new Date()
+  if (new Date(userRow.sms_otp_expires_at) < now) {
+    return res.status(400).json({ error: 'Verification code expired. Please request a new one.' })
+  }
+
+  const inputHash = crypto.createHash('sha256').update(otp.trim()).digest('hex')
+  if (inputHash !== userRow.sms_otp_hash) {
+    return res.status(400).json({ error: 'Invalid verification code' })
+  }
+
+  const { error } = await supabaseAdmin
+    .from('users')
+    .update({
+      phone_verified: true,
+      sms_otp_hash: null,
+      sms_otp_expires_at: null,
+    })
+    .eq('id', userId)
+
+  if (error) return res.status(500).json({ error: error.message })
+  res.json({ verified: true })
+})
+
+app.get('/api/sms/status', requireAuth, async (req, res) => {
+  const userId = req.user.id
+
+  const { data: userRow, error } = await supabaseAdmin
+    .from('users')
+    .select('sms_tier, sms_alerts_enabled, phone_verified, phone_number, sms_count_this_period, stripe_sms_sub_id')
+    .eq('id', userId)
+    .single()
+
+  if (error) return res.status(500).json({ error: error.message })
+
+  let maskedPhone = null
+  if (userRow?.phone_number && userRow.phone_verified) {
+    const digits = userRow.phone_number.replace(/\D/g, '')
+    maskedPhone = '(•••) •••-' + digits.slice(-4)
+  }
+
+  res.json({
+    sms_tier: userRow?.sms_tier ?? null,
+    sms_alerts_enabled: userRow?.sms_alerts_enabled ?? true,
+    phone_verified: userRow?.phone_verified ?? false,
+    sms_count_this_period: userRow?.sms_count_this_period ?? 0,
+    has_subscription: !!userRow?.stripe_sms_sub_id,
+    masked_phone: maskedPhone,
+  })
+})
+
+async function sendSmsAlert(recipientId, senderName, threadId) {
+  if (!telnyxClient || !TELNYX_PHONE_NUMBER) return
+
+  try {
+    const { data: recipient } = await supabaseAdmin
+      .from('users')
+      .select('sms_tier, sms_alerts_enabled, phone_verified, phone_number, sms_count_this_period')
+      .eq('id', recipientId)
+      .single()
+
+    if (!recipient) return
+    if (!recipient.sms_tier) return
+    if (!recipient.sms_alerts_enabled) return
+    if (!recipient.phone_verified) return
+    if (!recipient.phone_number) return
+
+    if (recipient.sms_tier === 'starter') {
+      if (recipient.sms_count_this_period >= 150) {
+        console.log(`[sms-dispatch] Starter cap reached for user ${recipientId}, skipping SMS`)
+        return
+      }
+      const { error: incrErr } = await supabaseAdmin
+        .from('users')
+        .update({ sms_count_this_period: recipient.sms_count_this_period + 1 })
+        .eq('id', recipientId)
+        .eq('sms_count_this_period', recipient.sms_count_this_period)
+      if (incrErr) {
+        console.error('[sms-dispatch] Failed to increment SMS count:', incrErr.message)
+        return
+      }
+    }
+
+    const appUrl = APP_ORIGIN + '/messages/' + threadId
+    const smsBody = `New message from ${senderName} on TraydBook. Open the app to reply: ${appUrl}`
+
+    await telnyxClient.messages.create({
+      from: TELNYX_PHONE_NUMBER,
+      to: recipient.phone_number,
+      text: smsBody,
+    })
+    console.log(`[sms-dispatch] Sent SMS alert to user ${recipientId}`)
+  } catch (err) {
+    console.error('[sms-dispatch] Telnyx error (non-blocking):', err.message)
+  }
+}
+
+
 const PORT = process.env.API_PORT ?? 3001
-app.listen(PORT, () => console.log(`[server] API ready on http://localhost:${PORT}`))
+app.listen(PORT, () => {
+  console.log(`[server] API ready on http://localhost:${PORT}`)
+  startNotificationListener()
+})
+
+function startNotificationListener() {
+  if (!SUPABASE_SERVICE_ROLE_KEY) {
+    console.warn('[sms-listener] SUPABASE_SERVICE_ROLE_KEY not set — SMS dispatch disabled')
+    return
+  }
+
+  const listenerClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+  listenerClient
+    .channel('server-notifications')
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'notifications', filter: 'type=eq.message_received' },
+      async (payload) => {
+        const notif = payload.new
+        if (!notif) return
+
+        const recipientId = notif.user_id
+        const entityId = notif.entity_id
+        const entityType = notif.entity_type ?? ''
+
+        const threadId = entityType.startsWith('thread:') ? entityType.slice(7) : null
+
+        const { data: sender } = await supabaseAdmin
+          .from('users')
+          .select('display_name')
+          .eq('id', entityId)
+          .single()
+
+        const senderName = sender?.display_name ?? 'Someone'
+
+        sendSmsAlert(recipientId, senderName, threadId ?? '').catch(() => {})
+      }
+    )
+    .subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('[sms-listener] Listening for message_received notifications')
+      } else if (status === 'CHANNEL_ERROR') {
+        console.error('[sms-listener] Channel error — SMS dispatch may be unavailable')
+      }
+    })
+}

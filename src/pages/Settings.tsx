@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Mail, Lock, Bell, Eye, User, Trash2, CheckCircle,
   AlertTriangle, ShieldCheck, CreditCard, Coins, Zap,
   TrendingUp, Award, Star, CheckCircle as CheckCircleIcon,
-  XCircle, ChevronRight, Users, Smartphone,
+  XCircle, ChevronRight, Users, Smartphone, Phone, Pause, Play, X,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -113,6 +113,33 @@ const btnGhost: React.CSSProperties = {
   fontFamily: 'var(--font-condensed)', fontSize: 13, fontWeight: 700,
   letterSpacing: '0.5px', textTransform: 'uppercase', color: 'var(--color-text-muted)',
   cursor: 'pointer',
+}
+
+const API_BASE = '/api'
+
+async function apiFetch(path: string, method: string, body?: object) {
+  const { data: { session } } = await supabase.auth.getSession()
+  const token = session?.access_token
+  const res = await fetch(API_BASE + path, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  })
+  const json = await res.json()
+  if (!res.ok) throw new Error(json.error ?? 'Request failed')
+  return json
+}
+
+interface SmsStatus {
+  sms_tier: 'starter' | 'unlimited' | null
+  sms_alerts_enabled: boolean
+  phone_verified: boolean
+  sms_count_this_period: number
+  has_subscription: boolean
+  masked_phone: string | null
 }
 
 export default function Settings() {
@@ -238,93 +265,6 @@ export default function Settings() {
       })
   }, [profile])
 
-  // ── SMS Alerts ──
-  const [smsPhone, setSmsPhone] = useState('')
-  const [smsActive, setSmsActive] = useState(false)
-  const [smsStatus, setSmsStatus] = useState('inactive')
-  const [phoneInput, setPhoneInput] = useState('')
-  const [savingPhone, setSavingPhone] = useState(false)
-  const [subscribingSms, setSubscribingSms] = useState(false)
-  const [unsubscribingSms, setUnsubscribingSms] = useState(false)
-  const [smsBanner, setSmsBanner] = useState<'success' | 'canceled' | null>(null)
-  const [smsPhoneMsg, setSmsPhoneMsg] = useState('')
-  const [smsPhoneErr, setSmsPhoneErr] = useState('')
-
-  useEffect(() => {
-    if (!user) return
-    const smsParam = searchParams.get('sms')
-    if (smsParam === 'success') setSmsBanner('success')
-    else if (smsParam === 'canceled') setSmsBanner('canceled')
-  }, [searchParams, user])
-
-  useEffect(() => {
-    if (!user) return
-    supabase.auth.getSession().then(async ({ data }) => {
-      const token = data.session?.access_token
-      if (!token) return
-      const res = await fetch('/api/sms/status', { headers: { Authorization: `Bearer ${token}` } })
-      if (!res.ok) return
-      const d = await res.json()
-      setSmsPhone(d.phone_e164 ?? '')
-      setPhoneInput(d.phone_e164 ?? '')
-      setSmsActive(d.sms_active ?? false)
-      setSmsStatus(d.subscription_status ?? 'inactive')
-    })
-  }, [user])
-
-  async function handleSavePhone(e: React.FormEvent) {
-    e.preventDefault()
-    setSavingPhone(true)
-    setSmsPhoneMsg('')
-    setSmsPhoneErr('')
-    const { data } = await supabase.auth.getSession()
-    const token = data.session?.access_token
-    if (!token) { setSavingPhone(false); return }
-    const res = await fetch('/api/sms/save-phone', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ phone: phoneInput }),
-    })
-    const json = await res.json()
-    setSavingPhone(false)
-    if (!res.ok) { setSmsPhoneErr(json.error ?? 'Failed to save'); return }
-    setSmsPhone(json.phone_e164)
-    setSmsPhoneMsg('Phone number saved.')
-    setTimeout(() => setSmsPhoneMsg(''), 3000)
-  }
-
-  async function handleSmsSubscribe() {
-    setSubscribingSms(true)
-    const { data } = await supabase.auth.getSession()
-    const token = data.session?.access_token
-    if (!token) { setSubscribingSms(false); return }
-    const res = await fetch('/api/sms/subscribe', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    })
-    const json = await res.json()
-    setSubscribingSms(false)
-    if (!res.ok) { setSmsPhoneErr(json.error ?? 'Subscription failed'); return }
-    window.location.href = json.url
-  }
-
-  async function handleSmsUnsubscribe() {
-    if (!confirm('Cancel your SMS alerts subscription? You can re-subscribe any time.')) return
-    setUnsubscribingSms(true)
-    const { data } = await supabase.auth.getSession()
-    const token = data.session?.access_token
-    if (!token) { setUnsubscribingSms(false); return }
-    const res = await fetch('/api/sms/unsubscribe', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    })
-    setUnsubscribingSms(false)
-    if (res.ok) {
-      setSmsActive(false)
-      setSmsStatus('canceled')
-    }
-  }
-
   async function handleNotifToggle(type: NotificationType) {
     if (!profile || savingNotif) return
     const current = notifPrefs[type] !== false
@@ -343,6 +283,127 @@ export default function Settings() {
       setNotifSavedMsg('Preferences saved.')
     }
     setTimeout(() => setNotifSavedMsg(''), 2500)
+  }
+
+  // ── SMS Alerts (two-tier) ──
+  const [smsStatus, setSmsStatus] = useState<SmsStatus | null>(null)
+  const [smsLoading, setSmsLoading] = useState(false)
+  const [smsSubscribing, setSmsSubscribing] = useState(false)
+  const [smsCancelling, setSmsCancelling] = useState(false)
+  const [smsTogglingPause, setSmsTogglingPause] = useState(false)
+  const [smsMsg, setSmsMsg] = useState('')
+  const [smsErr, setSmsErr] = useState('')
+  const [smsSuccessBanner, setSmsSuccessBanner] = useState(false)
+  const [smsCanceledBanner, setSmsCanceledBanner] = useState(false)
+  const [phoneInput, setPhoneInput] = useState('')
+  const [sendingOtp, setSendingOtp] = useState(false)
+  const [otpSent, setOtpSent] = useState(false)
+  const [otpInput, setOtpInput] = useState('')
+  const [verifyingOtp, setVerifyingOtp] = useState(false)
+  const [otpErr, setOtpErr] = useState('')
+
+  const loadSmsStatus = useCallback(async () => {
+    if (!profile) return
+    setSmsLoading(true)
+    try {
+      const data = await apiFetch('/sms/status', 'GET')
+      setSmsStatus(data)
+    } catch {
+      setSmsStatus(null)
+    } finally {
+      setSmsLoading(false)
+    }
+  }, [profile])
+
+  useEffect(() => {
+    loadSmsStatus()
+  }, [loadSmsStatus])
+
+  useEffect(() => {
+    if (searchParams.get('sms_success') === 'true') {
+      setSmsSuccessBanner(true)
+      loadSmsStatus()
+    }
+    if (searchParams.get('sms_canceled') === 'true') {
+      setSmsCanceledBanner(true)
+    }
+  }, [searchParams, loadSmsStatus])
+
+  async function handleSmsSubscribe(plan: 'starter' | 'unlimited') {
+    setSmsSubscribing(true)
+    setSmsErr('')
+    try {
+      const { url } = await apiFetch('/sms/create-subscription', 'POST', { plan })
+      window.location.href = url
+    } catch (err: unknown) {
+      setSmsErr(err instanceof Error ? err.message : 'Failed to start subscription')
+      setSmsSubscribing(false)
+    }
+  }
+
+  async function handleSmsCancel() {
+    if (!confirm('Cancel your SMS subscription? This will remove your phone number and disable SMS alerts.')) return
+    setSmsCancelling(true)
+    setSmsErr('')
+    try {
+      await apiFetch('/sms/cancel-subscription', 'POST')
+      setSmsMsg('Subscription cancelled. SMS alerts are now disabled.')
+      await loadSmsStatus()
+    } catch (err: unknown) {
+      setSmsErr(err instanceof Error ? err.message : 'Failed to cancel subscription')
+    } finally {
+      setSmsCancelling(false)
+    }
+  }
+
+  async function handleSmsPauseToggle() {
+    if (!smsStatus) return
+    const newEnabled = !smsStatus.sms_alerts_enabled
+    setSmsTogglingPause(true)
+    setSmsErr('')
+    try {
+      await apiFetch('/sms/toggle-alerts', 'POST', { enabled: newEnabled })
+      setSmsStatus(prev => prev ? { ...prev, sms_alerts_enabled: newEnabled } : prev)
+      setSmsMsg(newEnabled ? 'SMS alerts resumed.' : 'SMS alerts paused.')
+      setTimeout(() => setSmsMsg(''), 2500)
+    } catch (err: unknown) {
+      setSmsErr(err instanceof Error ? err.message : 'Failed to update')
+    } finally {
+      setSmsTogglingPause(false)
+    }
+  }
+
+  async function handleSendOtp(e: React.FormEvent) {
+    e.preventDefault()
+    setSendingOtp(true)
+    setOtpErr('')
+    try {
+      await apiFetch('/sms/send-verification', 'POST', { phone: phoneInput })
+      setOtpSent(true)
+    } catch (err: unknown) {
+      setOtpErr(err instanceof Error ? err.message : 'Failed to send code')
+    } finally {
+      setSendingOtp(false)
+    }
+  }
+
+  async function handleVerifyOtp(e: React.FormEvent) {
+    e.preventDefault()
+    setVerifyingOtp(true)
+    setOtpErr('')
+    try {
+      await apiFetch('/sms/verify', 'POST', { otp: otpInput })
+      setOtpSent(false)
+      setOtpInput('')
+      setPhoneInput('')
+      setSmsMsg('Phone verified! You will now receive SMS alerts.')
+      await loadSmsStatus()
+      setTimeout(() => setSmsMsg(''), 3500)
+    } catch (err: unknown) {
+      setOtpErr(err instanceof Error ? err.message : 'Invalid code')
+    } finally {
+      setVerifyingOtp(false)
+    }
   }
 
   // ── Privacy ──
@@ -868,94 +929,248 @@ export default function Settings() {
                   </div>
                 </Section>
 
-                {/* ── SMS Alerts ── */}
-                <div style={{ marginTop: 32 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                    <Smartphone size={16} color="var(--color-brand)" />
-                    <span style={{ fontFamily: 'var(--font-condensed)', fontSize: 16, fontWeight: 700, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                      SMS Alerts
-                    </span>
-                    {smsActive && (
-                      <span style={{ background: 'rgba(5,150,105,0.12)', color: '#059669', borderRadius: 99, padding: '2px 10px', fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-condensed)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
-                        Active
+                {/* ── SMS Alerts (two-tier) ── */}
+                {isContractor && (
+                  <div style={{ marginTop: 32 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                      <Smartphone size={16} color="var(--color-brand)" />
+                      <span style={{ fontFamily: 'var(--font-condensed)', fontSize: 16, fontWeight: 700, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        SMS Alerts
                       </span>
+                      {smsStatus?.sms_tier && (
+                        <span style={{ background: 'rgba(5,150,105,0.12)', color: '#059669', borderRadius: 99, padding: '2px 10px', fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-condensed)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                          {smsStatus.sms_tier === 'starter' ? 'Starter' : 'Unlimited'}
+                        </span>
+                      )}
+                    </div>
+
+                    {smsSuccessBanner && (
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: 8,
+                        background: 'rgba(5,150,105,0.1)', border: '1px solid rgba(5,150,105,0.25)',
+                        borderRadius: 'var(--radius-sm)', padding: '8px 12px',
+                        color: '#059669', fontSize: 13, fontWeight: 600,
+                        fontFamily: 'var(--font-condensed)', marginBottom: 14,
+                      }}>
+                        <CheckCircle size={14} /> Subscription activated! Now verify your phone number below.
+                      </div>
                     )}
-                  </div>
-                  <div style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 18 }}>
-                    Get text messages for new bids, messages, and job activity. <strong style={{ color: 'var(--color-text)' }}>$1.99/month</strong> — cancel any time.
-                  </div>
+                    {smsCanceledBanner && (
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: 8,
+                        background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.2)',
+                        borderRadius: 'var(--radius-sm)', padding: '8px 12px',
+                        color: '#DC2626', fontSize: 13, fontWeight: 600,
+                        fontFamily: 'var(--font-condensed)', marginBottom: 14,
+                      }}>
+                        <XCircle size={14} /> Checkout canceled — no charges were made.
+                      </div>
+                    )}
 
-                  {smsBanner === 'success' && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(5,150,105,0.1)', border: '1px solid rgba(5,150,105,0.3)', borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: 20, color: '#059669' }}>
-                      <CheckCircleIcon size={16} />
-                      <span style={{ fontFamily: 'var(--font-condensed)', fontWeight: 600, fontSize: 14 }}>SMS alerts activated! You'll receive a confirmation text shortly.</span>
-                    </div>
-                  )}
-                  {smsBanner === 'canceled' && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.2)', borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: 20, color: '#DC2626' }}>
-                      <XCircle size={16} />
-                      <span style={{ fontFamily: 'var(--font-condensed)', fontWeight: 600, fontSize: 14 }}>Checkout canceled — no charges were made.</span>
-                    </div>
-                  )}
-
-                  <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: '20px 22px' }}>
-                    {/* Phone number input */}
-                    <div style={{ marginBottom: 16 }}>
-                      <label style={{ display: 'block', fontFamily: 'var(--font-condensed)', fontSize: 12, fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: 'var(--color-text-muted)', marginBottom: 6 }}>
-                        Mobile Phone Number
-                      </label>
-                      <form onSubmit={handleSavePhone} style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                        <input
-                          type="tel"
-                          placeholder="(555) 123-4567"
-                          value={phoneInput}
-                          onChange={e => setPhoneInput(e.target.value)}
-                          style={{ ...inputStyle, maxWidth: 220, flex: '1 1 180px' }}
-                        />
-                        <button type="submit" disabled={savingPhone} style={{ ...btnGhost, flexShrink: 0, opacity: savingPhone ? 0.6 : 1, cursor: savingPhone ? 'not-allowed' : 'pointer' }}>
-                          {savingPhone ? 'Saving…' : 'Save Number'}
-                        </button>
-                      </form>
-                      {smsPhoneMsg && <div style={{ fontSize: 12, color: '#059669', marginTop: 6, fontWeight: 600 }}>{smsPhoneMsg}</div>}
-                      {smsPhoneErr && <div style={{ fontSize: 12, color: '#DC2626', marginTop: 6 }}>{smsPhoneErr}</div>}
-                    </div>
-
-                    {/* Subscribe / Unsubscribe */}
-                    {!smsActive ? (
+                    {smsLoading ? (
+                      <div style={{ color: 'var(--color-text-muted)', fontSize: 13, padding: '8px 0' }}>Loading…</div>
+                    ) : !smsStatus?.sms_tier ? (
                       <div>
-                        <button
-                          onClick={handleSmsSubscribe}
-                          disabled={subscribingSms || !smsPhone}
-                          title={!smsPhone ? 'Save a phone number first' : ''}
-                          style={{ ...btnPrimary, opacity: (subscribingSms || !smsPhone) ? 0.6 : 1, cursor: (subscribingSms || !smsPhone) ? 'not-allowed' : 'pointer' }}
-                        >
-                          {subscribingSms ? 'Redirecting…' : 'Subscribe — $1.99/mo'}
-                        </button>
-                        {!smsPhone && (
-                          <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 8 }}>
-                            Save a phone number above to enable subscription.
-                          </div>
-                        )}
+                        <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 16, lineHeight: 1.6 }}>
+                          Never miss a message — even when you're on a job site. Get SMS alerts when someone sends you a message on TraydBook. Your phone number is private and never shared with senders.
+                        </p>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+                          {[
+                            { plan: 'starter' as const, label: 'Starter', price: '$3.99/mo', desc: 'Up to 150 SMS alerts per month' },
+                            { plan: 'unlimited' as const, label: 'Unlimited', price: '$5.99/mo', desc: 'No cap — unlimited SMS alerts' },
+                          ].map(({ plan, label, price, desc }) => (
+                            <div key={plan} style={{
+                              border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)',
+                              padding: '16px', background: 'var(--color-bg)',
+                              display: 'flex', flexDirection: 'column', gap: 8,
+                            }}>
+                              <div style={{ fontFamily: 'var(--font-condensed)', fontSize: 15, fontWeight: 700, color: 'var(--color-text)' }}>
+                                {label}
+                              </div>
+                              <div style={{ fontFamily: 'var(--font-condensed)', fontSize: 20, fontWeight: 800, color: 'var(--color-brand)' }}>
+                                {price}
+                              </div>
+                              <div style={{ fontSize: 12, color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
+                                {desc}
+                              </div>
+                              <button
+                                onClick={() => handleSmsSubscribe(plan)}
+                                disabled={smsSubscribing}
+                                style={{
+                                  ...btnPrimary,
+                                  marginTop: 4,
+                                  opacity: smsSubscribing ? 0.6 : 1,
+                                  fontSize: 12,
+                                  padding: '8px 14px',
+                                }}
+                              >
+                                {smsSubscribing ? 'Redirecting…' : 'Subscribe'}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        {smsErr && <ErrorBanner msg={smsErr} />}
                       </div>
                     ) : (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <CheckCircleIcon size={16} color="#059669" />
-                          <span style={{ fontFamily: 'var(--font-condensed)', fontSize: 14, fontWeight: 600, color: '#059669' }}>
-                            SMS alerts active — texts go to {smsPhone}
-                          </span>
+                      <div>
+                        <div style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          flexWrap: 'wrap', gap: 12, marginBottom: 16,
+                        }}>
+                          <div>
+                            <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 2 }}>Current plan</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <span style={{
+                                fontFamily: 'var(--font-condensed)', fontSize: 14, fontWeight: 700,
+                                textTransform: 'uppercase', letterSpacing: '0.5px',
+                                background: 'var(--color-brand-light)', color: 'var(--color-brand)',
+                                padding: '3px 10px', borderRadius: 4,
+                              }}>
+                                {smsStatus.sms_tier === 'starter' ? 'Starter — $3.99/mo' : 'Unlimited — $5.99/mo'}
+                              </span>
+                              {smsStatus.sms_tier === 'starter' && (
+                                <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+                                  {smsStatus.sms_count_this_period} / 150 used this period
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: 8 }}>
+                            <button
+                              onClick={handleSmsPauseToggle}
+                              disabled={smsTogglingPause}
+                              style={{
+                                ...btnGhost, fontSize: 12, padding: '7px 12px',
+                                display: 'flex', alignItems: 'center', gap: 6,
+                                opacity: smsTogglingPause ? 0.6 : 1,
+                              }}
+                            >
+                              {smsStatus.sms_alerts_enabled
+                                ? <><Pause size={13} /> Pause alerts</>
+                                : <><Play size={13} /> Resume alerts</>
+                              }
+                            </button>
+                            <button
+                              onClick={handleSmsCancel}
+                              disabled={smsCancelling}
+                              style={{
+                                ...btnGhost, fontSize: 12, padding: '7px 12px',
+                                display: 'flex', alignItems: 'center', gap: 6,
+                                color: '#DC2626', borderColor: 'rgba(220,38,38,0.3)',
+                                opacity: smsCancelling ? 0.6 : 1,
+                              }}
+                            >
+                              <X size={13} /> Cancel plan
+                            </button>
+                          </div>
                         </div>
-                        <button
-                          onClick={handleSmsUnsubscribe}
-                          disabled={unsubscribingSms}
-                          style={{ ...btnGhost, fontSize: 12, padding: '6px 14px', color: '#DC2626', borderColor: 'rgba(220,38,38,0.3)', opacity: unsubscribingSms ? 0.6 : 1, cursor: unsubscribingSms ? 'not-allowed' : 'pointer' }}
-                        >
-                          {unsubscribingSms ? 'Canceling…' : 'Cancel Subscription'}
-                        </button>
+
+                        {!smsStatus.sms_alerts_enabled && (
+                          <div style={{
+                            background: 'rgba(217,119,6,0.08)', border: '1px solid rgba(217,119,6,0.25)',
+                            borderRadius: 'var(--radius-sm)', padding: '8px 12px',
+                            color: '#D97706', fontSize: 12, marginBottom: 14,
+                            display: 'flex', alignItems: 'center', gap: 8,
+                          }}>
+                            <Pause size={13} /> SMS alerts are paused. In-app notifications still work.
+                          </div>
+                        )}
+
+                        {!smsStatus.phone_verified ? (
+                          <div style={{
+                            background: 'var(--color-bg)', border: '1px solid var(--color-border)',
+                            borderRadius: 'var(--radius-md)', padding: 16,
+                          }}>
+                            <div style={{
+                              fontFamily: 'var(--font-condensed)', fontSize: 13, fontWeight: 700,
+                              color: 'var(--color-text)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6,
+                            }}>
+                              <Phone size={14} /> Verify your phone number
+                            </div>
+                            <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 12, lineHeight: 1.5 }}>
+                              Enter your US phone number to receive SMS alerts. We'll send a 6-digit verification code.
+                            </p>
+                            {!otpSent ? (
+                              <form onSubmit={handleSendOtp} style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                                <div style={{ flex: '1 1 200px' }}>
+                                  <label style={{ fontSize: 12, color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>
+                                    Phone number (US only)
+                                  </label>
+                                  <input
+                                    type="tel"
+                                    value={phoneInput}
+                                    onChange={e => setPhoneInput(e.target.value)}
+                                    placeholder="(555) 555-5555"
+                                    required
+                                    style={inputStyle}
+                                  />
+                                </div>
+                                <button
+                                  type="submit"
+                                  disabled={sendingOtp || !phoneInput.trim()}
+                                  style={{ ...btnPrimary, opacity: (sendingOtp || !phoneInput.trim()) ? 0.6 : 1, fontSize: 12, flexShrink: 0 }}
+                                >
+                                  {sendingOtp ? 'Sending…' : 'Send Code'}
+                                </button>
+                              </form>
+                            ) : (
+                              <form onSubmit={handleVerifyOtp} style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                                <div style={{ flex: '1 1 160px' }}>
+                                  <label style={{ fontSize: 12, color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>
+                                    Enter the 6-digit code
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={otpInput}
+                                    onChange={e => setOtpInput(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                    placeholder="123456"
+                                    required
+                                    maxLength={6}
+                                    style={inputStyle}
+                                  />
+                                </div>
+                                <button
+                                  type="submit"
+                                  disabled={verifyingOtp || otpInput.length < 6}
+                                  style={{ ...btnPrimary, opacity: (verifyingOtp || otpInput.length < 6) ? 0.6 : 1, fontSize: 12, flexShrink: 0 }}
+                                >
+                                  {verifyingOtp ? 'Verifying…' : 'Verify'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => { setOtpSent(false); setOtpInput(''); setOtpErr('') }}
+                                  style={{ ...btnGhost, fontSize: 12, flexShrink: 0 }}
+                                >
+                                  Change number
+                                </button>
+                              </form>
+                            )}
+                            {otpErr && <ErrorBanner msg={otpErr} />}
+                          </div>
+                        ) : (
+                          <div style={{
+                            display: 'flex', alignItems: 'center', gap: 8,
+                            background: 'rgba(5,150,105,0.08)', border: '1px solid rgba(5,150,105,0.2)',
+                            borderRadius: 'var(--radius-sm)', padding: '10px 14px',
+                          }}>
+                            <CheckCircle size={15} style={{ color: '#059669', flexShrink: 0 }} />
+                            <div>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: '#059669' }}>
+                                Phone verified{smsStatus.masked_phone ? ` — ${smsStatus.masked_phone}` : ''}
+                              </div>
+                              <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+                                SMS alerts are active. To change your number, cancel and re-subscribe.
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {smsMsg && <SavedBanner msg={smsMsg} />}
+                        {smsErr && <ErrorBanner msg={smsErr} />}
                       </div>
                     )}
                   </div>
-                </div>
+                )}
               </div>
             )}
 

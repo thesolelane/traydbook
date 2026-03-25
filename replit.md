@@ -103,7 +103,7 @@ Pro Verified contractors can vouch for others via the Vouch button on their prof
   - Dev (Replit): point to `https://<replit-dev-domain>/api/webhooks/stripe`
   - Production (own server): point to `https://yourdomain.com/api/webhooks/stripe`
   - Each environment needs its own webhook endpoint + its own `STRIPE_WEBHOOK_SECRET`
-  - Listen for: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`
+  - Listen for: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_succeeded`
 - **Seed script**: `scripts/seed-stripe-products.js` — run once to create/update products in Stripe (idempotent, safe to re-run)
 
 ### Live Stripe Products & Prices
@@ -116,12 +116,24 @@ Pro Verified contractors can vouch for others via the Vouch button on their prof
 | Professional | 200 cr  | $54   | `price_1TEMD9CXFkuyP9oEJKb5PKGL`     | `prod_UClkuhQHCsalUv` |
 | Power        | 500 cr  | $99   | `price_1TEMDACXFkuyP9oEJxlOr18m`     | `prod_UClksIMbwsf3xh` |
 
-**Monthly subscriptions** (`mode: 'subscription'`)
-| Plan        | Price      | Stripe Price ID                    | Stripe Product ID      |
-|---|---|---|---|
-| SMS Alerts  | $1.99/mo   | `price_1TEMF1CXFkuyP9oESpMHcTBR`  | `prod_UClmMWnPYp7C78` |
+**Monthly SMS subscriptions** (`mode: 'subscription'`)
+| Plan        | Price      | Stripe Price ID (env secret)          |
+|---|---|---|
+| Starter     | $3.99/mo   | `SMS_STARTER_PRICE_ID`               |
+| Unlimited   | $5.99/mo   | `SMS_UNLIMITED_PRICE_ID`             |
 
 - ⚠️ Since live keys are active in Replit, avoid triggering the checkout flow during development — it will charge real cards
+
+## SMS Message Alerts (Telnyx)
+- **Telnyx SDK** sends SMS via `TELNYX_API_KEY` and `TELNYX_PHONE_NUMBER` secrets
+- **Two-tier subscription** via Stripe: Starter ($3.99/mo, 150 SMS cap) and Unlimited ($5.99/mo, no cap)
+- **Stripe Price IDs**: `SMS_STARTER_PRICE_ID` and `SMS_UNLIMITED_PRICE_ID` secrets (create recurring monthly products in Stripe dashboard)
+- **OTP verification**: 6-digit code sent via Telnyx, SHA-256 hashed + 10min expiry stored in DB
+- **Phone privacy**: Column-level REVOKE on `phone_number`, `sms_otp_hash`, etc. — only service_role can read
+- **SMS dispatch**: Server-side Supabase realtime listener on `notifications` table (type=message_received) fires SMS to verified recipients
+- **Settings UI**: SMS Alerts in Settings > Notifications tab (contractors only) — plan cards, OTP flow, pause/resume, cancel
+- **Migration**: `supabase/migrations/011_sms_fields.sql`
+- **Server endpoints**: `/api/sms/create-subscription`, `/api/sms/cancel-subscription`, `/api/sms/toggle-alerts`, `/api/sms/send-verification`, `/api/sms/verify`, `/api/sms/status`
 
 ## Deployment
 All deployment files live in `deploy/` and must be updated as the app evolves (new env vars, new services, etc.):
@@ -147,6 +159,10 @@ SUPABASE_SERVICE_ROLE_KEY
 STRIPE_SECRET_KEY          ← live key
 STRIPE_WEBHOOK_SECRET      ← from Stripe dashboard for that server's webhook URL
 APP_ORIGIN                 ← https://yourdomain.com (controls Stripe redirect URLs)
+TELNYX_API_KEY             ← Telnyx API key for SMS
+TELNYX_PHONE_NUMBER        ← Telnyx phone number for SMS
+SMS_STARTER_PRICE_ID       ← Stripe price ID for Starter SMS plan
+SMS_UNLIMITED_PRICE_ID     ← Stripe price ID for Unlimited SMS plan
 NODE_ENV=production
 ```
 
@@ -173,5 +189,5 @@ Non-public delegate accounts let company staff manage a company's TraydBook pres
 - ✅ Task #7: Credits, Stripe & Settings — DONE
 - ✅ Task #8: Social Login + Verified Badge System — DONE
 - ✅ Task #8 (Profile Polish): Social Links & Avatar Validation — DONE
-- 🔄 Task #9: SMS Message Alerts (Telnyx, two-tier subscription) — IN PROGRESS
+- ✅ Task #9: SMS Message Alerts (Telnyx, two-tier subscription) — DONE
 - ✅ Task #12: Team Delegation & Ghost Sub-Accounts — DONE
