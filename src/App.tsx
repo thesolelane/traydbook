@@ -27,6 +27,7 @@ import Notifications from './pages/Notifications'
 import Settings from './pages/Settings'
 import ResetPassword from './pages/ResetPassword'
 import JoinDelegate from './pages/JoinDelegate'
+import StaffInvite from './pages/StaffInvite'
 import WalletSetup from './pages/WalletSetup'
 
 function AppLayout({ children }: { children: React.ReactNode }) {
@@ -198,6 +199,7 @@ export default function App() {
 
           {/* Delegate join — public, linked from invite email */}
           <Route path="/join/:token" element={<JoinDelegate />} />
+          <Route path="/staff-invite/:token" element={<StaffInvite />} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

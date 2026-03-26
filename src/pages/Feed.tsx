@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom'
 import { Plus, TrendingUp, UserPlus, Loader, RefreshCw } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { isStaff } from '../lib/roles'
 import PostCard, { AuthorAvatar } from '../components/PostCard'
 import FeedFilterBar from '../components/FeedFilterBar'
 import ComposeModal from '../components/ComposeModal'
@@ -96,7 +97,7 @@ export default function Feed() {
   const profileInfoLoaded = useRef(false)
 
   const isContractor = profile?.account_type === 'contractor'
-  const isAdmin = profile?.account_type === 'admin'
+  const isAdmin = isStaff(profile?.account_type)
 
   async function fetchConnectionIds(): Promise<Set<string>> {
     if (!profile) return new Set()

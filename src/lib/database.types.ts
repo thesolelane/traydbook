@@ -1,4 +1,4 @@
-export type AccountType = 'contractor' | 'project_owner' | 'agent' | 'homeowner' | 'admin'
+export type AccountType = 'contractor' | 'project_owner' | 'agent' | 'homeowner' | 'admin' | 'admin_2' | 'hired_dev' | 'moderator'
 export type AvailabilityStatus = 'available' | 'busy' | 'not_available'
 export type ConnectionStatus = 'pending' | 'accepted' | 'rejected'
 export type DelegationStatus = 'pending' | 'active' | 'revoked'

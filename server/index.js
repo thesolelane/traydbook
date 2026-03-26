@@ -452,6 +452,74 @@ app.get('/api/team', requireAuth, async (req, res) => {
   res.json({ delegations: enriched, auditLog })
 })
 
+// ── Admin Invites ─────────────────────────────────────────────────────────────
+
+const STAFF_ROLES = ['admin', 'admin_2', 'hired_dev', 'moderator']
+const PLATFORM_ROLES = ['contractor', 'project_owner', 'agent', 'homeowner']
+const ALL_INVITE_ROLES = [...STAFF_ROLES, ...PLATFORM_ROLES]
+
+/** Middleware: only account_type='admin' (super admin) can proceed */
+async function requireSuperAdmin(req, res, next) {
+  const { data: u } = await supabaseAdmin.from('users').select('account_type').eq('id', req.user.id).single()
+  if (u?.account_type !== 'admin') return res.status(403).json({ error: 'Super admin only' })
+  next()
+}
+
+app.post('/api/admin/invite', requireAuth, requireSuperAdmin, async (req, res) => {
+  const { email, role } = req.body ?? {}
+  if (!email || !role) return res.status(400).json({ error: 'email and role are required' })
+  if (!ALL_INVITE_ROLES.includes(role)) return res.status(400).json({ error: 'Invalid role' })
+
+  const { data: invite, error: insertErr } = await supabaseAdmin
+    .from('admin_invites')
+    .insert({ invited_by: req.user.id, email: email.trim().toLowerCase(), role })
+    .select('id, token, email, role, expires_at')
+    .single()
+
+  if (insertErr) {
+    console.error('[admin/invite] Insert error:', insertErr.message)
+    return res.status(500).json({ error: 'Failed to create invite' })
+  }
+
+  const domain = process.env.REPLIT_DEV_DOMAIN ?? 'traydbook.com'
+  const joinUrl = `https://${domain}/staff-invite/${invite.token}`
+  console.log(`[admin/invite] Invite created for ${email} (${role}) by ${req.user.id}. URL: ${joinUrl}`)
+  res.json({ invite, joinUrl })
+})
+
+app.get('/api/admin/invite/:token', async (req, res) => {
+  const { token } = req.params
+  const { data: invite, error } = await supabaseAdmin
+    .from('admin_invites')
+    .select('id, email, role, expires_at, used_at, invited_by, users!invited_by (display_name, avatar_url)')
+    .eq('token', token)
+    .maybeSingle()
+
+  if (error || !invite) return res.status(404).json({ error: 'Invite not found or already used' })
+  if (invite.used_at) return res.status(410).json({ error: 'This invite has already been used' })
+  if (new Date(invite.expires_at) < new Date()) return res.status(410).json({ error: 'This invite has expired' })
+
+  res.json({ invite })
+})
+
+app.get('/api/admin/invites', requireAuth, requireSuperAdmin, async (req, res) => {
+  const { data, error } = await supabaseAdmin
+    .from('admin_invites')
+    .select('id, email, role, expires_at, used_at, created_at, users!invited_by (display_name)')
+    .eq('invited_by', req.user.id)
+    .order('created_at', { ascending: false })
+
+  if (error) return res.status(500).json({ error: error.message })
+  res.json({ invites: data ?? [] })
+})
+
+app.delete('/api/admin/invite/:id', requireAuth, requireSuperAdmin, async (req, res) => {
+  const { id } = req.params
+  const { error } = await supabaseAdmin.from('admin_invites').delete().eq('id', id).eq('invited_by', req.user.id)
+  if (error) return res.status(500).json({ error: error.message })
+  res.json({ ok: true })
+})
+
 // ── SMS Subscriptions ─────────────────────────────────────────────────────────
 
 app.post('/api/sms/create-subscription', requireAuth, async (req, res) => {

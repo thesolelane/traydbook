@@ -5,7 +5,7 @@ import {
   AlertTriangle, ShieldCheck, CreditCard, Coins, Zap,
   TrendingUp, Award, Star, CheckCircle as CheckCircleIcon,
   XCircle, ChevronRight, Users, Smartphone, Phone, Pause, Play, X,
-  Wallet,
+  Wallet, Shield,
 } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { supabase } from '../lib/supabase'
@@ -13,6 +13,8 @@ import { useAuth } from '../context/AuthContext'
 import type { NotificationType } from '../lib/database.types'
 import VerifiedBadge from '../components/VerifiedBadge'
 import TeamPanel from '../components/TeamPanel'
+import StaffPanel from '../components/StaffPanel'
+import { isSuperAdmin } from '../lib/roles'
 import type { BadgeTier } from '../types/profile'
 
 const NOTIF_LABELS: { type: NotificationType; label: string; description: string }[] = [
@@ -55,7 +57,7 @@ interface LedgerRow {
   created_at: string
 }
 
-type Tab = 'account' | 'notifications' | 'privacy' | 'billing' | 'verification' | 'danger' | 'team' | 'wallet'
+type Tab = 'account' | 'notifications' | 'privacy' | 'billing' | 'verification' | 'danger' | 'team' | 'wallet' | 'staff'
 
 interface TabDef {
   id: Tab
@@ -63,6 +65,7 @@ interface TabDef {
   icon: React.ReactNode
   contractorOnly?: boolean
   ownerOnly?: boolean
+  adminOnly?: boolean
 }
 
 function SavedBanner({ msg }: { msg: string }) {
@@ -149,6 +152,7 @@ export default function Settings() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const isContractor = profile?.account_type === 'contractor'
+  const isSuperAdminUser = isSuperAdmin(profile?.account_type)
 
   const rawTab = searchParams.get('tab') as Tab | null
   const [activeTab, setActiveTab] = useState<Tab>(rawTab ?? 'account')
@@ -171,12 +175,14 @@ export default function Settings() {
     { id: 'verification',  label: 'Verification',    icon: <ShieldCheck size={15} />, contractorOnly: true },
     { id: 'wallet',        label: 'Crypto Wallet',   icon: <Wallet size={15} />, contractorOnly: true },
     { id: 'team',          label: 'Team',            icon: <Users size={15} />, ownerOnly: true },
+    { id: 'staff',         label: 'Staff',           icon: <Shield size={15} />, adminOnly: true },
     { id: 'danger',        label: 'Danger Zone',     icon: <Trash2 size={15} /> },
   ]
 
   const visibleTabs = TABS.filter(t => {
     if (t.contractorOnly && !isContractor) return false
     if (t.ownerOnly && isContractor) return false
+    if (t.adminOnly && !isSuperAdminUser) return false
     return true
   })
 
@@ -1830,6 +1836,14 @@ export default function Settings() {
                     </Section>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* ── STAFF TAB ── */}
+            {activeTab === 'staff' && isSuperAdminUser && (
+              <div>
+                <TabHeading>Staff</TabHeading>
+                <StaffPanel />
               </div>
             )}
 

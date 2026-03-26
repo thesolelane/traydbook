@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { isStaff } from '../lib/roles'
 import VerifiedBadge from '../components/VerifiedBadge'
 import type { BadgeTier } from '../types/profile'
 
@@ -98,7 +99,7 @@ export default function Explore() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const isContractor = profile?.account_type === 'contractor'
-  const isAdmin = profile?.account_type === 'admin'
+  const isAdmin = isStaff(profile?.account_type)
 
   const activeTab = (searchParams.get('tab') ?? 'contractors') as 'contractors' | 'nearme'
 

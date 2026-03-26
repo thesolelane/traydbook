@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
+import { isStaff } from '../lib/roles'
 
 function TraydBookLogo({ size = 'sm' }: { size?: 'sm' | 'md' }) {
   const iconSize = size === 'md' ? 32 : 26
@@ -114,7 +115,7 @@ export default function Navbar() {
     : '?'
 
   const isContractor = profile?.account_type === 'contractor'
-  const isAdmin = profile?.account_type === 'admin'
+  const isAdmin = isStaff(profile?.account_type)
   const canPostRfq = profile?.account_type === 'project_owner' || profile?.account_type === 'agent' || isAdmin
 
   function Dot() {

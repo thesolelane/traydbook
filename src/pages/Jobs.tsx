@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { Search, Briefcase, AlertCircle, TrendingUp, DollarSign, Plus, X, SlidersHorizontal, MapPin, Bookmark, CheckCircle, XCircle, Clock } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { isStaff } from '../lib/roles'
 import JobCard from '../components/JobCard'
 import {
   JobListing, JobApplication, TRADE_OPTIONS, CERT_OPTIONS, PAY_RANGE_OPTIONS,
@@ -57,7 +58,7 @@ export default function Jobs() {
   const { profile } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const isContractor = profile?.account_type === 'contractor'
-  const isAdmin = profile?.account_type === 'admin'
+  const isAdmin = isStaff(profile?.account_type)
 
   const activeTab = (searchParams.get('tab') ?? 'browse') as JobTab
 

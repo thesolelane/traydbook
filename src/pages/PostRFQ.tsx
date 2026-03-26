@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { isStaff } from '../lib/roles'
 import { tradeOptions } from '../data/mockData'
 
 const PROJECT_TYPES = [
@@ -42,7 +43,7 @@ export default function PostRFQ() {
   const navigate = useNavigate()
 
   const isContractor = profile?.account_type === 'contractor'
-  const isAdmin = profile?.account_type === 'admin'
+  const isAdmin = isStaff(profile?.account_type)
   const creditBalance = profile?.credit_balance ?? 0
   const canAfford = isContractor || isAdmin || creditBalance >= RFQ_CREDIT_COST
 
