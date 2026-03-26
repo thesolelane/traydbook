@@ -931,9 +931,21 @@ app.post('/api/wallet/send-reward', requireAuth, async (req, res) => {
   }
 })
 
-const PORT = process.env.API_PORT ?? 3001
+// ── Production: serve built frontend ─────────────────────────────────────────
+if (process.env.NODE_ENV === 'production') {
+  const path = await import('path')
+  const { fileURLToPath } = await import('url')
+  const __dirname = path.default.dirname(fileURLToPath(import.meta.url))
+  const distPath = path.default.join(__dirname, '../dist')
+  app.use(express.static(distPath))
+  app.get('*', (req, res) => {
+    res.sendFile(path.default.join(distPath, 'index.html'))
+  })
+}
+
+const PORT = process.env.PORT ?? process.env.API_PORT ?? 3001
 app.listen(PORT, () => {
-  console.log(`[server] API ready on http://localhost:${PORT}`)
+  console.log(`[server] Running on http://localhost:${PORT} (${process.env.NODE_ENV ?? 'development'})`)
   startNotificationListener()
 })
 
