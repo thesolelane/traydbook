@@ -5,7 +5,6 @@
 CREATE INDEX IF NOT EXISTS idx_posts_created_at   ON public.posts (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_posts_author_id     ON public.posts (author_id);
 CREATE INDEX IF NOT EXISTS idx_posts_post_type     ON public.posts (post_type);
-CREATE INDEX IF NOT EXISTS idx_posts_boosted_sort  ON public.posts (is_boosted DESC, is_urgent DESC, created_at DESC);
 
 -- Connections (used on every feed load to build connection set)
 CREATE INDEX IF NOT EXISTS idx_connections_requester ON public.connections (requester_id, status);
