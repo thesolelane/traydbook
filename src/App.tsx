@@ -1,8 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import AdminRoute from './components/AdminRoute'
 import Navbar from './components/Navbar'
 import Landing from './pages/Landing'
+import Admin from './pages/Admin'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import SignupContractor from './pages/SignupContractor'
@@ -200,6 +202,13 @@ export default function App() {
           {/* Delegate join — public, linked from invite email */}
           <Route path="/join/:token" element={<JoinDelegate />} />
           <Route path="/staff-invite/:token" element={<StaffInvite />} />
+
+          {/* Admin dashboard — admin and admin_2 only */}
+          <Route path="/admin" element={
+            <AdminRoute>
+              <Admin />
+            </AdminRoute>
+          } />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

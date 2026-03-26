@@ -185,6 +185,9 @@ create table if not exists public.posts (
   created_at     timestamptz not null default now()
 );
 
+-- is_flagged: set by admin/moderator to surface content for review
+alter table public.posts add column if not exists is_flagged boolean not null default false;
+
 alter table public.posts enable row level security;
 
 create policy "Posts are public" on public.posts
