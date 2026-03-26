@@ -138,7 +138,8 @@ export default function Feed() {
       .select(`
         id, post_type, body, media_urls, hashtags, like_count, comment_count, share_count,
         is_urgent, is_boosted, created_at, author_id, tagged_user_id, linked_job_id, linked_rfq_id,
-        users!author_id (display_name, handle, avatar_url, account_type)
+        users!author_id (display_name, handle, avatar_url, account_type),
+        contractor_profiles!author_id (primary_trade)
       `)
       .order('is_boosted', { ascending: false })
       .order('is_urgent', { ascending: false })
@@ -168,6 +169,7 @@ export default function Feed() {
     } else {
       rawMapped = data.map((row: Record<string, unknown>) => {
         const u = (row.users as unknown) as { display_name: string; handle: string; avatar_url: string | null; account_type: string } | null
+        const cp = (row.contractor_profiles as unknown) as { primary_trade: string | null } | null
         return {
           id: row.id as string,
           post_type: row.post_type as FeedPost['post_type'],
@@ -188,14 +190,13 @@ export default function Feed() {
           author_handle: u?.handle ?? '',
           author_avatar: u?.avatar_url ?? null,
           author_account_type: u?.account_type ?? '',
-          author_trade: null,
+          author_trade: cp?.primary_trade ?? null,
           author_verified: false,
         }
       })
     }
 
-    const enriched = await enrichWithTrades(rawMapped)
-    const scored = sortByScore(enriched, connIds)
+    const scored = sortByScore(rawMapped, connIds)
 
     if (reset) {
       setPosts(scored)
@@ -362,28 +363,31 @@ export default function Feed() {
 
   async function loadStats() {
     if (!profile) return
-    const { count: nc } = await supabase
-      .from('connections')
-      .select('*', { count: 'exact', head: true })
-      .or(`requester_id.eq.${profile.id},recipient_id.eq.${profile.id}`)
-      .eq('status', 'accepted')
-    setNetworkCount(nc ?? 0)
-
-    if (isContractor) {
-      const { count: bc } = await supabase
-        .from('bids')
+    const queries: Promise<void>[] = [
+      supabase
+        .from('connections')
         .select('*', { count: 'exact', head: true })
-        .eq('bidder_id', profile.id)
-        .in('status', ['pending', 'under_review'])
-      setActiveBidsCount(bc ?? 0)
+        .or(`requester_id.eq.${profile.id},recipient_id.eq.${profile.id}`)
+        .eq('status', 'accepted')
+        .then(({ count }) => setNetworkCount(count ?? 0)),
+      supabase
+        .from('job_listings')
+        .select('*', { count: 'exact', head: true })
+        .eq('poster_id', profile.id)
+        .eq('status', 'open')
+        .then(({ count }) => setOpenJobsCount(count ?? 0)),
+    ]
+    if (isContractor) {
+      queries.push(
+        supabase
+          .from('bids')
+          .select('*', { count: 'exact', head: true })
+          .eq('bidder_id', profile.id)
+          .in('status', ['pending', 'under_review'])
+          .then(({ count }) => setActiveBidsCount(count ?? 0))
+      )
     }
-
-    const { count: jc } = await supabase
-      .from('job_listings')
-      .select('*', { count: 'exact', head: true })
-      .eq('poster_id', profile.id)
-      .eq('status', 'open')
-    setOpenJobsCount(jc ?? 0)
+    await Promise.all(queries)
   }
 
   async function loadTrending() {
