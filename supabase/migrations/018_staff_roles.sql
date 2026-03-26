@@ -2,14 +2,12 @@
 -- Run in Supabase SQL Editor
 
 -- ============================================================
--- STEP 1: Extend account_type CHECK constraint
+-- STEP 1: Extend the account_type ENUM with new staff values
+--         (The live DB uses a PostgreSQL ENUM, not a CHECK constraint)
 -- ============================================================
-ALTER TABLE public.users DROP CONSTRAINT IF EXISTS users_account_type_check;
-ALTER TABLE public.users ADD CONSTRAINT users_account_type_check
-  CHECK (account_type IN (
-    'contractor','project_owner','agent','homeowner',
-    'admin','admin_2','hired_dev','moderator'
-  ));
+ALTER TYPE account_type ADD VALUE IF NOT EXISTS 'admin_2';
+ALTER TYPE account_type ADD VALUE IF NOT EXISTS 'hired_dev';
+ALTER TYPE account_type ADD VALUE IF NOT EXISTS 'moderator';
 
 -- ============================================================
 -- STEP 2: Create admin_invites table
@@ -31,15 +29,22 @@ CREATE TABLE IF NOT EXISTS public.admin_invites (
 
 ALTER TABLE public.admin_invites ENABLE ROW LEVEL SECURITY;
 
--- Super admin can do everything
-CREATE POLICY "Super admin manages invites" ON public.admin_invites
-  FOR ALL USING (
-    EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND account_type = 'admin')
-  );
+-- Policies (wrapped to skip if they already exist)
+DO $$
+BEGIN
+  CREATE POLICY "Super admin manages invites" ON public.admin_invites
+    FOR ALL USING (
+      EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND account_type = 'admin')
+    );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
--- Anyone can read their own invite by token (for accept page)
-CREATE POLICY "Anyone can read invites" ON public.admin_invites
-  FOR SELECT USING (true);
+DO $$
+BEGIN
+  CREATE POLICY "Anyone can read invites" ON public.admin_invites
+    FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 GRANT ALL ON public.admin_invites TO service_role;
 GRANT SELECT, INSERT ON public.admin_invites TO authenticated, anon;
