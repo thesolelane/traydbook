@@ -57,6 +57,7 @@ export default function Jobs() {
   const { profile } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const isContractor = profile?.account_type === 'contractor'
+  const isAdmin = profile?.account_type === 'admin'
 
   const activeTab = (searchParams.get('tab') ?? 'browse') as JobTab
 

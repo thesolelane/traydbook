@@ -98,6 +98,7 @@ export default function Explore() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const isContractor = profile?.account_type === 'contractor'
+  const isAdmin = profile?.account_type === 'admin'
 
   const activeTab = (searchParams.get('tab') ?? 'contractors') as 'contractors' | 'nearme'
 
@@ -520,8 +521,8 @@ export default function Explore() {
             </div>
           )}
 
-          {/* Credit banner for non-contractors */}
-          {!isContractor && (
+          {/* Credit banner for non-contractors/non-admins */}
+          {!isContractor && !isAdmin && (
             <div style={{ background: 'var(--color-brand-light)', border: '1px solid rgba(232,93,4,0.2)', borderRadius: 8, padding: '10px 14px', marginBottom: 14, fontSize: 13, color: 'var(--color-brand)', display: 'flex', alignItems: 'center', gap: 8 }}>
               <MessageSquare size={14} /> First message to a contractor costs {MSG_COLD_COST} credits. You have {profile?.credit_balance ?? 0}.
             </div>
@@ -627,10 +628,10 @@ export default function Explore() {
                         onClick={() => handleMessage(c)}
                         className="btn btn-primary"
                         style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 4, marginLeft: 'auto' }}
-                        title={!isContractor ? `${MSG_COLD_COST} credits for first message` : ''}
+                        title={(!isContractor && !isAdmin) ? `${MSG_COLD_COST} credits for first message` : ''}
                       >
                         <MessageSquare size={12} /> Message
-                        {!isContractor && <span style={{ opacity: 0.8, fontSize: 10 }}>({MSG_COLD_COST}cr)</span>}
+                        {(!isContractor && !isAdmin) && <span style={{ opacity: 0.8, fontSize: 10 }}>({MSG_COLD_COST}cr)</span>}
                       </button>
                     </div>
                   </div>

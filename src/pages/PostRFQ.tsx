@@ -42,8 +42,9 @@ export default function PostRFQ() {
   const navigate = useNavigate()
 
   const isContractor = profile?.account_type === 'contractor'
+  const isAdmin = profile?.account_type === 'admin'
   const creditBalance = profile?.credit_balance ?? 0
-  const canAfford = isContractor || creditBalance >= RFQ_CREDIT_COST
+  const canAfford = isContractor || isAdmin || creditBalance >= RFQ_CREDIT_COST
 
   const [title, setTitle] = useState('')
   const [tradeNeeded, setTradeNeeded] = useState('Electrical')
@@ -134,13 +135,13 @@ export default function PostRFQ() {
         <div>
           <h1 style={{ fontFamily: 'var(--font-condensed)', fontWeight: 800, fontSize: 24 }}>Post an RFQ</h1>
           <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 2 }}>
-            {isContractor ? 'Free for contractors' : `Costs ${RFQ_CREDIT_COST} credits (you have ${creditBalance})`}
+            {(isContractor || isAdmin) ? 'Free' : `Costs ${RFQ_CREDIT_COST} credits (you have ${creditBalance})`}
           </p>
         </div>
       </div>
 
-      {/* Credit warning for non-contractors */}
-      {!isContractor && (
+      {/* Credit warning for non-contractors/non-admins */}
+      {!isContractor && !isAdmin && (
         <div style={{ background: canAfford ? '#FFFBEB' : '#FEF2F2', border: `1px solid ${canAfford ? '#D97706' : '#DC2626'}`, borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: canAfford ? '#D97706' : '#DC2626', display: 'flex', alignItems: 'center', gap: 8 }}>
           <Coins size={14} />
           {canAfford
@@ -321,7 +322,7 @@ export default function PostRFQ() {
             style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, minWidth: 160 }}
           >
             {submitting ? <Loader size={13} className="spin" /> : <Plus size={13} />}
-            {submitting ? 'Posting...' : `Post RFQ${!isContractor ? ` (${RFQ_CREDIT_COST} credits)` : ''}`}
+            {submitting ? 'Posting...' : `Post RFQ${(!isContractor && !isAdmin) ? ` (${RFQ_CREDIT_COST} credits)` : ''}`}
           </button>
         </div>
       </form>

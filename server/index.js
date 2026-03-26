@@ -245,8 +245,8 @@ app.post('/api/create-checkout-session', requireAuth, async (req, res) => {
     .select('account_type')
     .eq('id', userId)
     .single()
-  if (userRow?.account_type === 'contractor') {
-    return res.status(403).json({ error: 'Contractors do not use credits' })
+  if (userRow?.account_type === 'contractor' || userRow?.account_type === 'admin') {
+    return res.status(403).json({ error: 'This account type does not use credits' })
   }
 
   const rawEmail = req.user.email ?? ''

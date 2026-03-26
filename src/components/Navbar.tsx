@@ -114,7 +114,8 @@ export default function Navbar() {
     : '?'
 
   const isContractor = profile?.account_type === 'contractor'
-  const canPostRfq = profile?.account_type === 'project_owner' || profile?.account_type === 'agent'
+  const isAdmin = profile?.account_type === 'admin'
+  const canPostRfq = profile?.account_type === 'project_owner' || profile?.account_type === 'agent' || isAdmin
 
   function Dot() {
     return <span style={{
@@ -290,7 +291,7 @@ export default function Navbar() {
                     {[
                       { label: 'My Profile', to: '/profile' },
                       { label: 'Settings', to: '/settings' },
-                      ...(!isContractor ? [{ label: 'Buy Credits', to: '/credits' }] : []),
+                      ...(!isContractor && !isAdmin ? [{ label: 'Buy Credits', to: '/credits' }] : []),
                     ].map(item => (
                       <Link key={item.to} to={item.to} onClick={() => setUserMenuOpen(false)} style={{
                         display: 'block', padding: '7px 10px', borderRadius: 'var(--radius-sm)',
@@ -446,8 +447,8 @@ export default function Navbar() {
               { label: 'Messages', Icon: MessageSquare, to: '/messages', dot: hasUnreadMessages },
               { label: 'Notifications', Icon: Bell, to: '/notifications', dot: hasUnreadNotifs },
               { label: 'My Profile', Icon: User, to: '/profile', dot: false },
-              ...(!isContractor ? [{ label: 'Buy Credits', Icon: CreditCard, to: '/credits', dot: false }] : []),
-              ...((isContractor || canPostRfq) ? [{
+              ...(!isContractor && !isAdmin ? [{ label: 'Buy Credits', Icon: CreditCard, to: '/credits', dot: false }] : []),
+              ...((isContractor || isAdmin || canPostRfq) ? [{
                 label: isContractor ? 'Post Work' : 'Post RFQ',
                 Icon: Plus,
                 to: isContractor ? '/feed/post' : '/bids/new',

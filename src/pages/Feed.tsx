@@ -96,6 +96,7 @@ export default function Feed() {
   const profileInfoLoaded = useRef(false)
 
   const isContractor = profile?.account_type === 'contractor'
+  const isAdmin = profile?.account_type === 'admin'
 
   async function fetchConnectionIds(): Promise<Set<string>> {
     if (!profile) return new Set()
