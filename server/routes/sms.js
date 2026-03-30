@@ -1,6 +1,13 @@
 import { Router } from 'express'
 import crypto from 'crypto'
-import { stripe, supabaseAdmin, telnyxClient, TELNYX_PHONE_NUMBER, SMS_PLANS, APP_ORIGIN } from '../lib/clients.js'
+import {
+  stripe,
+  supabaseAdmin,
+  telnyxClient,
+  TELNYX_PHONE_NUMBER,
+  SMS_PLANS,
+  APP_ORIGIN,
+} from '../lib/clients.js'
 import { requireAuth } from '../lib/auth.js'
 
 const router = Router()
@@ -57,10 +64,15 @@ router.post('/api/sms/create-subscription', requireAuth, async (req, res) => {
   if (!smsPlan) return res.status(400).json({ error: 'Invalid SMS plan' })
   if (!smsPlan.priceId) return res.status(503).json({ error: 'SMS plan not configured' })
 
-  const { data: userRow } = await supabaseAdmin.from('users').select('account_type, sms_tier, stripe_sms_sub_id').eq('id', userId).single()
+  const { data: userRow } = await supabaseAdmin
+    .from('users')
+    .select('account_type, sms_tier, stripe_sms_sub_id')
+    .eq('id', userId)
+    .single()
 
   if (!userRow) return res.status(404).json({ error: 'User not found' })
-  if (userRow.account_type !== 'contractor') return res.status(403).json({ error: 'SMS alerts are only available for contractors' })
+  if (userRow.account_type !== 'contractor')
+    return res.status(403).json({ error: 'SMS alerts are only available for contractors' })
   if (userRow.sms_tier) return res.status(400).json({ error: 'Already subscribed to an SMS plan' })
 
   try {
@@ -84,9 +96,14 @@ router.post('/api/sms/create-subscription', requireAuth, async (req, res) => {
 router.post('/api/sms/cancel-subscription', requireAuth, async (req, res) => {
   const userId = req.user.id
 
-  const { data: userRow } = await supabaseAdmin.from('users').select('stripe_sms_sub_id, sms_tier').eq('id', userId).single()
+  const { data: userRow } = await supabaseAdmin
+    .from('users')
+    .select('stripe_sms_sub_id, sms_tier')
+    .eq('id', userId)
+    .single()
 
-  if (!userRow?.stripe_sms_sub_id) return res.status(400).json({ error: 'No active SMS subscription' })
+  if (!userRow?.stripe_sms_sub_id)
+    return res.status(400).json({ error: 'No active SMS subscription' })
 
   try {
     await stripe.subscriptions.cancel(userRow.stripe_sms_sub_id)
@@ -100,12 +117,20 @@ router.post('/api/sms/cancel-subscription', requireAuth, async (req, res) => {
 router.post('/api/sms/toggle-alerts', requireAuth, async (req, res) => {
   const userId = req.user.id
   const { enabled } = req.body ?? {}
-  if (typeof enabled !== 'boolean') return res.status(400).json({ error: 'enabled must be a boolean' })
+  if (typeof enabled !== 'boolean')
+    return res.status(400).json({ error: 'enabled must be a boolean' })
 
-  const { data: userRow } = await supabaseAdmin.from('users').select('sms_tier').eq('id', userId).single()
+  const { data: userRow } = await supabaseAdmin
+    .from('users')
+    .select('sms_tier')
+    .eq('id', userId)
+    .single()
   if (!userRow?.sms_tier) return res.status(400).json({ error: 'No active SMS subscription' })
 
-  const { error } = await supabaseAdmin.from('users').update({ sms_alerts_enabled: enabled }).eq('id', userId)
+  const { error } = await supabaseAdmin
+    .from('users')
+    .update({ sms_alerts_enabled: enabled })
+    .eq('id', userId)
   if (error) return res.status(500).json({ error: error.message })
   res.json({ sms_alerts_enabled: enabled })
 })
@@ -121,9 +146,14 @@ router.post('/api/sms/send-verification', requireAuth, async (req, res) => {
   if (!/^1\d{10}$/.test(phone)) return res.status(400).json({ error: 'Invalid US phone number' })
   phone = '+' + phone
 
-  const { data: userRow } = await supabaseAdmin.from('users').select('sms_tier').eq('id', userId).single()
+  const { data: userRow } = await supabaseAdmin
+    .from('users')
+    .select('sms_tier')
+    .eq('id', userId)
+    .single()
   if (!userRow?.sms_tier) return res.status(403).json({ error: 'SMS subscription required' })
-  if (!telnyxClient || !TELNYX_PHONE_NUMBER) return res.status(503).json({ error: 'SMS service not configured' })
+  if (!telnyxClient || !TELNYX_PHONE_NUMBER)
+    return res.status(503).json({ error: 'SMS service not configured' })
 
   const otp = String(Math.floor(100000 + Math.random() * 900000))
   const otpHash = crypto.createHash('sha256').update(otp).digest('hex')
@@ -131,7 +161,12 @@ router.post('/api/sms/send-verification', requireAuth, async (req, res) => {
 
   const { error: updateErr } = await supabaseAdmin
     .from('users')
-    .update({ phone_number: phone, phone_verified: false, sms_otp_hash: otpHash, sms_otp_expires_at: expiresAt })
+    .update({
+      phone_number: phone,
+      phone_verified: false,
+      sms_otp_hash: otpHash,
+      sms_otp_expires_at: expiresAt,
+    })
     .eq('id', userId)
 
   if (updateErr) {
@@ -172,9 +207,13 @@ router.post('/api/sms/verify', requireAuth, async (req, res) => {
   }
 
   const inputHash = crypto.createHash('sha256').update(otp.trim()).digest('hex')
-  if (inputHash !== userRow.sms_otp_hash) return res.status(400).json({ error: 'Invalid verification code' })
+  if (inputHash !== userRow.sms_otp_hash)
+    return res.status(400).json({ error: 'Invalid verification code' })
 
-  const { error } = await supabaseAdmin.from('users').update({ phone_verified: true, sms_otp_hash: null, sms_otp_expires_at: null }).eq('id', userId)
+  const { error } = await supabaseAdmin
+    .from('users')
+    .update({ phone_verified: true, sms_otp_hash: null, sms_otp_expires_at: null })
+    .eq('id', userId)
   if (error) return res.status(500).json({ error: error.message })
   res.json({ verified: true })
 })
@@ -184,7 +223,9 @@ router.get('/api/sms/status', requireAuth, async (req, res) => {
 
   const { data: userRow, error } = await supabaseAdmin
     .from('users')
-    .select('sms_tier, sms_alerts_enabled, phone_verified, phone_number, sms_count_this_period, stripe_sms_sub_id')
+    .select(
+      'sms_tier, sms_alerts_enabled, phone_verified, phone_number, sms_count_this_period, stripe_sms_sub_id'
+    )
     .eq('id', userId)
     .single()
 

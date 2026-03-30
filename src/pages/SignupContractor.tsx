@@ -6,18 +6,81 @@ import type { AccountType } from '../lib/database.types'
 import '../styles/auth.css'
 
 const TRADES = [
-  'Design Professional', 'General Contractor', 'Electrician', 'Plumber',
-  'HVAC Tech', 'Carpenter', 'Ironworker', 'Mason / Bricklayer', 'Painter',
-  'Roofer', 'Welder', 'Pipefitter', 'Sheet Metal Worker', 'Concrete / Flatwork',
-  'Drywall / Finisher', 'Flooring', 'Tile Setter', 'Glazier', 'Insulation',
-  'Landscaping', 'Construction Manager', 'Other',
+  'Design Professional',
+  'General Contractor',
+  'Electrician',
+  'Plumber',
+  'HVAC Tech',
+  'Carpenter',
+  'Ironworker',
+  'Mason / Bricklayer',
+  'Painter',
+  'Roofer',
+  'Welder',
+  'Pipefitter',
+  'Sheet Metal Worker',
+  'Concrete / Flatwork',
+  'Drywall / Finisher',
+  'Flooring',
+  'Tile Setter',
+  'Glazier',
+  'Insulation',
+  'Landscaping',
+  'Construction Manager',
+  'Other',
 ]
 
 const US_STATES = [
-  'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA',
-  'KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ',
-  'NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT',
-  'VA','WA','WV','WI','WY',
+  'AL',
+  'AK',
+  'AZ',
+  'AR',
+  'CA',
+  'CO',
+  'CT',
+  'DE',
+  'FL',
+  'GA',
+  'HI',
+  'ID',
+  'IL',
+  'IN',
+  'IA',
+  'KS',
+  'KY',
+  'LA',
+  'ME',
+  'MD',
+  'MA',
+  'MI',
+  'MN',
+  'MS',
+  'MO',
+  'MT',
+  'NE',
+  'NV',
+  'NH',
+  'NJ',
+  'NM',
+  'NY',
+  'NC',
+  'ND',
+  'OH',
+  'OK',
+  'OR',
+  'PA',
+  'RI',
+  'SC',
+  'SD',
+  'TN',
+  'TX',
+  'UT',
+  'VT',
+  'VA',
+  'WA',
+  'WV',
+  'WI',
+  'WY',
 ]
 
 interface Step1 {
@@ -61,8 +124,12 @@ export default function SignupContractor() {
 
   const [step1, setStep1] = useState<Step1>({ email: '', password: '', confirmPassword: '' })
   const [step2, setStep2] = useState<Step2>({
-    displayName: '', handle: '', primaryTrade: locationState?.preselectedTrade ?? '', yearsExperience: '',
-    locationCity: '', locationState: '',
+    displayName: '',
+    handle: '',
+    primaryTrade: locationState?.preselectedTrade ?? '',
+    yearsExperience: '',
+    locationCity: '',
+    locationState: '',
   })
   const [step3, setStep3] = useState<Step3>({ businessName: '', bio: '', serviceRadius: '50' })
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
@@ -94,14 +161,19 @@ export default function SignupContractor() {
     if (!avatarFile) return null
     const ext = avatarFile.name.split('.').pop() ?? 'jpg'
     const path = `${uid}.${ext}`
-    const { error } = await supabase.storage.from('avatars').upload(path, avatarFile, { upsert: true, contentType: avatarFile.type })
+    const { error } = await supabase.storage
+      .from('avatars')
+      .upload(path, avatarFile, { upsert: true, contentType: avatarFile.type })
     if (error) return null
     const { data } = supabase.storage.from('avatars').getPublicUrl(path)
     return data.publicUrl
   }
 
   function slugify(s: string) {
-    return s.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30)
+    return s
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '')
+      .slice(0, 30)
   }
 
   async function handleStep1(e: FormEvent) {
@@ -118,8 +190,14 @@ export default function SignupContractor() {
     setLoading(true)
     const { error, userId: uid, needsEmailConfirmation } = await signUp(step1.email, step1.password)
     setLoading(false)
-    if (error) { setError(error); return }
-    if (needsEmailConfirmation) { setEmailConfirmSent(true); return }
+    if (error) {
+      setError(error)
+      return
+    }
+    if (needsEmailConfirmation) {
+      setEmailConfirmSent(true)
+      return
+    }
     if (uid) setUserId(uid)
     setStep(2)
   }
@@ -127,7 +205,10 @@ export default function SignupContractor() {
   async function handleStep2(e: FormEvent) {
     e.preventDefault()
     setError('')
-    if (!step2.primaryTrade) { setError('Please select your primary trade.'); return }
+    if (!step2.primaryTrade) {
+      setError('Please select your primary trade.')
+      return
+    }
     setStep(3)
   }
 
@@ -191,232 +272,349 @@ export default function SignupContractor() {
         <Link to="/" className="auth-logo">
           <div className="auth-logo-icon">
             <svg viewBox="0 0 17 17" fill="none" width={16} height={16}>
-              <rect x="2" y="1.5" width="9" height="13" rx="1.5" fill="rgba(255,255,255,0.12)" stroke="white" strokeWidth="1.2" />
-              <rect x="5" y="1.5" width="9" height="13" rx="1.5" fill="rgba(255,255,255,0.25)" stroke="white" strokeWidth="1.2" />
-              <path d="M7 6h4M7 9h3M7 12h2" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
+              <rect
+                x="2"
+                y="1.5"
+                width="9"
+                height="13"
+                rx="1.5"
+                fill="rgba(255,255,255,0.12)"
+                stroke="white"
+                strokeWidth="1.2"
+              />
+              <rect
+                x="5"
+                y="1.5"
+                width="9"
+                height="13"
+                rx="1.5"
+                fill="rgba(255,255,255,0.25)"
+                stroke="white"
+                strokeWidth="1.2"
+              />
+              <path
+                d="M7 6h4M7 9h3M7 12h2"
+                stroke="white"
+                strokeWidth="1.2"
+                strokeLinecap="round"
+              />
             </svg>
           </div>
-          <div className="auth-logo-word"><span className="trayd">Trayd</span><span className="book">Book</span></div>
+          <div className="auth-logo-word">
+            <span className="trayd">Trayd</span>
+            <span className="book">Book</span>
+          </div>
         </Link>
 
         {emailConfirmSent ? (
           <>
             <h1 className="auth-title">Check your email</h1>
-            <p className="auth-subtitle">We sent a confirmation link to <strong>{step1.email}</strong>. Click it to verify your account, then sign in to complete your profile setup.</p>
+            <p className="auth-subtitle">
+              We sent a confirmation link to <strong>{step1.email}</strong>. Click it to verify your
+              account, then sign in to complete your profile setup.
+            </p>
             <p className="auth-footer-text" style={{ marginTop: 20 }}>
               <Link to="/login">Back to sign in</Link>
             </p>
           </>
         ) : (
-        <>
-        <div className="signup-steps">
-          {[1, 2, 3].map(s => (
-            <div
-              key={s}
-              className={`signup-step ${s === step ? 'active' : s < step ? 'done' : ''}`}
-            />
-          ))}
-        </div>
-
-        {step === 1 && (
           <>
-            <h1 className="auth-title">Create your account</h1>
-            <p className="auth-subtitle">Step 1 of 3 · Account credentials</p>
-            <form onSubmit={handleStep1} className="auth-form">
-              {error && <div className="auth-error">{error}</div>}
-              <div className="form-group">
-                <label>Email</label>
-                <input
-                  type="email"
-                  value={step1.email}
-                  onChange={e => setStep1(p => ({ ...p, email: e.target.value }))}
-                  placeholder="you@example.com"
-                  required
-                  autoComplete="email"
+            <div className="signup-steps">
+              {[1, 2, 3].map(s => (
+                <div
+                  key={s}
+                  className={`signup-step ${s === step ? 'active' : s < step ? 'done' : ''}`}
                 />
-              </div>
-              <div className="form-group">
-                <label>Password</label>
-                <input
-                  type="password"
-                  value={step1.password}
-                  onChange={e => setStep1(p => ({ ...p, password: e.target.value }))}
-                  placeholder="Min. 8 characters"
-                  required
-                  minLength={8}
-                  autoComplete="new-password"
-                />
-              </div>
-              <div className="form-group">
-                <label>Confirm Password</label>
-                <input
-                  type="password"
-                  value={step1.confirmPassword}
-                  onChange={e => setStep1(p => ({ ...p, confirmPassword: e.target.value }))}
-                  placeholder="Repeat password"
-                  required
-                  autoComplete="new-password"
-                />
-              </div>
-              <button type="submit" className="btn-primary btn-full" disabled={loading}>
-                {loading ? 'Creating account...' : 'Continue'}
-              </button>
-            </form>
-          </>
-        )}
+              ))}
+            </div>
 
-        {step === 2 && (
-          <>
-            <h1 className="auth-title">Your trade profile</h1>
-            <p className="auth-subtitle">Step 2 of 3 · Professional info</p>
-            <form onSubmit={handleStep2} className="auth-form">
-              {error && <div className="auth-error">{error}</div>}
-              <div className="form-group">
-                <label>Full Name</label>
-                <input
-                  type="text"
-                  value={step2.displayName}
-                  onChange={e => setStep2(p => ({ ...p, displayName: e.target.value }))}
-                  placeholder="Mike Rivera"
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Username (handle)</label>
-                <input
-                  type="text"
-                  value={step2.handle}
-                  onChange={e => setStep2(p => ({ ...p, handle: slugify(e.target.value) }))}
-                  placeholder={`@${slugify(step2.displayName) || 'yourhandle'}`}
-                />
-              </div>
-              <div className="form-group">
-                <label>Primary Trade</label>
-                <select
-                  value={step2.primaryTrade}
-                  onChange={e => setStep2(p => ({ ...p, primaryTrade: e.target.value }))}
-                  required
-                >
-                  <option value="">Select your trade...</option>
-                  {TRADES.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Years of Experience</label>
-                <input
-                  type="number"
-                  value={step2.yearsExperience}
-                  onChange={e => setStep2(p => ({ ...p, yearsExperience: e.target.value }))}
-                  placeholder="e.g. 12"
-                  min="0"
-                  max="60"
-                />
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>City</label>
-                  <input
-                    type="text"
-                    value={step2.locationCity}
-                    onChange={e => setStep2(p => ({ ...p, locationCity: e.target.value }))}
-                    placeholder="Chicago"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>State</label>
-                  <select
-                    value={step2.locationState}
-                    onChange={e => setStep2(p => ({ ...p, locationState: e.target.value }))}
-                  >
-                    <option value="">State</option>
-                    {US_STATES.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="step-nav">
-                <button type="button" className="btn-secondary" onClick={() => setStep(1)}>Back</button>
-                <button type="submit" className="btn-primary" style={{ flex: 1 }}>Continue</button>
-              </div>
-            </form>
-          </>
-        )}
-
-        {step === 3 && (
-          <>
-            <h1 className="auth-title">Almost done</h1>
-            <p className="auth-subtitle">Step 3 of 3 · Business details</p>
-            <form onSubmit={handleStep3} className="auth-form">
-              {error && <div className="auth-error">{error}</div>}
-              <div className="form-group">
-                <label>Business Name (optional)</label>
-                <input
-                  type="text"
-                  value={step3.businessName}
-                  onChange={e => setStep3(p => ({ ...p, businessName: e.target.value }))}
-                  placeholder="Rivera Electric LLC"
-                />
-              </div>
-              <div className="form-group">
-                <label>Bio</label>
-                <textarea
-                  value={step3.bio}
-                  onChange={e => setStep3(p => ({ ...p, bio: e.target.value }))}
-                  placeholder="Brief intro — trade specialty, years experience, what makes you stand out..."
-                  rows={4}
-                />
-              </div>
-              <div className="form-group">
-                <label>Profile Photo <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--color-text-muted)' }}>(optional)</span></label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                  <div style={{ position: 'relative', flexShrink: 0 }}>
-                    {avatarPreview ? (
-                      <img src={avatarPreview} alt="Preview" style={{ width: 64, height: 64, borderRadius: 8, objectFit: 'cover', border: '2px solid var(--color-border)' }} />
-                    ) : (
-                      <div style={{ width: 64, height: 64, borderRadius: 8, background: 'var(--color-surface)', border: '2px dashed var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>
-                        📷
-                      </div>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      style={{ position: 'absolute', bottom: -6, right: -6, background: 'var(--color-brand)', border: '2px solid var(--color-bg)', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 10 }}
-                    >✏️</button>
+            {step === 1 && (
+              <>
+                <h1 className="auth-title">Create your account</h1>
+                <p className="auth-subtitle">Step 1 of 3 · Account credentials</p>
+                <form onSubmit={handleStep1} className="auth-form">
+                  {error && <div className="auth-error">{error}</div>}
+                  <div className="form-group">
+                    <label>Email</label>
+                    <input
+                      type="email"
+                      value={step1.email}
+                      onChange={e => setStep1(p => ({ ...p, email: e.target.value }))}
+                      placeholder="you@example.com"
+                      required
+                      autoComplete="email"
+                    />
                   </div>
-                  <div>
-                    <button type="button" onClick={() => fileInputRef.current?.click()} className="btn-secondary" style={{ fontSize: 12, padding: '6px 14px' }}>
-                      Choose Photo
+                  <div className="form-group">
+                    <label>Password</label>
+                    <input
+                      type="password"
+                      value={step1.password}
+                      onChange={e => setStep1(p => ({ ...p, password: e.target.value }))}
+                      placeholder="Min. 8 characters"
+                      required
+                      minLength={8}
+                      autoComplete="new-password"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Confirm Password</label>
+                    <input
+                      type="password"
+                      value={step1.confirmPassword}
+                      onChange={e => setStep1(p => ({ ...p, confirmPassword: e.target.value }))}
+                      placeholder="Repeat password"
+                      required
+                      autoComplete="new-password"
+                    />
+                  </div>
+                  <button type="submit" className="btn-primary btn-full" disabled={loading}>
+                    {loading ? 'Creating account...' : 'Continue'}
+                  </button>
+                </form>
+              </>
+            )}
+
+            {step === 2 && (
+              <>
+                <h1 className="auth-title">Your trade profile</h1>
+                <p className="auth-subtitle">Step 2 of 3 · Professional info</p>
+                <form onSubmit={handleStep2} className="auth-form">
+                  {error && <div className="auth-error">{error}</div>}
+                  <div className="form-group">
+                    <label>Full Name</label>
+                    <input
+                      type="text"
+                      value={step2.displayName}
+                      onChange={e => setStep2(p => ({ ...p, displayName: e.target.value }))}
+                      placeholder="Mike Rivera"
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Username (handle)</label>
+                    <input
+                      type="text"
+                      value={step2.handle}
+                      onChange={e => setStep2(p => ({ ...p, handle: slugify(e.target.value) }))}
+                      placeholder={`@${slugify(step2.displayName) || 'yourhandle'}`}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Primary Trade</label>
+                    <select
+                      value={step2.primaryTrade}
+                      onChange={e => setStep2(p => ({ ...p, primaryTrade: e.target.value }))}
+                      required
+                    >
+                      <option value="">Select your trade...</option>
+                      {TRADES.map(t => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Years of Experience</label>
+                    <input
+                      type="number"
+                      value={step2.yearsExperience}
+                      onChange={e => setStep2(p => ({ ...p, yearsExperience: e.target.value }))}
+                      placeholder="e.g. 12"
+                      min="0"
+                      max="60"
+                    />
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>City</label>
+                      <input
+                        type="text"
+                        value={step2.locationCity}
+                        onChange={e => setStep2(p => ({ ...p, locationCity: e.target.value }))}
+                        placeholder="Chicago"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>State</label>
+                      <select
+                        value={step2.locationState}
+                        onChange={e => setStep2(p => ({ ...p, locationState: e.target.value }))}
+                      >
+                        <option value="">State</option>
+                        {US_STATES.map(s => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="step-nav">
+                    <button type="button" className="btn-secondary" onClick={() => setStep(1)}>
+                      Back
                     </button>
-                    <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>JPG, PNG or GIF · Max 5MB</p>
-                    {avatarError && <p style={{ fontSize: 11, color: '#DC2626', marginTop: 4 }}>{avatarError}</p>}
+                    <button type="submit" className="btn-primary" style={{ flex: 1 }}>
+                      Continue
+                    </button>
                   </div>
-                  <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarChange} />
-                </div>
-              </div>
-              <div className="form-group">
-                <label>Service Radius (miles)</label>
-                <select
-                  value={step3.serviceRadius}
-                  onChange={e => setStep3(p => ({ ...p, serviceRadius: e.target.value }))}
-                >
-                  {[10, 25, 50, 100, 250, 500].map(r => (
-                    <option key={r} value={r}>{r} miles</option>
-                  ))}
-                </select>
-              </div>
-              <div className="step-nav">
-                <button type="button" className="btn-secondary" onClick={() => setStep(2)}>Back</button>
-                <button type="submit" className="btn-primary" style={{ flex: 1 }} disabled={loading}>
-                  {loading ? 'Setting up profile...' : 'Finish Setup'}
-                </button>
-              </div>
-            </form>
-          </>
-        )}
+                </form>
+              </>
+            )}
 
-        <p className="auth-footer-text" style={{ marginTop: 20 }}>
-          Already have an account? <Link to="/login">Sign in</Link>
-        </p>
-        </>
+            {step === 3 && (
+              <>
+                <h1 className="auth-title">Almost done</h1>
+                <p className="auth-subtitle">Step 3 of 3 · Business details</p>
+                <form onSubmit={handleStep3} className="auth-form">
+                  {error && <div className="auth-error">{error}</div>}
+                  <div className="form-group">
+                    <label>Business Name (optional)</label>
+                    <input
+                      type="text"
+                      value={step3.businessName}
+                      onChange={e => setStep3(p => ({ ...p, businessName: e.target.value }))}
+                      placeholder="Rivera Electric LLC"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Bio</label>
+                    <textarea
+                      value={step3.bio}
+                      onChange={e => setStep3(p => ({ ...p, bio: e.target.value }))}
+                      placeholder="Brief intro — trade specialty, years experience, what makes you stand out..."
+                      rows={4}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>
+                      Profile Photo{' '}
+                      <span
+                        style={{
+                          fontWeight: 400,
+                          textTransform: 'none',
+                          letterSpacing: 0,
+                          color: 'var(--color-text-muted)',
+                        }}
+                      >
+                        (optional)
+                      </span>
+                    </label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                      <div style={{ position: 'relative', flexShrink: 0 }}>
+                        {avatarPreview ? (
+                          <img
+                            src={avatarPreview}
+                            alt="Preview"
+                            style={{
+                              width: 64,
+                              height: 64,
+                              borderRadius: 8,
+                              objectFit: 'cover',
+                              border: '2px solid var(--color-border)',
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              width: 64,
+                              height: 64,
+                              borderRadius: 8,
+                              background: 'var(--color-surface)',
+                              border: '2px dashed var(--color-border)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: 22,
+                            }}
+                          >
+                            📷
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          style={{
+                            position: 'absolute',
+                            bottom: -6,
+                            right: -6,
+                            background: 'var(--color-brand)',
+                            border: '2px solid var(--color-bg)',
+                            borderRadius: '50%',
+                            width: 22,
+                            height: 22,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            fontSize: 10,
+                          }}
+                        >
+                          ✏️
+                        </button>
+                      </div>
+                      <div>
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="btn-secondary"
+                          style={{ fontSize: 12, padding: '6px 14px' }}
+                        >
+                          Choose Photo
+                        </button>
+                        <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>
+                          JPG, PNG or GIF · Max 5MB
+                        </p>
+                        {avatarError && (
+                          <p style={{ fontSize: 11, color: '#DC2626', marginTop: 4 }}>
+                            {avatarError}
+                          </p>
+                        )}
+                      </div>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={handleAvatarChange}
+                      />
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label>Service Radius (miles)</label>
+                    <select
+                      value={step3.serviceRadius}
+                      onChange={e => setStep3(p => ({ ...p, serviceRadius: e.target.value }))}
+                    >
+                      {[10, 25, 50, 100, 250, 500].map(r => (
+                        <option key={r} value={r}>
+                          {r} miles
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="step-nav">
+                    <button type="button" className="btn-secondary" onClick={() => setStep(2)}>
+                      Back
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn-primary"
+                      style={{ flex: 1 }}
+                      disabled={loading}
+                    >
+                      {loading ? 'Setting up profile...' : 'Finish Setup'}
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
+
+            <p className="auth-footer-text" style={{ marginTop: 20 }}>
+              Already have an account? <Link to="/login">Sign in</Link>
+            </p>
+          </>
         )}
       </div>
     </div>

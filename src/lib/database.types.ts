@@ -1,16 +1,40 @@
-export type AccountType = 'contractor' | 'project_owner' | 'agent' | 'homeowner' | 'admin' | 'admin_2' | 'hired_dev' | 'moderator'
+export type AccountType =
+  | 'contractor'
+  | 'project_owner'
+  | 'agent'
+  | 'homeowner'
+  | 'admin'
+  | 'admin_2'
+  | 'hired_dev'
+  | 'moderator'
 export type AvailabilityStatus = 'available' | 'busy' | 'not_available'
 export type ConnectionStatus = 'pending' | 'accepted' | 'rejected'
 export type DelegationStatus = 'pending' | 'active' | 'revoked'
 export type DelegationRole = 'admin' | 'contributor'
-export type PostType = 'project_update' | 'job_post' | 'bid_post' | 'trade_tip' | 'safety_alert' | 'referral' | 'story'
+export type PostType =
+  | 'project_update'
+  | 'job_post'
+  | 'bid_post'
+  | 'trade_tip'
+  | 'safety_alert'
+  | 'referral'
+  | 'story'
 export type JobType = 'full_time' | 'contract' | 'per_diem' | 'subcontract'
 export type RfqStatus = 'open' | 'awarded' | 'closed' | 'archived'
 export type BidStatus = 'pending' | 'under_review' | 'awarded' | 'not_awarded'
 export type NotificationType =
-  | 'connection_request' | 'connection_accepted' | 'post_liked' | 'post_commented'
-  | 'bid_submitted' | 'bid_awarded' | 'job_applied' | 'rfq_closing_soon'
-  | 'credential_expiring' | 'referral_received' | 'safety_alert' | 'credits_added'
+  | 'connection_request'
+  | 'connection_accepted'
+  | 'post_liked'
+  | 'post_commented'
+  | 'bid_submitted'
+  | 'bid_awarded'
+  | 'job_applied'
+  | 'rfq_closing_soon'
+  | 'credential_expiring'
+  | 'referral_received'
+  | 'safety_alert'
+  | 'credits_added'
   | 'message_received'
 
 export interface Database {
@@ -52,7 +76,10 @@ export interface Database {
           total_work_value: number
           created_at: string
         }
-        Insert: Omit<Database['public']['Tables']['contractor_profiles']['Row'], 'id' | 'created_at'>
+        Insert: Omit<
+          Database['public']['Tables']['contractor_profiles']['Row'],
+          'id' | 'created_at'
+        >
         Update: Partial<Database['public']['Tables']['contractor_profiles']['Insert']>
       }
       credentials: {
@@ -100,7 +127,10 @@ export interface Database {
           is_boosted: boolean
           created_at: string
         }
-        Insert: Omit<Database['public']['Tables']['posts']['Row'], 'id' | 'created_at' | 'like_count' | 'comment_count' | 'share_count'>
+        Insert: Omit<
+          Database['public']['Tables']['posts']['Row'],
+          'id' | 'created_at' | 'like_count' | 'comment_count' | 'share_count'
+        >
         Update: Partial<Database['public']['Tables']['posts']['Insert']>
       }
       comments: {
@@ -301,7 +331,10 @@ export interface Database {
           responsibility_terms_version: string
           created_at: string
         }
-        Insert: Omit<Database['public']['Tables']['account_delegations']['Row'], 'id' | 'created_at'>
+        Insert: Omit<
+          Database['public']['Tables']['account_delegations']['Row'],
+          'id' | 'created_at'
+        >
         Update: Partial<Database['public']['Tables']['account_delegations']['Insert']>
       }
       delegate_audit_log: {

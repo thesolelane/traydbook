@@ -14,14 +14,29 @@ export default function FeedFilterBar() {
   }
 
   return (
-    <div style={{
-      background: 'var(--color-surface)',
-      borderBottom: '1px solid var(--color-border)',
-      position: 'sticky',
-      top: 56,
-      zIndex: 90,
-    }}>
-      <div className="container feed-filter-inner" style={{ display: 'flex', gap: 4, paddingTop: 10, paddingBottom: 10, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
+    <div
+      style={{
+        background: 'var(--color-surface)',
+        borderBottom: '1px solid var(--color-border)',
+        position: 'sticky',
+        top: 56,
+        zIndex: 90,
+      }}
+    >
+      <div
+        className="container feed-filter-inner"
+        style={
+          {
+            display: 'flex',
+            gap: 4,
+            paddingTop: 10,
+            paddingBottom: 10,
+            overflowX: 'auto',
+            scrollbarWidth: 'none',
+            WebkitOverflowScrolling: 'touch',
+          } as React.CSSProperties
+        }
+      >
         {FILTER_OPTIONS.map(opt => {
           const isActive = active === opt.key
           return (
@@ -31,7 +46,9 @@ export default function FeedFilterBar() {
               style={{
                 padding: '5px 14px',
                 borderRadius: 20,
-                border: isActive ? '1.5px solid var(--color-brand)' : '1.5px solid var(--color-border)',
+                border: isActive
+                  ? '1.5px solid var(--color-brand)'
+                  : '1.5px solid var(--color-border)',
                 background: isActive ? 'var(--color-brand-light)' : 'transparent',
                 color: isActive ? 'var(--color-brand)' : 'var(--color-text-muted)',
                 fontFamily: 'var(--font-condensed)',

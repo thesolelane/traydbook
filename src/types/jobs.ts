@@ -54,9 +54,20 @@ export const JOB_TYPE_DISPLAY_OPTIONS: { value: JobType; label: string }[] = [
 export const JOB_CREDIT_COST = 8
 
 export const TRADE_OPTIONS = [
-  'Carpentry', 'Concrete', 'Drywall', 'Electrical',
-  'Engineering', 'General Contractor', 'HVAC', 'Masonry', 'Painting',
-  'Plumbing', 'Roofing', 'Steel/Ironwork', 'Tile', 'Other',
+  'Carpentry',
+  'Concrete',
+  'Drywall',
+  'Electrical',
+  'Engineering',
+  'General Contractor',
+  'HVAC',
+  'Masonry',
+  'Painting',
+  'Plumbing',
+  'Roofing',
+  'Steel/Ironwork',
+  'Tile',
+  'Other',
 ]
 
 export const CERT_OPTIONS = ['OSHA 10', 'OSHA 30', 'Union', 'Own Tools']
@@ -76,11 +87,11 @@ export const PAY_RANGE_OPTIONS: PayRangeOption[] = [
 
 export function formatPay(listing: JobListing): string {
   if (!listing.pay_min && !listing.pay_max) return 'Pay TBD'
-  const unit = listing.pay_unit === 'hourly' ? '/hr' : listing.pay_unit === 'salary' ? '/yr' : ' project'
-  const fmt = (n: number) => listing.pay_unit === 'salary'
-    ? `$${Math.round(n / 1000)}K`
-    : `$${n}`
-  if (listing.pay_min && listing.pay_max) return `${fmt(listing.pay_min)}–${fmt(listing.pay_max)}${unit}`
+  const unit =
+    listing.pay_unit === 'hourly' ? '/hr' : listing.pay_unit === 'salary' ? '/yr' : ' project'
+  const fmt = (n: number) => (listing.pay_unit === 'salary' ? `$${Math.round(n / 1000)}K` : `$${n}`)
+  if (listing.pay_min && listing.pay_max)
+    return `${fmt(listing.pay_min)}–${fmt(listing.pay_max)}${unit}`
   if (listing.pay_min) return `${fmt(listing.pay_min)}+${unit}`
   if (listing.pay_max) return `Up to ${fmt(listing.pay_max)}${unit}`
   return 'Pay TBD'

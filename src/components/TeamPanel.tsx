@@ -30,26 +30,42 @@ interface AuditEntry {
   created_at: string
 }
 
-const RESPONSIBILITY_TEXT = 'By adding a team member to your account, you accept full responsibility for all content, messages, bids, and actions they take on your behalf. TraydBook holds the account owner accountable for all activity regardless of who performed it. Only invite people you fully trust.'
+const RESPONSIBILITY_TEXT =
+  'By adding a team member to your account, you accept full responsibility for all content, messages, bids, and actions they take on your behalf. TraydBook holds the account owner accountable for all activity regardless of who performed it. Only invite people you fully trust.'
 const TERMS_VERSION = '1.0'
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return new Date(iso).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
 }
 
 function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+  return new Date(iso).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
 }
 
 function RoleBadge({ role }: { role: 'admin' | 'contributor' }) {
   return (
-    <span style={{
-      fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-condensed)',
-      letterSpacing: '0.5px', textTransform: 'uppercase',
-      padding: '2px 7px', borderRadius: 10,
-      background: role === 'admin' ? 'rgba(232,93,4,0.1)' : 'rgba(99,102,241,0.1)',
-      color: role === 'admin' ? 'var(--color-brand)' : '#6366f1',
-    }}>
+    <span
+      style={{
+        fontSize: 10,
+        fontWeight: 700,
+        fontFamily: 'var(--font-condensed)',
+        letterSpacing: '0.5px',
+        textTransform: 'uppercase',
+        padding: '2px 7px',
+        borderRadius: 10,
+        background: role === 'admin' ? 'rgba(232,93,4,0.1)' : 'rgba(99,102,241,0.1)',
+        color: role === 'admin' ? 'var(--color-brand)' : '#6366f1',
+      }}
+    >
       {role === 'admin' ? 'Team Admin' : 'Contributor'}
     </span>
   )
@@ -81,7 +97,9 @@ export default function TeamPanel() {
     setLoading(true)
     setError('')
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       const token = session?.access_token
       if (!token) throw new Error('Not authenticated')
 
@@ -102,24 +120,38 @@ export default function TeamPanel() {
     }
   }
 
-  useEffect(() => { loadTeam() }, [user])
+  useEffect(() => {
+    loadTeam()
+  }, [user])
 
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault()
-    if (!responsibilityChecked) { setInviteErr('You must accept the responsibility agreement to continue.'); return }
-    if (!inviteEmail.trim()) { setInviteErr('Please enter an email address.'); return }
+    if (!responsibilityChecked) {
+      setInviteErr('You must accept the responsibility agreement to continue.')
+      return
+    }
+    if (!inviteEmail.trim()) {
+      setInviteErr('Please enter an email address.')
+      return
+    }
 
     setInviting(true)
     setInviteErr('')
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       const token = session?.access_token
       if (!token) throw new Error('Not authenticated')
 
       const res = await fetch('/api/team/invite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ inviteEmail: inviteEmail.trim(), role: inviteRole, responsibilityAccepted: true }),
+        body: JSON.stringify({
+          inviteEmail: inviteEmail.trim(),
+          role: inviteRole,
+          responsibilityAccepted: true,
+        }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Failed to send invite')
@@ -139,7 +171,9 @@ export default function TeamPanel() {
   async function handleRevoke(delegationId: string) {
     setRevoking(delegationId)
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       const token = session?.access_token
       if (!token) throw new Error('Not authenticated')
 
@@ -166,10 +200,15 @@ export default function TeamPanel() {
   }
 
   const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '9px 12px',
-    background: 'var(--color-bg)', border: '1px solid var(--color-border)',
-    borderRadius: 'var(--radius-md)', color: 'var(--color-text)',
-    fontSize: 14, fontFamily: 'var(--font-sans)', outline: 'none',
+    width: '100%',
+    padding: '9px 12px',
+    background: 'var(--color-bg)',
+    border: '1px solid var(--color-border)',
+    borderRadius: 'var(--radius-md)',
+    color: 'var(--color-text)',
+    fontSize: 14,
+    fontFamily: 'var(--font-sans)',
+    outline: 'none',
     boxSizing: 'border-box',
   }
 
@@ -180,10 +219,16 @@ export default function TeamPanel() {
   if (isDelegateUser) {
     return (
       <div style={{ padding: '20px 0' }}>
-        <div style={{
-          background: 'rgba(232,93,4,0.06)', border: '1px solid rgba(232,93,4,0.2)',
-          borderRadius: 8, padding: '14px 16px', fontSize: 13, color: 'var(--color-text-muted)',
-        }}>
+        <div
+          style={{
+            background: 'rgba(232,93,4,0.06)',
+            border: '1px solid rgba(232,93,4,0.2)',
+            borderRadius: 8,
+            padding: '14px 16px',
+            fontSize: 13,
+            color: 'var(--color-text-muted)',
+          }}
+        >
           <strong style={{ color: 'var(--color-text)' }}>Team management is restricted.</strong>{' '}
           Only the account owner can invite or manage team members.
         </div>
@@ -193,7 +238,14 @@ export default function TeamPanel() {
 
   if (loading) {
     return (
-      <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: 13 }}>
+      <div
+        style={{
+          padding: '20px 0',
+          textAlign: 'center',
+          color: 'var(--color-text-muted)',
+          fontSize: 13,
+        }}
+      >
         Loading team…
       </div>
     )
@@ -202,24 +254,45 @@ export default function TeamPanel() {
   return (
     <div>
       {error && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.2)',
-          borderRadius: 6, padding: '8px 12px', color: '#DC2626', fontSize: 13, marginBottom: 16,
-        }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            background: 'rgba(220,38,38,0.08)',
+            border: '1px solid rgba(220,38,38,0.2)',
+            borderRadius: 6,
+            padding: '8px 12px',
+            color: '#DC2626',
+            fontSize: 13,
+            marginBottom: 16,
+          }}
+        >
           <AlertTriangle size={14} /> {error}
         </div>
       )}
 
       {/* Invite result */}
       {inviteResult && (
-        <div style={{
-          background: 'rgba(5,150,105,0.06)', border: '1px solid rgba(5,150,105,0.25)',
-          borderRadius: 8, padding: '14px 16px', marginBottom: 20,
-        }}>
+        <div
+          style={{
+            background: 'rgba(5,150,105,0.06)',
+            border: '1px solid rgba(5,150,105,0.25)',
+            borderRadius: 8,
+            padding: '14px 16px',
+            marginBottom: 20,
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
             <CheckCircle size={16} color="#059669" />
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#059669', fontFamily: 'var(--font-condensed)' }}>
+            <span
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: '#059669',
+                fontFamily: 'var(--font-condensed)',
+              }}
+            >
               Invite created for {inviteResult.email}
             </span>
           </div>
@@ -236,17 +309,33 @@ export default function TeamPanel() {
             <button
               onClick={() => copyLink(inviteResult.joinUrl)}
               style={{
-                padding: '9px 14px', background: copied ? '#059669' : 'var(--color-brand)',
-                border: 'none', borderRadius: 'var(--radius-md)',
-                color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
-                fontFamily: 'var(--font-condensed)', fontSize: 13, fontWeight: 700, flexShrink: 0,
+                padding: '9px 14px',
+                background: copied ? '#059669' : 'var(--color-brand)',
+                border: 'none',
+                borderRadius: 'var(--radius-md)',
+                color: '#fff',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                fontFamily: 'var(--font-condensed)',
+                fontSize: 13,
+                fontWeight: 700,
+                flexShrink: 0,
               }}
             >
               <Copy size={13} /> {copied ? 'Copied!' : 'Copy'}
             </button>
             <button
               onClick={() => setInviteResult(null)}
-              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', padding: 4, flexShrink: 0 }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                color: 'var(--color-text-muted)',
+                padding: 4,
+                flexShrink: 0,
+              }}
             >
               <X size={16} />
             </button>
@@ -257,30 +346,78 @@ export default function TeamPanel() {
       {/* Active members */}
       {activeMembers.length > 0 && (
         <div style={{ marginBottom: 24 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: 10, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+          <div
+            style={{
+              fontSize: 12,
+              fontWeight: 700,
+              color: 'var(--color-text-muted)',
+              marginBottom: 10,
+              letterSpacing: '0.5px',
+              textTransform: 'uppercase',
+            }}
+          >
             Active Team Members
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {activeMembers.map(d => (
-              <div key={d.id} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                background: 'var(--color-bg)', border: '1px solid var(--color-border)',
-                borderRadius: 8, padding: '12px 14px', gap: 12,
-              }}>
+              <div
+                key={d.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  background: 'var(--color-bg)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 8,
+                  padding: '12px 14px',
+                  gap: 12,
+                }}
+              >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
                   {d.delegate_profile?.avatar_url ? (
-                    <img src={d.delegate_profile.avatar_url} alt="" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                    <img
+                      src={d.delegate_profile.avatar_url}
+                      alt=""
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        flexShrink: 0,
+                      }}
+                    />
                   ) : (
-                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--color-brand-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <div
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: '50%',
+                        background: 'var(--color-brand-light)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
                       <Users size={16} color="var(--color-brand)" />
                     </div>
                   )}
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)', fontFamily: 'var(--font-condensed)' }}>
+                    <div
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: 'var(--color-text)',
+                        fontFamily: 'var(--font-condensed)',
+                      }}
+                    >
                       {d.delegate_profile?.display_name ?? d.invite_email}
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-                      {d.invite_email} · Joined {d.delegate_profile?.created_at ? formatDate(d.delegate_profile.created_at) : '—'}
+                      {d.invite_email} · Joined{' '}
+                      {d.delegate_profile?.created_at
+                        ? formatDate(d.delegate_profile.created_at)
+                        : '—'}
                     </div>
                   </div>
                 </div>
@@ -290,11 +427,17 @@ export default function TeamPanel() {
                     onClick={() => handleRevoke(d.id)}
                     disabled={revoking === d.id}
                     style={{
-                      padding: '5px 12px', background: 'transparent',
-                      border: '1px solid rgba(220,38,38,0.4)', borderRadius: 6,
-                      fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-condensed)',
-                      letterSpacing: '0.4px', textTransform: 'uppercase',
-                      color: '#DC2626', cursor: revoking === d.id ? 'not-allowed' : 'pointer',
+                      padding: '5px 12px',
+                      background: 'transparent',
+                      border: '1px solid rgba(220,38,38,0.4)',
+                      borderRadius: 6,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      fontFamily: 'var(--font-condensed)',
+                      letterSpacing: '0.4px',
+                      textTransform: 'uppercase',
+                      color: '#DC2626',
+                      cursor: revoking === d.id ? 'not-allowed' : 'pointer',
                       opacity: revoking === d.id ? 0.6 : 1,
                     }}
                   >
@@ -310,21 +453,40 @@ export default function TeamPanel() {
       {/* Pending invites */}
       {pendingInvites.length > 0 && (
         <div style={{ marginBottom: 24 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: 10, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+          <div
+            style={{
+              fontSize: 12,
+              fontWeight: 700,
+              color: 'var(--color-text-muted)',
+              marginBottom: 10,
+              letterSpacing: '0.5px',
+              textTransform: 'uppercase',
+            }}
+          >
             Pending Invites
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {pendingInvites.map(d => (
-              <div key={d.id} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                background: 'var(--color-bg)', border: '1px solid var(--color-border)',
-                borderRadius: 8, padding: '10px 14px', gap: 12,
-              }}>
+              <div
+                key={d.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  background: 'var(--color-bg)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 8,
+                  padding: '10px 14px',
+                  gap: 12,
+                }}
+              >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <Clock size={14} color="var(--color-text-muted)" />
                   <div>
                     <div style={{ fontSize: 13, color: 'var(--color-text)' }}>{d.invite_email}</div>
-                    <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>Invited {formatDate(d.created_at)}</div>
+                    <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
+                      Invited {formatDate(d.created_at)}
+                    </div>
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
@@ -333,11 +495,17 @@ export default function TeamPanel() {
                     onClick={() => handleRevoke(d.id)}
                     disabled={revoking === d.id}
                     style={{
-                      padding: '4px 10px', background: 'transparent',
-                      border: '1px solid var(--color-border)', borderRadius: 6,
-                      fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-condensed)',
-                      letterSpacing: '0.4px', textTransform: 'uppercase',
-                      color: 'var(--color-text-muted)', cursor: revoking === d.id ? 'not-allowed' : 'pointer',
+                      padding: '4px 10px',
+                      background: 'transparent',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: 6,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      fontFamily: 'var(--font-condensed)',
+                      letterSpacing: '0.4px',
+                      textTransform: 'uppercase',
+                      color: 'var(--color-text-muted)',
+                      cursor: revoking === d.id ? 'not-allowed' : 'pointer',
                       opacity: revoking === d.id ? 0.6 : 1,
                     }}
                   >
@@ -355,11 +523,20 @@ export default function TeamPanel() {
         <button
           onClick={() => setShowInviteForm(true)}
           style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '10px 16px', background: 'var(--color-brand)',
-            border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer',
-            fontFamily: 'var(--font-condensed)', fontSize: 13, fontWeight: 700,
-            letterSpacing: '0.5px', textTransform: 'uppercase', color: '#fff',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '10px 16px',
+            background: 'var(--color-brand)',
+            border: 'none',
+            borderRadius: 'var(--radius-md)',
+            cursor: 'pointer',
+            fontFamily: 'var(--font-condensed)',
+            fontSize: 13,
+            fontWeight: 700,
+            letterSpacing: '0.5px',
+            textTransform: 'uppercase',
+            color: '#fff',
             marginBottom: 20,
           }}
         >
@@ -368,35 +545,81 @@ export default function TeamPanel() {
       )}
 
       {showInviteForm && (
-        <div style={{
-          background: 'var(--color-bg)', border: '1px solid var(--color-border)',
-          borderRadius: 10, padding: '18px', marginBottom: 20,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-            <div style={{ fontFamily: 'var(--font-condensed)', fontSize: 14, fontWeight: 700, color: 'var(--color-text)' }}>
+        <div
+          style={{
+            background: 'var(--color-bg)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 10,
+            padding: '18px',
+            marginBottom: 20,
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: 14,
+            }}
+          >
+            <div
+              style={{
+                fontFamily: 'var(--font-condensed)',
+                fontSize: 14,
+                fontWeight: 700,
+                color: 'var(--color-text)',
+              }}
+            >
               Invite a Team Member
             </div>
             <button
-              onClick={() => { setShowInviteForm(false); setInviteErr('') }}
-              style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+              onClick={() => {
+                setShowInviteForm(false)
+                setInviteErr('')
+              }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                color: 'var(--color-text-muted)',
+              }}
             >
               <X size={16} />
             </button>
           </div>
 
           {inviteErr && (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.2)',
-              borderRadius: 6, padding: '8px 12px', color: '#DC2626', fontSize: 13, marginBottom: 12,
-            }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                background: 'rgba(220,38,38,0.08)',
+                border: '1px solid rgba(220,38,38,0.2)',
+                borderRadius: 6,
+                padding: '8px 12px',
+                color: '#DC2626',
+                fontSize: 13,
+                marginBottom: 12,
+              }}
+            >
               <AlertTriangle size={14} /> {inviteErr}
             </div>
           )}
 
-          <form onSubmit={handleInvite} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <form
+            onSubmit={handleInvite}
+            style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+          >
             <div>
-              <label style={{ fontSize: 12, color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>
+              <label
+                style={{
+                  fontSize: 12,
+                  color: 'var(--color-text-muted)',
+                  display: 'block',
+                  marginBottom: 4,
+                }}
+              >
                 Email address
               </label>
               <input
@@ -410,7 +633,14 @@ export default function TeamPanel() {
             </div>
 
             <div>
-              <label style={{ fontSize: 12, color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>
+              <label
+                style={{
+                  fontSize: 12,
+                  color: 'var(--color-text-muted)',
+                  display: 'block',
+                  marginBottom: 4,
+                }}
+              >
                 Role
               </label>
               <select
@@ -419,7 +649,9 @@ export default function TeamPanel() {
                 style={inputStyle}
               >
                 <option value="contributor">Contributor — can post feed updates only</option>
-                <option value="admin">Team Admin — can post, message, submit bids, manage jobs</option>
+                <option value="admin">
+                  Team Admin — can post, message, submit bids, manage jobs
+                </option>
               </select>
               <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>
                 {inviteRole === 'admin'
@@ -428,19 +660,38 @@ export default function TeamPanel() {
               </div>
             </div>
 
-            <div style={{
-              background: 'rgba(232,93,4,0.04)', border: '1px solid rgba(232,93,4,0.2)',
-              borderRadius: 8, padding: '12px 14px',
-            }}>
-              <div style={{ fontSize: 12, color: 'var(--color-text-muted)', lineHeight: 1.6, marginBottom: 10 }}>
+            <div
+              style={{
+                background: 'rgba(232,93,4,0.04)',
+                border: '1px solid rgba(232,93,4,0.2)',
+                borderRadius: 8,
+                padding: '12px 14px',
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 12,
+                  color: 'var(--color-text-muted)',
+                  lineHeight: 1.6,
+                  marginBottom: 10,
+                }}
+              >
                 {RESPONSIBILITY_TEXT}
               </div>
-              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+              <label
+                style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}
+              >
                 <input
                   type="checkbox"
                   checked={responsibilityChecked}
                   onChange={e => setResponsibilityChecked(e.target.checked)}
-                  style={{ marginTop: 2, accentColor: 'var(--color-brand)', width: 16, height: 16, flexShrink: 0 }}
+                  style={{
+                    marginTop: 2,
+                    accentColor: 'var(--color-brand)',
+                    width: 16,
+                    height: 16,
+                    flexShrink: 0,
+                  }}
                 />
                 <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text)' }}>
                   I accept full responsibility for all actions this team member takes on my account.
@@ -451,12 +702,20 @@ export default function TeamPanel() {
             <div style={{ display: 'flex', gap: 10 }}>
               <button
                 type="button"
-                onClick={() => { setShowInviteForm(false); setInviteErr('') }}
+                onClick={() => {
+                  setShowInviteForm(false)
+                  setInviteErr('')
+                }}
                 style={{
-                  padding: '9px 16px', background: 'transparent',
-                  border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)',
-                  fontFamily: 'var(--font-condensed)', fontSize: 13, fontWeight: 700,
-                  color: 'var(--color-text-muted)', cursor: 'pointer',
+                  padding: '9px 16px',
+                  background: 'transparent',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius-md)',
+                  fontFamily: 'var(--font-condensed)',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: 'var(--color-text-muted)',
+                  cursor: 'pointer',
                 }}
               >
                 Cancel
@@ -465,12 +724,19 @@ export default function TeamPanel() {
                 type="submit"
                 disabled={inviting || !responsibilityChecked}
                 style={{
-                  flex: 1, padding: '9px 18px', background: 'var(--color-brand)',
-                  border: 'none', borderRadius: 'var(--radius-md)',
-                  fontFamily: 'var(--font-condensed)', fontSize: 13, fontWeight: 700,
-                  letterSpacing: '0.5px', textTransform: 'uppercase', color: '#fff',
-                  cursor: (inviting || !responsibilityChecked) ? 'not-allowed' : 'pointer',
-                  opacity: (inviting || !responsibilityChecked) ? 0.6 : 1,
+                  flex: 1,
+                  padding: '9px 18px',
+                  background: 'var(--color-brand)',
+                  border: 'none',
+                  borderRadius: 'var(--radius-md)',
+                  fontFamily: 'var(--font-condensed)',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  letterSpacing: '0.5px',
+                  textTransform: 'uppercase',
+                  color: '#fff',
+                  cursor: inviting || !responsibilityChecked ? 'not-allowed' : 'pointer',
+                  opacity: inviting || !responsibilityChecked ? 0.6 : 1,
                 }}
               >
                 {inviting ? 'Sending…' : 'Send Invite'}
@@ -483,27 +749,49 @@ export default function TeamPanel() {
       {/* Audit log */}
       {auditLog.length > 0 && (
         <div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: 10, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+          <div
+            style={{
+              fontSize: 12,
+              fontWeight: 700,
+              color: 'var(--color-text-muted)',
+              marginBottom: 10,
+              letterSpacing: '0.5px',
+              textTransform: 'uppercase',
+            }}
+          >
             Recent Activity Log
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {auditLog.map(entry => {
               const memberDelegation = delegations.find(d => d.id === entry.delegation_id)
-              const memberName = memberDelegation?.delegate_profile?.display_name ?? memberDelegation?.invite_email ?? 'Unknown'
+              const memberName =
+                memberDelegation?.delegate_profile?.display_name ??
+                memberDelegation?.invite_email ??
+                'Unknown'
               return (
-                <div key={entry.id} style={{
-                  display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
-                  background: 'var(--color-bg)', borderRadius: 6, padding: '8px 12px', gap: 12,
-                }}>
+                <div
+                  key={entry.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    justifyContent: 'space-between',
+                    background: 'var(--color-bg)',
+                    borderRadius: 6,
+                    padding: '8px 12px',
+                    gap: 12,
+                  }}
+                >
                   <div>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text)' }}>{memberName}</span>
-                    {' '}
+                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text)' }}>
+                      {memberName}
+                    </span>{' '}
                     <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
                       {entry.action_type.replace(/_/g, ' ')}
                     </span>
                     {entry.action_detail && Object.keys(entry.action_detail).length > 0 && (
                       <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
-                        {' '}· {JSON.stringify(entry.action_detail).slice(0, 60)}
+                        {' '}
+                        · {JSON.stringify(entry.action_detail).slice(0, 60)}
                       </span>
                     )}
                   </div>
@@ -520,16 +808,34 @@ export default function TeamPanel() {
       {/* Revoked members (collapsed, for reference) */}
       {revokedMembers.length > 0 && (
         <div style={{ marginTop: 24 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: 8, letterSpacing: '0.5px', textTransform: 'uppercase', opacity: 0.6 }}>
+          <div
+            style={{
+              fontSize: 12,
+              fontWeight: 700,
+              color: 'var(--color-text-muted)',
+              marginBottom: 8,
+              letterSpacing: '0.5px',
+              textTransform: 'uppercase',
+              opacity: 0.6,
+            }}
+          >
             Revoked Access ({revokedMembers.length})
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {revokedMembers.map(d => (
-              <div key={d.id} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                background: 'var(--color-bg)', borderRadius: 6, padding: '8px 12px', gap: 12,
-                opacity: 0.55,
-              }}>
+              <div
+                key={d.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  background: 'var(--color-bg)',
+                  borderRadius: 6,
+                  padding: '8px 12px',
+                  gap: 12,
+                  opacity: 0.55,
+                }}
+              >
                 <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
                   {d.delegate_profile?.display_name ?? d.invite_email}
                   <span style={{ marginLeft: 6 }}>
@@ -544,20 +850,36 @@ export default function TeamPanel() {
       )}
 
       {/* Empty state */}
-      {activeMembers.length === 0 && pendingInvites.length === 0 && !showInviteForm && !inviteResult && (
-        <div style={{
-          textAlign: 'center', padding: '30px 20px',
-          background: 'var(--color-bg)', borderRadius: 10, border: '1px dashed var(--color-border)',
-        }}>
-          <Shield size={28} color="var(--color-text-muted)" style={{ marginBottom: 10 }} />
-          <div style={{ fontFamily: 'var(--font-condensed)', fontSize: 14, fontWeight: 700, color: 'var(--color-text)', marginBottom: 4 }}>
-            No team members yet
+      {activeMembers.length === 0 &&
+        pendingInvites.length === 0 &&
+        !showInviteForm &&
+        !inviteResult && (
+          <div
+            style={{
+              textAlign: 'center',
+              padding: '30px 20px',
+              background: 'var(--color-bg)',
+              borderRadius: 10,
+              border: '1px dashed var(--color-border)',
+            }}
+          >
+            <Shield size={28} color="var(--color-text-muted)" style={{ marginBottom: 10 }} />
+            <div
+              style={{
+                fontFamily: 'var(--font-condensed)',
+                fontSize: 14,
+                fontWeight: 700,
+                color: 'var(--color-text)',
+                marginBottom: 4,
+              }}
+            >
+              No team members yet
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+              Invite trusted team members to manage your account on your behalf.
+            </div>
           </div>
-          <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-            Invite trusted team members to manage your account on your behalf.
-          </div>
-        </div>
-      )}
+        )}
     </div>
   )
 }

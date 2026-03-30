@@ -2,8 +2,8 @@ import express from 'express'
 import { createClient } from '@supabase/supabase-js'
 import { supabaseAdmin, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } from './lib/clients.js'
 import stripeRoutes from './routes/stripe.js'
-import teamRoutes   from './routes/team.js'
-import adminRoutes  from './routes/admin.js'
+import teamRoutes from './routes/team.js'
+import adminRoutes from './routes/admin.js'
 import smsRoutes, { sendSmsAlert } from './routes/sms.js'
 import walletRoutes from './routes/wallet.js'
 
@@ -31,7 +31,9 @@ if (process.env.NODE_ENV === 'production') {
 
 const PORT = process.env.PORT ?? process.env.API_PORT ?? 3001
 app.listen(PORT, () => {
-  console.log(`[server] Running on http://localhost:${PORT} (${process.env.NODE_ENV ?? 'development'})`)
+  console.log(
+    `[server] Running on http://localhost:${PORT} (${process.env.NODE_ENV ?? 'development'})`
+  )
   startNotificationListener()
 })
 
@@ -47,15 +49,20 @@ function startNotificationListener() {
     .channel('server-notifications')
     .on(
       'postgres_changes',
-      { event: 'INSERT', schema: 'public', table: 'notifications', filter: 'type=eq.message_received' },
-      async (payload) => {
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications',
+        filter: 'type=eq.message_received',
+      },
+      async payload => {
         const notif = payload.new
         if (!notif) return
 
         const recipientId = notif.user_id
-        const entityId    = notif.entity_id
-        const entityType  = notif.entity_type ?? ''
-        const threadId    = entityType.startsWith('thread:') ? entityType.slice(7) : null
+        const entityId = notif.entity_id
+        const entityType = notif.entity_type ?? ''
+        const threadId = entityType.startsWith('thread:') ? entityType.slice(7) : null
 
         const { data: sender } = await supabaseAdmin
           .from('users')
@@ -67,7 +74,7 @@ function startNotificationListener() {
         sendSmsAlert(recipientId, senderName, threadId ?? '').catch(() => {})
       }
     )
-    .subscribe((status) => {
+    .subscribe(status => {
       if (status === 'SUBSCRIBED') {
         console.log('[sms-listener] Listening for message_received notifications')
       } else if (status === 'CHANNEL_ERROR') {

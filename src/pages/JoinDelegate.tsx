@@ -53,7 +53,9 @@ export default function JoinDelegate() {
       }
 
       if (new Date(delegation.invite_expires_at) < new Date()) {
-        setInviteError('This invite link has expired. Please ask the account owner to send a new invite.')
+        setInviteError(
+          'This invite link has expired. Please ask the account owner to send a new invite.'
+        )
         setInviteLoading(false)
         return
       }
@@ -82,9 +84,18 @@ export default function JoinDelegate() {
     if (!invite) return
     setError('')
 
-    if (!fullName.trim()) { setError('Please enter your full name.'); return }
-    if (password.length < 8) { setError('Password must be at least 8 characters.'); return }
-    if (password !== confirmPassword) { setError('Passwords do not match.'); return }
+    if (!fullName.trim()) {
+      setError('Please enter your full name.')
+      return
+    }
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.')
+      return
+    }
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.')
+      return
+    }
 
     setLoading(true)
     try {
@@ -139,7 +150,9 @@ export default function JoinDelegate() {
     return (
       <div className="auth-page">
         <div className="auth-card" style={{ maxWidth: 480, textAlign: 'center' }}>
-          <div style={{ color: 'var(--color-text-muted)', fontSize: 14 }}>Verifying invite link…</div>
+          <div style={{ color: 'var(--color-text-muted)', fontSize: 14 }}>
+            Verifying invite link…
+          </div>
         </div>
       </div>
     )
@@ -152,15 +165,43 @@ export default function JoinDelegate() {
           <Link to="/" className="auth-logo">
             <div className="auth-logo-icon">
               <svg viewBox="0 0 17 17" fill="none" width={16} height={16}>
-                <rect x="2" y="1.5" width="9" height="13" rx="1.5" fill="rgba(255,255,255,0.12)" stroke="white" strokeWidth="1.2" />
-                <rect x="5" y="1.5" width="9" height="13" rx="1.5" fill="rgba(255,255,255,0.25)" stroke="white" strokeWidth="1.2" />
-                <path d="M7 6h4M7 9h3M7 12h2" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
+                <rect
+                  x="2"
+                  y="1.5"
+                  width="9"
+                  height="13"
+                  rx="1.5"
+                  fill="rgba(255,255,255,0.12)"
+                  stroke="white"
+                  strokeWidth="1.2"
+                />
+                <rect
+                  x="5"
+                  y="1.5"
+                  width="9"
+                  height="13"
+                  rx="1.5"
+                  fill="rgba(255,255,255,0.25)"
+                  stroke="white"
+                  strokeWidth="1.2"
+                />
+                <path
+                  d="M7 6h4M7 9h3M7 12h2"
+                  stroke="white"
+                  strokeWidth="1.2"
+                  strokeLinecap="round"
+                />
               </svg>
             </div>
-            <div className="auth-logo-word"><span className="trayd">Trayd</span><span className="book">Book</span></div>
+            <div className="auth-logo-word">
+              <span className="trayd">Trayd</span>
+              <span className="book">Book</span>
+            </div>
           </Link>
           <h1 className="auth-title">Invalid Invite</h1>
-          <p className="auth-subtitle" style={{ color: '#DC2626' }}>{inviteError}</p>
+          <p className="auth-subtitle" style={{ color: '#DC2626' }}>
+            {inviteError}
+          </p>
           <p className="auth-footer-text" style={{ marginTop: 20 }}>
             <Link to="/login">Go to sign in</Link>
           </p>
@@ -176,16 +217,43 @@ export default function JoinDelegate() {
           <Link to="/" className="auth-logo">
             <div className="auth-logo-icon">
               <svg viewBox="0 0 17 17" fill="none" width={16} height={16}>
-                <rect x="2" y="1.5" width="9" height="13" rx="1.5" fill="rgba(255,255,255,0.12)" stroke="white" strokeWidth="1.2" />
-                <rect x="5" y="1.5" width="9" height="13" rx="1.5" fill="rgba(255,255,255,0.25)" stroke="white" strokeWidth="1.2" />
-                <path d="M7 6h4M7 9h3M7 12h2" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
+                <rect
+                  x="2"
+                  y="1.5"
+                  width="9"
+                  height="13"
+                  rx="1.5"
+                  fill="rgba(255,255,255,0.12)"
+                  stroke="white"
+                  strokeWidth="1.2"
+                />
+                <rect
+                  x="5"
+                  y="1.5"
+                  width="9"
+                  height="13"
+                  rx="1.5"
+                  fill="rgba(255,255,255,0.25)"
+                  stroke="white"
+                  strokeWidth="1.2"
+                />
+                <path
+                  d="M7 6h4M7 9h3M7 12h2"
+                  stroke="white"
+                  strokeWidth="1.2"
+                  strokeLinecap="round"
+                />
               </svg>
             </div>
-            <div className="auth-logo-word"><span className="trayd">Trayd</span><span className="book">Book</span></div>
+            <div className="auth-logo-word">
+              <span className="trayd">Trayd</span>
+              <span className="book">Book</span>
+            </div>
           </Link>
           <h1 className="auth-title">You're all set!</h1>
           <p className="auth-subtitle">
-            Your account has been created. Sign in below to start working as <strong>{invite?.principal_name}</strong>'s team member.
+            Your account has been created. Sign in below to start working as{' '}
+            <strong>{invite?.principal_name}</strong>'s team member.
           </p>
           <button
             className="btn-primary btn-full"
@@ -205,28 +273,65 @@ export default function JoinDelegate() {
         <Link to="/" className="auth-logo">
           <div className="auth-logo-icon">
             <svg viewBox="0 0 17 17" fill="none" width={16} height={16}>
-              <rect x="2" y="1.5" width="9" height="13" rx="1.5" fill="rgba(255,255,255,0.12)" stroke="white" strokeWidth="1.2" />
-              <rect x="5" y="1.5" width="9" height="13" rx="1.5" fill="rgba(255,255,255,0.25)" stroke="white" strokeWidth="1.2" />
-              <path d="M7 6h4M7 9h3M7 12h2" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
+              <rect
+                x="2"
+                y="1.5"
+                width="9"
+                height="13"
+                rx="1.5"
+                fill="rgba(255,255,255,0.12)"
+                stroke="white"
+                strokeWidth="1.2"
+              />
+              <rect
+                x="5"
+                y="1.5"
+                width="9"
+                height="13"
+                rx="1.5"
+                fill="rgba(255,255,255,0.25)"
+                stroke="white"
+                strokeWidth="1.2"
+              />
+              <path
+                d="M7 6h4M7 9h3M7 12h2"
+                stroke="white"
+                strokeWidth="1.2"
+                strokeLinecap="round"
+              />
             </svg>
           </div>
-          <div className="auth-logo-word"><span className="trayd">Trayd</span><span className="book">Book</span></div>
+          <div className="auth-logo-word">
+            <span className="trayd">Trayd</span>
+            <span className="book">Book</span>
+          </div>
         </Link>
 
         <h1 className="auth-title">Join {invite?.principal_name}'s team</h1>
         <p className="auth-subtitle">
-          You've been invited as a <strong>{invite?.role === 'admin' ? 'Team Admin' : 'Contributor'}</strong>.
-          Create your account to get started.
+          You've been invited as a{' '}
+          <strong>{invite?.role === 'admin' ? 'Team Admin' : 'Contributor'}</strong>. Create your
+          account to get started.
         </p>
 
-        <div style={{
-          background: 'rgba(232,93,4,0.06)', border: '1px solid rgba(232,93,4,0.2)',
-          borderRadius: 8, padding: '12px 14px', marginBottom: 20,
-          fontSize: 12, color: 'var(--color-text-muted)', lineHeight: 1.5,
-        }}>
-          <strong style={{ color: 'var(--color-text)', display: 'block', marginBottom: 4 }}>Notice</strong>
-          {invite?.principal_name} has accepted full responsibility for all content, messages, bids, and actions you take on their behalf.
-          All activity is recorded and attributed to their account.
+        <div
+          style={{
+            background: 'rgba(232,93,4,0.06)',
+            border: '1px solid rgba(232,93,4,0.2)',
+            borderRadius: 8,
+            padding: '12px 14px',
+            marginBottom: 20,
+            fontSize: 12,
+            color: 'var(--color-text-muted)',
+            lineHeight: 1.5,
+          }}
+        >
+          <strong style={{ color: 'var(--color-text)', display: 'block', marginBottom: 4 }}>
+            Notice
+          </strong>
+          {invite?.principal_name} has accepted full responsibility for all content, messages, bids,
+          and actions you take on their behalf. All activity is recorded and attributed to their
+          account.
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">

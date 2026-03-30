@@ -1,5 +1,13 @@
 import { Router } from 'express'
-import { Keypair, Connection, SystemProgram, Transaction, sendAndConfirmTransaction, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js'
+import {
+  Keypair,
+  Connection,
+  SystemProgram,
+  Transaction,
+  sendAndConfirmTransaction,
+  LAMPORTS_PER_SOL,
+  PublicKey,
+} from '@solana/web3.js'
 import { supabaseAdmin } from '../lib/clients.js'
 import { requireAuth } from '../lib/auth.js'
 
@@ -11,8 +19,10 @@ router.post('/api/wallet/save-pubkey', requireAuth, async (req, res) => {
   const userId = req.user.id
   const { pubkey } = req.body ?? {}
 
-  if (!pubkey || typeof pubkey !== 'string') return res.status(400).json({ error: 'pubkey is required' })
-  if (!BASE58_REGEX.test(pubkey)) return res.status(400).json({ error: 'Invalid Base58 public key format' })
+  if (!pubkey || typeof pubkey !== 'string')
+    return res.status(400).json({ error: 'pubkey is required' })
+  if (!BASE58_REGEX.test(pubkey))
+    return res.status(400).json({ error: 'Invalid Base58 public key format' })
 
   try {
     new PublicKey(pubkey)
@@ -20,11 +30,19 @@ router.post('/api/wallet/save-pubkey', requireAuth, async (req, res) => {
     return res.status(400).json({ error: 'Invalid Solana public key' })
   }
 
-  const { data: userRow } = await supabaseAdmin.from('users').select('account_type').eq('id', userId).single()
+  const { data: userRow } = await supabaseAdmin
+    .from('users')
+    .select('account_type')
+    .eq('id', userId)
+    .single()
   if (!userRow) return res.status(404).json({ error: 'User not found' })
-  if (userRow.account_type !== 'contractor') return res.status(403).json({ error: 'Wallets are only available for contractors' })
+  if (userRow.account_type !== 'contractor')
+    return res.status(403).json({ error: 'Wallets are only available for contractors' })
 
-  const { error } = await supabaseAdmin.from('users').update({ solana_pubkey: pubkey }).eq('id', userId)
+  const { error } = await supabaseAdmin
+    .from('users')
+    .update({ solana_pubkey: pubkey })
+    .eq('id', userId)
   if (error) {
     console.error('[wallet/save-pubkey] DB error:', error.message)
     return res.status(500).json({ error: error.message })
@@ -37,10 +55,15 @@ router.post('/api/wallet/save-pubkey', requireAuth, async (req, res) => {
 router.get('/api/wallet/status', requireAuth, async (req, res) => {
   const userId = req.user.id
 
-  const { data: userRow, error } = await supabaseAdmin.from('users').select('solana_pubkey, account_type').eq('id', userId).single()
+  const { data: userRow, error } = await supabaseAdmin
+    .from('users')
+    .select('solana_pubkey, account_type')
+    .eq('id', userId)
+    .single()
   if (error) return res.status(500).json({ error: error.message })
   if (!userRow) return res.status(404).json({ error: 'User not found' })
-  if (userRow.account_type !== 'contractor') return res.status(403).json({ error: 'Wallets are only available for contractors' })
+  if (userRow.account_type !== 'contractor')
+    return res.status(403).json({ error: 'Wallets are only available for contractors' })
 
   res.json({ solana_pubkey: userRow.solana_pubkey ?? null })
 })
@@ -48,11 +71,19 @@ router.get('/api/wallet/status', requireAuth, async (req, res) => {
 router.post('/api/wallet/remove', requireAuth, async (req, res) => {
   const userId = req.user.id
 
-  const { data: userRow } = await supabaseAdmin.from('users').select('account_type').eq('id', userId).single()
+  const { data: userRow } = await supabaseAdmin
+    .from('users')
+    .select('account_type')
+    .eq('id', userId)
+    .single()
   if (!userRow) return res.status(404).json({ error: 'User not found' })
-  if (userRow.account_type !== 'contractor') return res.status(403).json({ error: 'Wallets are only available for contractors' })
+  if (userRow.account_type !== 'contractor')
+    return res.status(403).json({ error: 'Wallets are only available for contractors' })
 
-  const { error } = await supabaseAdmin.from('users').update({ solana_pubkey: null }).eq('id', userId)
+  const { error } = await supabaseAdmin
+    .from('users')
+    .update({ solana_pubkey: null })
+    .eq('id', userId)
   if (error) {
     console.error('[wallet/remove] DB error:', error.message)
     return res.status(500).json({ error: error.message })
@@ -65,7 +96,11 @@ router.post('/api/wallet/remove', requireAuth, async (req, res) => {
 router.post('/api/wallet/send-reward', requireAuth, async (req, res) => {
   const userId = req.user.id
 
-  const { data: adminRow } = await supabaseAdmin.from('users').select('account_type').eq('id', userId).single()
+  const { data: adminRow } = await supabaseAdmin
+    .from('users')
+    .select('account_type')
+    .eq('id', userId)
+    .single()
   if (adminRow?.account_type !== 'admin') return res.status(403).json({ error: 'Admin only' })
 
   const { recipientPubkey, amountSol } = req.body ?? {}
@@ -74,7 +109,8 @@ router.post('/api/wallet/send-reward', requireAuth, async (req, res) => {
   }
 
   const treasuryKeyRaw = process.env.SOLANA_TREASURY_PRIVATE_KEY
-  if (!treasuryKeyRaw) return res.status(503).json({ error: 'SOLANA_TREASURY_PRIVATE_KEY not configured' })
+  if (!treasuryKeyRaw)
+    return res.status(503).json({ error: 'SOLANA_TREASURY_PRIVATE_KEY not configured' })
 
   let treasuryKeypair
   try {
@@ -95,10 +131,16 @@ router.post('/api/wallet/send-reward', requireAuth, async (req, res) => {
     const connection = new Connection('https://api.mainnet-beta.solana.com', 'confirmed')
     const lamports = Math.round(amountSol * LAMPORTS_PER_SOL)
     const transaction = new Transaction().add(
-      SystemProgram.transfer({ fromPubkey: treasuryKeypair.publicKey, toPubkey: recipientKey, lamports })
+      SystemProgram.transfer({
+        fromPubkey: treasuryKeypair.publicKey,
+        toPubkey: recipientKey,
+        lamports,
+      })
     )
     const signature = await sendAndConfirmTransaction(connection, transaction, [treasuryKeypair])
-    console.log(`[wallet/send-reward] Sent ${amountSol} SOL to ${recipientPubkey}. Sig: ${signature}`)
+    console.log(
+      `[wallet/send-reward] Sent ${amountSol} SOL to ${recipientPubkey}. Sig: ${signature}`
+    )
     res.json({ success: true, signature })
   } catch (err) {
     console.error('[wallet/send-reward] Error:', err.message)

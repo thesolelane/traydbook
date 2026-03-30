@@ -30,7 +30,10 @@ interface AuthContextType {
   delegateSession: DelegateSession | null
   effectiveUserId: string | null
   signIn: (email: string, password: string) => Promise<{ error: string | null }>
-  signUp: (email: string, password: string) => Promise<{ error: string | null; userId?: string; needsEmailConfirmation?: boolean }>
+  signUp: (
+    email: string,
+    password: string
+  ) => Promise<{ error: string | null; userId?: string; needsEmailConfirmation?: boolean }>
   signInWithOAuth: (provider: Provider) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
@@ -51,7 +54,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function fetchProfile(userId: string): Promise<UserProfile | null> {
     const { data } = await supabase
       .from('users')
-      .select('id, display_name, handle, avatar_url, account_type, credit_balance, is_delegate, delegate_principal_id')
+      .select(
+        'id, display_name, handle, avatar_url, account_type, credit_balance, is_delegate, delegate_principal_id'
+      )
       .eq('id', userId)
       .single()
     return data as UserProfile | null
@@ -66,7 +71,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return data as UserProfile | null
   }
 
-  async function loadDelegateSession(actualUser: User, ownProfile: UserProfile): Promise<{ principalProfile: UserProfile | null; ds: DelegateSession | null }> {
+  async function loadDelegateSession(
+    actualUser: User,
+    ownProfile: UserProfile
+  ): Promise<{ principalProfile: UserProfile | null; ds: DelegateSession | null }> {
     if (!ownProfile.is_delegate || !ownProfile.delegate_principal_id) {
       return { principalProfile: null, ds: null }
     }
@@ -98,7 +106,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (ownProfile.is_delegate && ownProfile.delegate_principal_id) {
         const { principalProfile, ds } = await loadDelegateSession(user, ownProfile)
         if (principalProfile && ds) {
-          setProfile({ ...principalProfile, is_delegate: true, delegate_principal_id: ownProfile.delegate_principal_id })
+          setProfile({
+            ...principalProfile,
+            is_delegate: true,
+            delegate_principal_id: ownProfile.delegate_principal_id,
+          })
           setDelegateSession(ds)
         } else {
           setProfile(ownProfile)
@@ -131,7 +143,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (ownProfile.is_delegate && ownProfile.delegate_principal_id) {
       const { principalProfile, ds } = await loadDelegateSession(sessionUser, ownProfile)
       if (principalProfile && ds) {
-        setProfile({ ...principalProfile, is_delegate: true, delegate_principal_id: ownProfile.delegate_principal_id })
+        setProfile({
+          ...principalProfile,
+          is_delegate: true,
+          delegate_principal_id: ownProfile.delegate_principal_id,
+        })
         setDelegateSession(ds)
         setNeedsOnboarding(false)
         return
@@ -151,7 +167,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session)
       setUser(session?.user ?? null)
       await initSession(session?.user ?? null)
@@ -215,12 +233,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const effectiveUserId = delegateSession ? delegateSession.principalUserId : (user?.id ?? null)
 
   return (
-    <AuthContext.Provider value={{
-      session, user, profile, loading, needsOnboarding,
-      delegateSession, effectiveUserId,
-      signIn, signUp, signInWithOAuth, signOut, refreshProfile,
-      logDelegateAction, canDelegate,
-    }}>
+    <AuthContext.Provider
+      value={{
+        session,
+        user,
+        profile,
+        loading,
+        needsOnboarding,
+        delegateSession,
+        effectiveUserId,
+        signIn,
+        signUp,
+        signInWithOAuth,
+        signOut,
+        refreshProfile,
+        logDelegateAction,
+        canDelegate,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )

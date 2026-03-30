@@ -1,11 +1,32 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
-  Mail, Lock, Bell, Eye, User, Trash2, CheckCircle,
-  AlertTriangle, ShieldCheck, CreditCard, Coins, Zap,
-  TrendingUp, Award, Star, CheckCircle as CheckCircleIcon,
-  XCircle, ChevronRight, Users, Smartphone, Phone, Pause, Play, X,
-  Wallet, Shield,
+  Mail,
+  Lock,
+  Bell,
+  Eye,
+  User,
+  Trash2,
+  CheckCircle,
+  AlertTriangle,
+  ShieldCheck,
+  CreditCard,
+  Coins,
+  Zap,
+  TrendingUp,
+  Award,
+  Star,
+  CheckCircle as CheckCircleIcon,
+  XCircle,
+  ChevronRight,
+  Users,
+  Smartphone,
+  Phone,
+  Pause,
+  Play,
+  X,
+  Wallet,
+  Shield,
 } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { supabase } from '../lib/supabase'
@@ -18,33 +39,93 @@ import { isSuperAdmin } from '../lib/roles'
 import type { BadgeTier } from '../types/profile'
 
 const NOTIF_LABELS: { type: NotificationType; label: string; description: string }[] = [
-  { type: 'message_received',    label: 'New messages',            description: 'Someone sends you a message' },
-  { type: 'connection_request',  label: 'Connection requests',     description: 'Someone wants to connect with you' },
-  { type: 'connection_accepted', label: 'Connection accepted',     description: 'A connection request was accepted' },
-  { type: 'bid_submitted',       label: 'Bid received',            description: 'A contractor bids on your RFQ' },
-  { type: 'bid_awarded',         label: 'Bid awarded',             description: 'Your bid was selected' },
-  { type: 'job_applied',         label: 'Job application',         description: 'Someone applies to your job listing' },
-  { type: 'rfq_closing_soon',    label: 'RFQ closing soon',        description: 'A bid deadline is approaching' },
-  { type: 'post_liked',          label: 'Post likes',              description: 'Someone likes your post' },
-  { type: 'post_commented',      label: 'Post comments',           description: 'Someone comments on your post' },
-  { type: 'credential_expiring', label: 'Credential expiring',     description: 'A license or cert is about to expire' },
-  { type: 'credits_added',       label: 'Credits added',           description: 'Credits are added to your account' },
-  { type: 'referral_received',   label: 'Referrals',               description: 'Someone refers you for work' },
-  { type: 'safety_alert',        label: 'Safety alerts',           description: 'Safety-related alerts from your network' },
+  { type: 'message_received', label: 'New messages', description: 'Someone sends you a message' },
+  {
+    type: 'connection_request',
+    label: 'Connection requests',
+    description: 'Someone wants to connect with you',
+  },
+  {
+    type: 'connection_accepted',
+    label: 'Connection accepted',
+    description: 'A connection request was accepted',
+  },
+  { type: 'bid_submitted', label: 'Bid received', description: 'A contractor bids on your RFQ' },
+  { type: 'bid_awarded', label: 'Bid awarded', description: 'Your bid was selected' },
+  {
+    type: 'job_applied',
+    label: 'Job application',
+    description: 'Someone applies to your job listing',
+  },
+  {
+    type: 'rfq_closing_soon',
+    label: 'RFQ closing soon',
+    description: 'A bid deadline is approaching',
+  },
+  { type: 'post_liked', label: 'Post likes', description: 'Someone likes your post' },
+  { type: 'post_commented', label: 'Post comments', description: 'Someone comments on your post' },
+  {
+    type: 'credential_expiring',
+    label: 'Credential expiring',
+    description: 'A license or cert is about to expire',
+  },
+  {
+    type: 'credits_added',
+    label: 'Credits added',
+    description: 'Credits are added to your account',
+  },
+  { type: 'referral_received', label: 'Referrals', description: 'Someone refers you for work' },
+  {
+    type: 'safety_alert',
+    label: 'Safety alerts',
+    description: 'Safety-related alerts from your network',
+  },
 ]
 
 type NotifPrefs = Partial<Record<NotificationType, boolean>>
 
 const BUNDLES = [
-  { id: 'starter',      name: 'Starter',      credits: 25,  price: '$9',  perCredit: '$0.36 / cr', icon: Zap,        popular: false },
-  { id: 'builder',      name: 'Builder',      credits: 75,  price: '$24', perCredit: '$0.32 / cr', icon: TrendingUp, popular: true  },
-  { id: 'professional', name: 'Professional', credits: 200, price: '$54', perCredit: '$0.27 / cr', icon: Award,      popular: false },
-  { id: 'power',        name: 'Power',        credits: 500, price: '$99', perCredit: '$0.20 / cr', icon: Star,       popular: false },
+  {
+    id: 'starter',
+    name: 'Starter',
+    credits: 25,
+    price: '$9',
+    perCredit: '$0.36 / cr',
+    icon: Zap,
+    popular: false,
+  },
+  {
+    id: 'builder',
+    name: 'Builder',
+    credits: 75,
+    price: '$24',
+    perCredit: '$0.32 / cr',
+    icon: TrendingUp,
+    popular: true,
+  },
+  {
+    id: 'professional',
+    name: 'Professional',
+    credits: 200,
+    price: '$54',
+    perCredit: '$0.27 / cr',
+    icon: Award,
+    popular: false,
+  },
+  {
+    id: 'power',
+    name: 'Power',
+    credits: 500,
+    price: '$99',
+    perCredit: '$0.20 / cr',
+    icon: Star,
+    popular: false,
+  },
 ]
 
 const CREDIT_COSTS = [
-  { action: 'Post an RFQ',            cost: 10 },
-  { action: 'Post a job listing',     cost: 8  },
+  { action: 'Post an RFQ', cost: 10 },
+  { action: 'Post a job listing', cost: 8 },
   { action: 'Cold-message a contractor', cost: 3 },
 ]
 
@@ -57,7 +138,16 @@ interface LedgerRow {
   created_at: string
 }
 
-type Tab = 'account' | 'notifications' | 'privacy' | 'billing' | 'verification' | 'danger' | 'team' | 'wallet' | 'staff'
+type Tab =
+  | 'account'
+  | 'notifications'
+  | 'privacy'
+  | 'billing'
+  | 'verification'
+  | 'danger'
+  | 'team'
+  | 'wallet'
+  | 'staff'
 
 interface TabDef {
   id: Tab
@@ -70,13 +160,22 @@ interface TabDef {
 
 function SavedBanner({ msg }: { msg: string }) {
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 8,
-      background: 'rgba(5,150,105,0.1)', border: '1px solid rgba(5,150,105,0.25)',
-      borderRadius: 'var(--radius-sm)', padding: '8px 12px',
-      color: '#059669', fontSize: 13, fontWeight: 600,
-      fontFamily: 'var(--font-condensed)', marginTop: 10,
-    }}>
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        background: 'rgba(5,150,105,0.1)',
+        border: '1px solid rgba(5,150,105,0.25)',
+        borderRadius: 'var(--radius-sm)',
+        padding: '8px 12px',
+        color: '#059669',
+        fontSize: 13,
+        fontWeight: 600,
+        fontFamily: 'var(--font-condensed)',
+        marginTop: 10,
+      }}
+    >
       <CheckCircle size={14} /> {msg}
     </div>
   )
@@ -84,46 +183,72 @@ function SavedBanner({ msg }: { msg: string }) {
 
 function ErrorBanner({ msg }: { msg: string }) {
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 8,
-      background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.2)',
-      borderRadius: 'var(--radius-sm)', padding: '8px 12px',
-      color: '#DC2626', fontSize: 13,
-      marginTop: 10,
-    }}>
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        background: 'rgba(220,38,38,0.08)',
+        border: '1px solid rgba(220,38,38,0.2)',
+        borderRadius: 'var(--radius-sm)',
+        padding: '8px 12px',
+        color: '#DC2626',
+        fontSize: 13,
+        marginTop: 10,
+      }}
+    >
       <AlertTriangle size={14} /> {msg}
     </div>
   )
 }
 
 const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '9px 12px',
-  background: 'var(--color-bg)', border: '1px solid var(--color-border)',
-  borderRadius: 'var(--radius-md)', color: 'var(--color-text)',
-  fontSize: 14, fontFamily: 'var(--font-sans)', outline: 'none',
+  width: '100%',
+  padding: '9px 12px',
+  background: 'var(--color-bg)',
+  border: '1px solid var(--color-border)',
+  borderRadius: 'var(--radius-md)',
+  color: 'var(--color-text)',
+  fontSize: 14,
+  fontFamily: 'var(--font-sans)',
+  outline: 'none',
   boxSizing: 'border-box',
 }
 
 const btnPrimary: React.CSSProperties = {
-  padding: '9px 18px', background: 'var(--color-brand)',
-  border: 'none', borderRadius: 'var(--radius-md)',
-  fontFamily: 'var(--font-condensed)', fontSize: 13, fontWeight: 700,
-  letterSpacing: '0.5px', textTransform: 'uppercase', color: '#fff',
+  padding: '9px 18px',
+  background: 'var(--color-brand)',
+  border: 'none',
+  borderRadius: 'var(--radius-md)',
+  fontFamily: 'var(--font-condensed)',
+  fontSize: 13,
+  fontWeight: 700,
+  letterSpacing: '0.5px',
+  textTransform: 'uppercase',
+  color: '#fff',
   cursor: 'pointer',
 }
 
 const btnGhost: React.CSSProperties = {
-  padding: '9px 18px', background: 'transparent',
-  border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)',
-  fontFamily: 'var(--font-condensed)', fontSize: 13, fontWeight: 700,
-  letterSpacing: '0.5px', textTransform: 'uppercase', color: 'var(--color-text-muted)',
+  padding: '9px 18px',
+  background: 'transparent',
+  border: '1px solid var(--color-border)',
+  borderRadius: 'var(--radius-md)',
+  fontFamily: 'var(--font-condensed)',
+  fontSize: 13,
+  fontWeight: 700,
+  letterSpacing: '0.5px',
+  textTransform: 'uppercase',
+  color: 'var(--color-text-muted)',
   cursor: 'pointer',
 }
 
 const API_BASE = '/api'
 
 async function apiFetch(path: string, method: string, body?: object) {
-  const { data: { session } } = await supabase.auth.getSession()
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
   const token = session?.access_token
   const res = await fetch(API_BASE + path, {
     method,
@@ -168,15 +293,20 @@ export default function Settings() {
   }
 
   const TABS: TabDef[] = [
-    { id: 'account',       label: 'Account',        icon: <User size={15} /> },
-    { id: 'notifications', label: 'Notifications',  icon: <Bell size={15} /> },
-    { id: 'privacy',       label: 'Privacy',         icon: <Eye size={15} />, contractorOnly: true },
-    { id: 'billing',       label: 'Billing',         icon: <CreditCard size={15} />, ownerOnly: true },
-    { id: 'verification',  label: 'Verification',    icon: <ShieldCheck size={15} />, contractorOnly: true },
-    { id: 'wallet',        label: 'Crypto Wallet',   icon: <Wallet size={15} />, contractorOnly: true },
-    { id: 'team',          label: 'Team',            icon: <Users size={15} />, ownerOnly: true },
-    { id: 'staff',         label: 'Staff',           icon: <Shield size={15} />, adminOnly: true },
-    { id: 'danger',        label: 'Danger Zone',     icon: <Trash2 size={15} /> },
+    { id: 'account', label: 'Account', icon: <User size={15} /> },
+    { id: 'notifications', label: 'Notifications', icon: <Bell size={15} /> },
+    { id: 'privacy', label: 'Privacy', icon: <Eye size={15} />, contractorOnly: true },
+    { id: 'billing', label: 'Billing', icon: <CreditCard size={15} />, ownerOnly: true },
+    {
+      id: 'verification',
+      label: 'Verification',
+      icon: <ShieldCheck size={15} />,
+      contractorOnly: true,
+    },
+    { id: 'wallet', label: 'Crypto Wallet', icon: <Wallet size={15} />, contractorOnly: true },
+    { id: 'team', label: 'Team', icon: <Users size={15} />, ownerOnly: true },
+    { id: 'staff', label: 'Staff', icon: <Shield size={15} />, adminOnly: true },
+    { id: 'danger', label: 'Danger Zone', icon: <Trash2 size={15} /> },
   ]
 
   const visibleTabs = TABS.filter(t => {
@@ -212,14 +342,19 @@ export default function Settings() {
     e.preventDefault()
     setEmailMsg('')
     setEmailErr('')
-    if (!newEmail || newEmail === currentEmail) { setEmailErr('Please enter a different email address.'); return }
+    if (!newEmail || newEmail === currentEmail) {
+      setEmailErr('Please enter a different email address.')
+      return
+    }
     setChangingEmail(true)
     const { error } = await supabase.auth.updateUser({ email: newEmail })
     setChangingEmail(false)
     if (error) {
       setEmailErr(error.message)
     } else {
-      setEmailMsg(`Confirmation sent to ${newEmail}. Check your inbox and click the link to confirm the change.`)
+      setEmailMsg(
+        `Confirmation sent to ${newEmail}. Check your inbox and click the link to confirm the change.`
+      )
       await refreshProfile()
       setNewEmail('')
     }
@@ -237,10 +372,19 @@ export default function Settings() {
     e.preventDefault()
     setPwdMsg('')
     setPwdErr('')
-    if (newPassword !== confirmPassword) { setPwdErr('Passwords do not match.'); return }
-    if (newPassword.length < 8) { setPwdErr('Password must be at least 8 characters.'); return }
+    if (newPassword !== confirmPassword) {
+      setPwdErr('Passwords do not match.')
+      return
+    }
+    if (newPassword.length < 8) {
+      setPwdErr('Password must be at least 8 characters.')
+      return
+    }
     setSavingPwd(true)
-    const signInRes = await supabase.auth.signInWithPassword({ email: currentEmail, password: currentPassword })
+    const signInRes = await supabase.auth.signInWithPassword({
+      email: currentEmail,
+      password: currentPassword,
+    })
     if (signInRes.error) {
       setPwdErr('Current password is incorrect.')
       setSavingPwd(false)
@@ -351,7 +495,12 @@ export default function Settings() {
   }
 
   async function handleSmsCancel() {
-    if (!confirm('Cancel your SMS subscription? This will remove your phone number and disable SMS alerts.')) return
+    if (
+      !confirm(
+        'Cancel your SMS subscription? This will remove your phone number and disable SMS alerts.'
+      )
+    )
+      return
     setSmsCancelling(true)
     setSmsErr('')
     try {
@@ -372,7 +521,7 @@ export default function Settings() {
     setSmsErr('')
     try {
       await apiFetch('/sms/toggle-alerts', 'POST', { enabled: newEnabled })
-      setSmsStatus(prev => prev ? { ...prev, sms_alerts_enabled: newEnabled } : prev)
+      setSmsStatus(prev => (prev ? { ...prev, sms_alerts_enabled: newEnabled } : prev))
       setSmsMsg(newEnabled ? 'SMS alerts resumed.' : 'SMS alerts paused.')
       setTimeout(() => setSmsMsg(''), 2500)
     } catch (err: unknown) {
@@ -427,7 +576,9 @@ export default function Settings() {
       .select('visible_to_owners')
       .eq('user_id', profile.id)
       .single()
-      .then(({ data }) => { if (data) setVisibleToOwners(data.visible_to_owners) })
+      .then(({ data }) => {
+        if (data) setVisibleToOwners(data.visible_to_owners)
+      })
   }, [profile, isContractor])
 
   async function handleVisibilityToggle() {
@@ -442,7 +593,11 @@ export default function Settings() {
     setSavingPrivacy(false)
     if (!error) {
       setVisibleToOwners(newVal)
-      setPrivacyMsg(newVal ? 'Your profile is now visible to owners.' : 'Your profile is now hidden from owners.')
+      setPrivacyMsg(
+        newVal
+          ? 'Your profile is now visible to owners.'
+          : 'Your profile is now hidden from owners.'
+      )
     }
   }
 
@@ -482,7 +637,9 @@ export default function Settings() {
           setBadgeTier(data.badge_tier as BadgeTier)
           supabase
             .from('credentials')
-            .select('id, credential_type, masked_display, issuing_state, expiry_date, verified_at, status')
+            .select(
+              'id, credential_type, masked_display, issuing_state, expiry_date, verified_at, status'
+            )
             .eq('contractor_id', data.id)
             .order('created_at', { ascending: false })
             .then(({ data: cd }) => {
@@ -513,13 +670,15 @@ export default function Settings() {
     if (error) {
       setCredErr('Failed to submit. ' + error.message)
     } else {
-      setCredMsg('Submitted for review. We\'ll verify it within 2–3 business days.')
+      setCredMsg("Submitted for review. We'll verify it within 2–3 business days.")
       setCredDisplay('')
       setCredState('')
       setCredExpiry('')
       const { data: cd } = await supabase
         .from('credentials')
-        .select('id, credential_type, masked_display, issuing_state, expiry_date, verified_at, status')
+        .select(
+          'id, credential_type, masked_display, issuing_state, expiry_date, verified_at, status'
+        )
         .eq('contractor_id', cpId)
         .order('created_at', { ascending: false })
       setCreds((cd ?? []) as CredRow[])
@@ -549,9 +708,14 @@ export default function Settings() {
     setSearchParams({ tab: 'billing' }, { replace: true })
 
     async function pollUntilFulfilled() {
-      const { data: { session: authSession } } = await supabase.auth.getSession()
+      const {
+        data: { session: authSession },
+      } = await supabase.auth.getSession()
       const token = authSession?.access_token
-      if (!token) { refreshProfile(); return }
+      if (!token) {
+        refreshProfile()
+        return
+      }
 
       const maxAttempts = 15
       for (let i = 0; i < maxAttempts; i++) {
@@ -592,7 +756,9 @@ export default function Settings() {
     setBuyError('')
     setBuying(bundleId)
     try {
-      const { data: { session: authSession } } = await supabase.auth.getSession()
+      const {
+        data: { session: authSession },
+      } = await supabase.auth.getSession()
       const token = authSession?.access_token
       if (!token) throw new Error('Not authenticated. Please sign in again.')
 
@@ -644,7 +810,12 @@ export default function Settings() {
   }
 
   async function handleRemoveWallet() {
-    if (!confirm('Remove your wallet? Your public key will be cleared. You can set up a new wallet any time.')) return
+    if (
+      !confirm(
+        'Remove your wallet? Your public key will be cleared. You can set up a new wallet any time.'
+      )
+    )
+      return
     setWalletActionLoading(true)
     setWalletErr('')
     try {
@@ -666,7 +837,10 @@ export default function Settings() {
 
   async function handleDeleteAccount() {
     if (!profile) return
-    if (deleteConfirmText !== 'CONFIRM') { setDeleteErr('Type CONFIRM to proceed.'); return }
+    if (deleteConfirmText !== 'CONFIRM') {
+      setDeleteErr('Type CONFIRM to proceed.')
+      return
+    }
     setDeletingAccount(true)
     setDeleteErr('')
     const { error } = await supabase
@@ -684,10 +858,16 @@ export default function Settings() {
 
   return (
     <div className="container" style={{ padding: '32px 0', maxWidth: 900 }}>
-      <h1 style={{
-        fontFamily: 'var(--font-condensed)', fontSize: 26, fontWeight: 800,
-        letterSpacing: '0.3px', color: 'var(--color-text)', marginBottom: 20,
-      }}>
+      <h1
+        style={{
+          fontFamily: 'var(--font-condensed)',
+          fontSize: 26,
+          fontWeight: 800,
+          letterSpacing: '0.3px',
+          color: 'var(--color-text)',
+          marginBottom: 20,
+        }}
+      >
         Settings
       </h1>
 
@@ -720,13 +900,20 @@ export default function Settings() {
           }
         `}</style>
 
-        <div className="settings-layout" style={{ display: 'flex', width: '100%', gap: 0, alignItems: 'flex-start' }}>
+        <div
+          className="settings-layout"
+          style={{ display: 'flex', width: '100%', gap: 0, alignItems: 'flex-start' }}
+        >
           <nav
             className="settings-sidebar"
             style={{
-              width: 200, flexShrink: 0,
+              width: 200,
+              flexShrink: 0,
               borderRight: '1px solid var(--color-border)',
-              paddingRight: 0, display: 'flex', flexDirection: 'column', gap: 2,
+              paddingRight: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 2,
               paddingTop: 4,
             }}
           >
@@ -738,15 +925,23 @@ export default function Settings() {
                   className="settings-tab"
                   onClick={() => goTab(tab.id)}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 9,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 9,
                     padding: '10px 16px',
                     background: isActive ? 'var(--color-brand-light)' : 'transparent',
                     border: 'none',
-                    borderRight: isActive ? '2px solid var(--color-brand)' : '2px solid transparent',
+                    borderRight: isActive
+                      ? '2px solid var(--color-brand)'
+                      : '2px solid transparent',
                     borderRadius: 0,
                     color: isActive ? 'var(--color-brand)' : 'var(--color-text-muted)',
-                    fontFamily: 'var(--font-condensed)', fontSize: 13, fontWeight: isActive ? 700 : 500,
-                    letterSpacing: '0.3px', cursor: 'pointer', textAlign: 'left',
+                    fontFamily: 'var(--font-condensed)',
+                    fontSize: 13,
+                    fontWeight: isActive ? 700 : 500,
+                    letterSpacing: '0.3px',
+                    cursor: 'pointer',
+                    textAlign: 'left',
                     width: '100%',
                     transition: 'background 0.15s, color 0.15s',
                   }}
@@ -770,50 +965,110 @@ export default function Settings() {
 
                 {/* Delegate session notice */}
                 {delegateSession && (
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    background: 'rgba(232,93,4,0.06)', border: '1px solid rgba(232,93,4,0.2)',
-                    borderRadius: 8, padding: '10px 14px', marginBottom: 20, fontSize: 13,
-                    color: 'var(--color-text-muted)',
-                  }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      background: 'rgba(232,93,4,0.06)',
+                      border: '1px solid rgba(232,93,4,0.2)',
+                      borderRadius: 8,
+                      padding: '10px 14px',
+                      marginBottom: 20,
+                      fontSize: 13,
+                      color: 'var(--color-text-muted)',
+                    }}
+                  >
                     <Users size={14} color="var(--color-brand)" style={{ flexShrink: 0 }} />
                     <span>
-                      You are operating as a <strong style={{ color: 'var(--color-text)' }}>{delegateSession.role === 'admin' ? 'Team Admin' : 'Contributor'}</strong>.
-                      Billing, email, and password settings are restricted to the account owner.
+                      You are operating as a{' '}
+                      <strong style={{ color: 'var(--color-text)' }}>
+                        {delegateSession.role === 'admin' ? 'Team Admin' : 'Contributor'}
+                      </strong>
+                      . Billing, email, and password settings are restricted to the account owner.
                     </span>
                   </div>
                 )}
 
                 {/* Profile summary */}
                 <Section>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: 12,
+                    }}
+                  >
                     <div>
-                      <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 4 }}>Display name</div>
-                      <div style={{ fontFamily: 'var(--font-condensed)', fontSize: 16, fontWeight: 700, color: 'var(--color-text)' }}>
+                      <div
+                        style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 4 }}
+                      >
+                        Display name
+                      </div>
+                      <div
+                        style={{
+                          fontFamily: 'var(--font-condensed)',
+                          fontSize: 16,
+                          fontWeight: 700,
+                          color: 'var(--color-text)',
+                        }}
+                      >
                         {profile?.display_name}
                       </div>
                     </div>
                     <div>
-                      <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 4 }}>Account type</div>
-                      <div style={{
-                        fontFamily: 'var(--font-condensed)', fontSize: 12, fontWeight: 700,
-                        letterSpacing: '0.5px', textTransform: 'uppercase',
-                        background: 'var(--color-brand-light)', color: 'var(--color-brand)',
-                        padding: '3px 10px', borderRadius: 4, display: 'inline-block',
-                      }}>
+                      <div
+                        style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 4 }}
+                      >
+                        Account type
+                      </div>
+                      <div
+                        style={{
+                          fontFamily: 'var(--font-condensed)',
+                          fontSize: 12,
+                          fontWeight: 700,
+                          letterSpacing: '0.5px',
+                          textTransform: 'uppercase',
+                          background: 'var(--color-brand-light)',
+                          color: 'var(--color-brand)',
+                          padding: '3px 10px',
+                          borderRadius: 4,
+                          display: 'inline-block',
+                        }}
+                      >
                         {profile?.account_type?.replace('_', ' ')}
                       </div>
                     </div>
                     {!isContractor && (
                       <div>
-                        <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 4 }}>Credit balance</div>
-                        <button onClick={() => goTab('billing')} style={{
-                          display: 'flex', alignItems: 'center', gap: 6,
-                          background: 'var(--color-brand-light)', border: '1px solid rgba(232,93,4,0.2)',
-                          borderRadius: 4, padding: '4px 10px', cursor: 'pointer',
-                          fontFamily: 'var(--font-condensed)', fontSize: 14, fontWeight: 700,
-                          color: 'var(--color-brand)',
-                        }}>
+                        <div
+                          style={{
+                            fontSize: 12,
+                            color: 'var(--color-text-muted)',
+                            marginBottom: 4,
+                          }}
+                        >
+                          Credit balance
+                        </div>
+                        <button
+                          onClick={() => goTab('billing')}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            background: 'var(--color-brand-light)',
+                            border: '1px solid rgba(232,93,4,0.2)',
+                            borderRadius: 4,
+                            padding: '4px 10px',
+                            cursor: 'pointer',
+                            fontFamily: 'var(--font-condensed)',
+                            fontSize: 14,
+                            fontWeight: 700,
+                            color: 'var(--color-brand)',
+                          }}
+                        >
                           <Coins size={14} /> {profile?.credit_balance ?? 0} credits
                         </button>
                       </div>
@@ -822,99 +1077,169 @@ export default function Settings() {
                 </Section>
 
                 {/* Change email — hidden for delegates */}
-                {!delegateSession && <><SectionHeading>Email</SectionHeading>
-                <Section>
-                  <div style={{ marginBottom: 14 }}>
-                    <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 4 }}>Current email</div>
-                    <div style={{ fontFamily: 'var(--font-condensed)', fontSize: 15, fontWeight: 600, color: 'var(--color-text)' }}>
-                      {currentEmail || '—'}
-                    </div>
-                  </div>
-                  <form onSubmit={handleChangeEmail} style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
-                    <div>
-                      <label style={{ fontSize: 12, color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>
-                        New email address
-                      </label>
-                      <input
-                        type="email"
-                        value={newEmail}
-                        onChange={e => setNewEmail(e.target.value)}
-                        placeholder="Enter new email"
-                        style={inputStyle}
-                      />
-                    </div>
-                    <div>
-                      <button type="submit" disabled={changingEmail || !newEmail} style={{ ...btnGhost, opacity: (changingEmail || !newEmail) ? 0.6 : 1 }}>
-                        {changingEmail ? 'Sending…' : 'Change Email'}
-                      </button>
-                    </div>
-                  </form>
-                  <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 14 }}>
-                    <button
-                      onClick={handleResendVerification}
-                      disabled={sendingVerif || !currentEmail}
-                      style={{ ...btnGhost, opacity: sendingVerif ? 0.6 : 1, fontSize: 12 }}
-                    >
-                      {sendingVerif ? 'Sending…' : 'Resend Verification Email'}
-                    </button>
-                  </div>
-                  {emailMsg && <SavedBanner msg={emailMsg} />}
-                  {emailErr && <ErrorBanner msg={emailErr} />}
-                </Section></>}
+                {!delegateSession && (
+                  <>
+                    <SectionHeading>Email</SectionHeading>
+                    <Section>
+                      <div style={{ marginBottom: 14 }}>
+                        <div
+                          style={{
+                            fontSize: 12,
+                            color: 'var(--color-text-muted)',
+                            marginBottom: 4,
+                          }}
+                        >
+                          Current email
+                        </div>
+                        <div
+                          style={{
+                            fontFamily: 'var(--font-condensed)',
+                            fontSize: 15,
+                            fontWeight: 600,
+                            color: 'var(--color-text)',
+                          }}
+                        >
+                          {currentEmail || '—'}
+                        </div>
+                      </div>
+                      <form
+                        onSubmit={handleChangeEmail}
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 10,
+                          marginBottom: 14,
+                        }}
+                      >
+                        <div>
+                          <label
+                            style={{
+                              fontSize: 12,
+                              color: 'var(--color-text-muted)',
+                              display: 'block',
+                              marginBottom: 4,
+                            }}
+                          >
+                            New email address
+                          </label>
+                          <input
+                            type="email"
+                            value={newEmail}
+                            onChange={e => setNewEmail(e.target.value)}
+                            placeholder="Enter new email"
+                            style={inputStyle}
+                          />
+                        </div>
+                        <div>
+                          <button
+                            type="submit"
+                            disabled={changingEmail || !newEmail}
+                            style={{ ...btnGhost, opacity: changingEmail || !newEmail ? 0.6 : 1 }}
+                          >
+                            {changingEmail ? 'Sending…' : 'Change Email'}
+                          </button>
+                        </div>
+                      </form>
+                      <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 14 }}>
+                        <button
+                          onClick={handleResendVerification}
+                          disabled={sendingVerif || !currentEmail}
+                          style={{ ...btnGhost, opacity: sendingVerif ? 0.6 : 1, fontSize: 12 }}
+                        >
+                          {sendingVerif ? 'Sending…' : 'Resend Verification Email'}
+                        </button>
+                      </div>
+                      {emailMsg && <SavedBanner msg={emailMsg} />}
+                      {emailErr && <ErrorBanner msg={emailErr} />}
+                    </Section>
+                  </>
+                )}
 
                 {/* Change password — hidden for delegates */}
-                {!delegateSession && <><SectionHeading>Password</SectionHeading>
-                <Section>
-                  <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    <div>
-                      <label style={{ fontSize: 12, color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>
-                        Current password
-                      </label>
-                      <input
-                        type="password"
-                        value={currentPassword}
-                        onChange={e => setCurrentPassword(e.target.value)}
-                        required
-                        style={inputStyle}
-                        placeholder="Enter current password"
-                      />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: 12, color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>
-                        New password
-                      </label>
-                      <input
-                        type="password"
-                        value={newPassword}
-                        onChange={e => setNewPassword(e.target.value)}
-                        required
-                        minLength={8}
-                        style={inputStyle}
-                        placeholder="At least 8 characters"
-                      />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: 12, color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>
-                        Confirm new password
-                      </label>
-                      <input
-                        type="password"
-                        value={confirmPassword}
-                        onChange={e => setConfirmPassword(e.target.value)}
-                        required
-                        style={inputStyle}
-                        placeholder="Repeat new password"
-                      />
-                    </div>
-                    <div>
-                      <button type="submit" disabled={savingPwd} style={{ ...btnPrimary, opacity: savingPwd ? 0.6 : 1 }}>
-                        {savingPwd ? 'Saving…' : 'Update Password'}
-                      </button>
-                    </div>
-                    {pwdMsg && <SavedBanner msg={pwdMsg} />}
-                    {pwdErr && <ErrorBanner msg={pwdErr} />}
-                  </form>
-                </Section></>}
+                {!delegateSession && (
+                  <>
+                    <SectionHeading>Password</SectionHeading>
+                    <Section>
+                      <form
+                        onSubmit={handleChangePassword}
+                        style={{ display: 'flex', flexDirection: 'column', gap: 10 }}
+                      >
+                        <div>
+                          <label
+                            style={{
+                              fontSize: 12,
+                              color: 'var(--color-text-muted)',
+                              display: 'block',
+                              marginBottom: 4,
+                            }}
+                          >
+                            Current password
+                          </label>
+                          <input
+                            type="password"
+                            value={currentPassword}
+                            onChange={e => setCurrentPassword(e.target.value)}
+                            required
+                            style={inputStyle}
+                            placeholder="Enter current password"
+                          />
+                        </div>
+                        <div>
+                          <label
+                            style={{
+                              fontSize: 12,
+                              color: 'var(--color-text-muted)',
+                              display: 'block',
+                              marginBottom: 4,
+                            }}
+                          >
+                            New password
+                          </label>
+                          <input
+                            type="password"
+                            value={newPassword}
+                            onChange={e => setNewPassword(e.target.value)}
+                            required
+                            minLength={8}
+                            style={inputStyle}
+                            placeholder="At least 8 characters"
+                          />
+                        </div>
+                        <div>
+                          <label
+                            style={{
+                              fontSize: 12,
+                              color: 'var(--color-text-muted)',
+                              display: 'block',
+                              marginBottom: 4,
+                            }}
+                          >
+                            Confirm new password
+                          </label>
+                          <input
+                            type="password"
+                            value={confirmPassword}
+                            onChange={e => setConfirmPassword(e.target.value)}
+                            required
+                            style={inputStyle}
+                            placeholder="Repeat new password"
+                          />
+                        </div>
+                        <div>
+                          <button
+                            type="submit"
+                            disabled={savingPwd}
+                            style={{ ...btnPrimary, opacity: savingPwd ? 0.6 : 1 }}
+                          >
+                            {savingPwd ? 'Saving…' : 'Update Password'}
+                          </button>
+                        </div>
+                        {pwdMsg && <SavedBanner msg={pwdMsg} />}
+                        {pwdErr && <ErrorBanner msg={pwdErr} />}
+                      </form>
+                    </Section>
+                  </>
+                )}
               </div>
             )}
 
@@ -933,10 +1258,13 @@ export default function Settings() {
                 <div style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 20 }}>
                   Choose which notifications you receive. Changes are saved automatically.
                   {notifSavedMsg && (
-                    <span style={{
-                      marginLeft: 12, fontWeight: 600,
-                      color: notifSavedMsg.startsWith('Failed') ? '#ef4444' : '#22c55e',
-                    }}>
+                    <span
+                      style={{
+                        marginLeft: 12,
+                        fontWeight: 600,
+                        color: notifSavedMsg.startsWith('Failed') ? '#ef4444' : '#22c55e',
+                      }}
+                    >
                       {notifSavedMsg}
                     </span>
                   )}
@@ -946,36 +1274,61 @@ export default function Settings() {
                     {NOTIF_LABELS.map(({ type, label, description }) => {
                       const enabled = notifPrefs[type] !== false
                       return (
-                        <div key={type} style={{
-                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                          padding: '10px 12px', borderRadius: 'var(--radius-sm)',
-                          background: 'var(--color-bg)',
-                        }}>
+                        <div
+                          key={type}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '10px 12px',
+                            borderRadius: 'var(--radius-sm)',
+                            background: 'var(--color-bg)',
+                          }}
+                        >
                           <div>
-                            <div style={{ fontFamily: 'var(--font-condensed)', fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>
+                            <div
+                              style={{
+                                fontFamily: 'var(--font-condensed)',
+                                fontSize: 14,
+                                fontWeight: 600,
+                                color: 'var(--color-text)',
+                              }}
+                            >
                               {label}
                             </div>
-                            <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{description}</div>
+                            <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+                              {description}
+                            </div>
                           </div>
                           <button
                             onClick={() => handleNotifToggle(type)}
                             disabled={savingNotif}
                             style={{
-                              width: 40, height: 22, borderRadius: 11,
+                              width: 40,
+                              height: 22,
+                              borderRadius: 11,
                               background: enabled ? 'var(--color-brand)' : 'var(--color-border)',
-                              border: 'none', cursor: savingNotif ? 'not-allowed' : 'pointer',
-                              position: 'relative', transition: 'background 0.2s', flexShrink: 0,
+                              border: 'none',
+                              cursor: savingNotif ? 'not-allowed' : 'pointer',
+                              position: 'relative',
+                              transition: 'background 0.2s',
+                              flexShrink: 0,
                               opacity: savingNotif ? 0.7 : 1,
                             }}
                           >
-                            <span style={{
-                              position: 'absolute', top: 3,
-                              left: enabled ? 20 : 3,
-                              width: 16, height: 16, borderRadius: '50%',
-                              background: '#fff',
-                              transition: 'left 0.2s',
-                              boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                            }} />
+                            <span
+                              style={{
+                                position: 'absolute',
+                                top: 3,
+                                left: enabled ? 20 : 3,
+                                width: 16,
+                                height: 16,
+                                borderRadius: '50%',
+                                background: '#fff',
+                                transition: 'left 0.2s',
+                                boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                              }}
+                            />
                           </button>
                         </div>
                       )
@@ -986,65 +1339,164 @@ export default function Settings() {
                 {/* ── SMS Alerts (two-tier) ── */}
                 {isContractor && (
                   <div style={{ marginTop: 32 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                    <div
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}
+                    >
                       <Smartphone size={16} color="var(--color-brand)" />
-                      <span style={{ fontFamily: 'var(--font-condensed)', fontSize: 16, fontWeight: 700, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      <span
+                        style={{
+                          fontFamily: 'var(--font-condensed)',
+                          fontSize: 16,
+                          fontWeight: 700,
+                          color: 'var(--color-text)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px',
+                        }}
+                      >
                         SMS Alerts
                       </span>
                       {smsStatus?.sms_tier && (
-                        <span style={{ background: 'rgba(5,150,105,0.12)', color: '#059669', borderRadius: 99, padding: '2px 10px', fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-condensed)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                        <span
+                          style={{
+                            background: 'rgba(5,150,105,0.12)',
+                            color: '#059669',
+                            borderRadius: 99,
+                            padding: '2px 10px',
+                            fontSize: 11,
+                            fontWeight: 700,
+                            fontFamily: 'var(--font-condensed)',
+                            letterSpacing: '0.5px',
+                            textTransform: 'uppercase',
+                          }}
+                        >
                           {smsStatus.sms_tier === 'starter' ? 'Starter' : 'Unlimited'}
                         </span>
                       )}
                     </div>
 
                     {smsSuccessBanner && (
-                      <div style={{
-                        display: 'flex', alignItems: 'center', gap: 8,
-                        background: 'rgba(5,150,105,0.1)', border: '1px solid rgba(5,150,105,0.25)',
-                        borderRadius: 'var(--radius-sm)', padding: '8px 12px',
-                        color: '#059669', fontSize: 13, fontWeight: 600,
-                        fontFamily: 'var(--font-condensed)', marginBottom: 14,
-                      }}>
-                        <CheckCircle size={14} /> Subscription activated! Now verify your phone number below.
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          background: 'rgba(5,150,105,0.1)',
+                          border: '1px solid rgba(5,150,105,0.25)',
+                          borderRadius: 'var(--radius-sm)',
+                          padding: '8px 12px',
+                          color: '#059669',
+                          fontSize: 13,
+                          fontWeight: 600,
+                          fontFamily: 'var(--font-condensed)',
+                          marginBottom: 14,
+                        }}
+                      >
+                        <CheckCircle size={14} /> Subscription activated! Now verify your phone
+                        number below.
                       </div>
                     )}
                     {smsCanceledBanner && (
-                      <div style={{
-                        display: 'flex', alignItems: 'center', gap: 8,
-                        background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.2)',
-                        borderRadius: 'var(--radius-sm)', padding: '8px 12px',
-                        color: '#DC2626', fontSize: 13, fontWeight: 600,
-                        fontFamily: 'var(--font-condensed)', marginBottom: 14,
-                      }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          background: 'rgba(220,38,38,0.08)',
+                          border: '1px solid rgba(220,38,38,0.2)',
+                          borderRadius: 'var(--radius-sm)',
+                          padding: '8px 12px',
+                          color: '#DC2626',
+                          fontSize: 13,
+                          fontWeight: 600,
+                          fontFamily: 'var(--font-condensed)',
+                          marginBottom: 14,
+                        }}
+                      >
                         <XCircle size={14} /> Checkout canceled — no charges were made.
                       </div>
                     )}
 
                     {smsLoading ? (
-                      <div style={{ color: 'var(--color-text-muted)', fontSize: 13, padding: '8px 0' }}>Loading…</div>
+                      <div
+                        style={{ color: 'var(--color-text-muted)', fontSize: 13, padding: '8px 0' }}
+                      >
+                        Loading…
+                      </div>
                     ) : !smsStatus?.sms_tier ? (
                       <div>
-                        <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 16, lineHeight: 1.6 }}>
-                          Never miss a message — even when you're on a job site. Get SMS alerts when someone sends you a message on TraydBook. Your phone number is private and never shared with senders.
+                        <p
+                          style={{
+                            fontSize: 13,
+                            color: 'var(--color-text-muted)',
+                            marginBottom: 16,
+                            lineHeight: 1.6,
+                          }}
+                        >
+                          Never miss a message — even when you're on a job site. Get SMS alerts when
+                          someone sends you a message on TraydBook. Your phone number is private and
+                          never shared with senders.
                         </p>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+                        <div
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: '1fr 1fr',
+                            gap: 12,
+                            marginBottom: 14,
+                          }}
+                        >
                           {[
-                            { plan: 'starter' as const, label: 'Starter', price: '$3.99/mo', desc: 'Up to 150 SMS alerts per month' },
-                            { plan: 'unlimited' as const, label: 'Unlimited', price: '$5.99/mo', desc: 'No cap — unlimited SMS alerts' },
+                            {
+                              plan: 'starter' as const,
+                              label: 'Starter',
+                              price: '$3.99/mo',
+                              desc: 'Up to 150 SMS alerts per month',
+                            },
+                            {
+                              plan: 'unlimited' as const,
+                              label: 'Unlimited',
+                              price: '$5.99/mo',
+                              desc: 'No cap — unlimited SMS alerts',
+                            },
                           ].map(({ plan, label, price, desc }) => (
-                            <div key={plan} style={{
-                              border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)',
-                              padding: '16px', background: 'var(--color-bg)',
-                              display: 'flex', flexDirection: 'column', gap: 8,
-                            }}>
-                              <div style={{ fontFamily: 'var(--font-condensed)', fontSize: 15, fontWeight: 700, color: 'var(--color-text)' }}>
+                            <div
+                              key={plan}
+                              style={{
+                                border: '1px solid var(--color-border)',
+                                borderRadius: 'var(--radius-md)',
+                                padding: '16px',
+                                background: 'var(--color-bg)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 8,
+                              }}
+                            >
+                              <div
+                                style={{
+                                  fontFamily: 'var(--font-condensed)',
+                                  fontSize: 15,
+                                  fontWeight: 700,
+                                  color: 'var(--color-text)',
+                                }}
+                              >
                                 {label}
                               </div>
-                              <div style={{ fontFamily: 'var(--font-condensed)', fontSize: 20, fontWeight: 800, color: 'var(--color-brand)' }}>
+                              <div
+                                style={{
+                                  fontFamily: 'var(--font-condensed)',
+                                  fontSize: 20,
+                                  fontWeight: 800,
+                                  color: 'var(--color-brand)',
+                                }}
+                              >
                                 {price}
                               </div>
-                              <div style={{ fontSize: 12, color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
+                              <div
+                                style={{
+                                  fontSize: 12,
+                                  color: 'var(--color-text-muted)',
+                                  lineHeight: 1.5,
+                                }}
+                              >
                                 {desc}
                               </div>
                               <button
@@ -1067,20 +1519,43 @@ export default function Settings() {
                       </div>
                     ) : (
                       <div>
-                        <div style={{
-                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                          flexWrap: 'wrap', gap: 12, marginBottom: 16,
-                        }}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            flexWrap: 'wrap',
+                            gap: 12,
+                            marginBottom: 16,
+                          }}
+                        >
                           <div>
-                            <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 2 }}>Current plan</div>
+                            <div
+                              style={{
+                                fontSize: 12,
+                                color: 'var(--color-text-muted)',
+                                marginBottom: 2,
+                              }}
+                            >
+                              Current plan
+                            </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <span style={{
-                                fontFamily: 'var(--font-condensed)', fontSize: 14, fontWeight: 700,
-                                textTransform: 'uppercase', letterSpacing: '0.5px',
-                                background: 'var(--color-brand-light)', color: 'var(--color-brand)',
-                                padding: '3px 10px', borderRadius: 4,
-                              }}>
-                                {smsStatus.sms_tier === 'starter' ? 'Starter — $3.99/mo' : 'Unlimited — $5.99/mo'}
+                              <span
+                                style={{
+                                  fontFamily: 'var(--font-condensed)',
+                                  fontSize: 14,
+                                  fontWeight: 700,
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.5px',
+                                  background: 'var(--color-brand-light)',
+                                  color: 'var(--color-brand)',
+                                  padding: '3px 10px',
+                                  borderRadius: 4,
+                                }}
+                              >
+                                {smsStatus.sms_tier === 'starter'
+                                  ? 'Starter — $3.99/mo'
+                                  : 'Unlimited — $5.99/mo'}
                               </span>
                               {smsStatus.sms_tier === 'starter' && (
                                 <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
@@ -1094,23 +1569,37 @@ export default function Settings() {
                               onClick={handleSmsPauseToggle}
                               disabled={smsTogglingPause}
                               style={{
-                                ...btnGhost, fontSize: 12, padding: '7px 12px',
-                                display: 'flex', alignItems: 'center', gap: 6,
+                                ...btnGhost,
+                                fontSize: 12,
+                                padding: '7px 12px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6,
                                 opacity: smsTogglingPause ? 0.6 : 1,
                               }}
                             >
-                              {smsStatus.sms_alerts_enabled
-                                ? <><Pause size={13} /> Pause alerts</>
-                                : <><Play size={13} /> Resume alerts</>
-                              }
+                              {smsStatus.sms_alerts_enabled ? (
+                                <>
+                                  <Pause size={13} /> Pause alerts
+                                </>
+                              ) : (
+                                <>
+                                  <Play size={13} /> Resume alerts
+                                </>
+                              )}
                             </button>
                             <button
                               onClick={handleSmsCancel}
                               disabled={smsCancelling}
                               style={{
-                                ...btnGhost, fontSize: 12, padding: '7px 12px',
-                                display: 'flex', alignItems: 'center', gap: 6,
-                                color: '#DC2626', borderColor: 'rgba(220,38,38,0.3)',
+                                ...btnGhost,
+                                fontSize: 12,
+                                padding: '7px 12px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                color: '#DC2626',
+                                borderColor: 'rgba(220,38,38,0.3)',
                                 opacity: smsCancelling ? 0.6 : 1,
                               }}
                             >
@@ -1120,34 +1609,78 @@ export default function Settings() {
                         </div>
 
                         {!smsStatus.sms_alerts_enabled && (
-                          <div style={{
-                            background: 'rgba(217,119,6,0.08)', border: '1px solid rgba(217,119,6,0.25)',
-                            borderRadius: 'var(--radius-sm)', padding: '8px 12px',
-                            color: '#D97706', fontSize: 12, marginBottom: 14,
-                            display: 'flex', alignItems: 'center', gap: 8,
-                          }}>
-                            <Pause size={13} /> SMS alerts are paused. In-app notifications still work.
+                          <div
+                            style={{
+                              background: 'rgba(217,119,6,0.08)',
+                              border: '1px solid rgba(217,119,6,0.25)',
+                              borderRadius: 'var(--radius-sm)',
+                              padding: '8px 12px',
+                              color: '#D97706',
+                              fontSize: 12,
+                              marginBottom: 14,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 8,
+                            }}
+                          >
+                            <Pause size={13} /> SMS alerts are paused. In-app notifications still
+                            work.
                           </div>
                         )}
 
                         {!smsStatus.phone_verified ? (
-                          <div style={{
-                            background: 'var(--color-bg)', border: '1px solid var(--color-border)',
-                            borderRadius: 'var(--radius-md)', padding: 16,
-                          }}>
-                            <div style={{
-                              fontFamily: 'var(--font-condensed)', fontSize: 13, fontWeight: 700,
-                              color: 'var(--color-text)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6,
-                            }}>
+                          <div
+                            style={{
+                              background: 'var(--color-bg)',
+                              border: '1px solid var(--color-border)',
+                              borderRadius: 'var(--radius-md)',
+                              padding: 16,
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontFamily: 'var(--font-condensed)',
+                                fontSize: 13,
+                                fontWeight: 700,
+                                color: 'var(--color-text)',
+                                marginBottom: 4,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6,
+                              }}
+                            >
                               <Phone size={14} /> Verify your phone number
                             </div>
-                            <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 12, lineHeight: 1.5 }}>
-                              Enter your US phone number to receive SMS alerts. We'll send a 6-digit verification code.
+                            <p
+                              style={{
+                                fontSize: 12,
+                                color: 'var(--color-text-muted)',
+                                marginBottom: 12,
+                                lineHeight: 1.5,
+                              }}
+                            >
+                              Enter your US phone number to receive SMS alerts. We'll send a 6-digit
+                              verification code.
                             </p>
                             {!otpSent ? (
-                              <form onSubmit={handleSendOtp} style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                              <form
+                                onSubmit={handleSendOtp}
+                                style={{
+                                  display: 'flex',
+                                  gap: 8,
+                                  alignItems: 'flex-end',
+                                  flexWrap: 'wrap',
+                                }}
+                              >
                                 <div style={{ flex: '1 1 200px' }}>
-                                  <label style={{ fontSize: 12, color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>
+                                  <label
+                                    style={{
+                                      fontSize: 12,
+                                      color: 'var(--color-text-muted)',
+                                      display: 'block',
+                                      marginBottom: 4,
+                                    }}
+                                  >
                                     Phone number (US only)
                                   </label>
                                   <input
@@ -1162,21 +1695,43 @@ export default function Settings() {
                                 <button
                                   type="submit"
                                   disabled={sendingOtp || !phoneInput.trim()}
-                                  style={{ ...btnPrimary, opacity: (sendingOtp || !phoneInput.trim()) ? 0.6 : 1, fontSize: 12, flexShrink: 0 }}
+                                  style={{
+                                    ...btnPrimary,
+                                    opacity: sendingOtp || !phoneInput.trim() ? 0.6 : 1,
+                                    fontSize: 12,
+                                    flexShrink: 0,
+                                  }}
                                 >
                                   {sendingOtp ? 'Sending…' : 'Send Code'}
                                 </button>
                               </form>
                             ) : (
-                              <form onSubmit={handleVerifyOtp} style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                              <form
+                                onSubmit={handleVerifyOtp}
+                                style={{
+                                  display: 'flex',
+                                  gap: 8,
+                                  alignItems: 'flex-end',
+                                  flexWrap: 'wrap',
+                                }}
+                              >
                                 <div style={{ flex: '1 1 160px' }}>
-                                  <label style={{ fontSize: 12, color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>
+                                  <label
+                                    style={{
+                                      fontSize: 12,
+                                      color: 'var(--color-text-muted)',
+                                      display: 'block',
+                                      marginBottom: 4,
+                                    }}
+                                  >
                                     Enter the 6-digit code
                                   </label>
                                   <input
                                     type="text"
                                     value={otpInput}
-                                    onChange={e => setOtpInput(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                    onChange={e =>
+                                      setOtpInput(e.target.value.replace(/\D/g, '').slice(0, 6))
+                                    }
                                     placeholder="123456"
                                     required
                                     maxLength={6}
@@ -1186,13 +1741,22 @@ export default function Settings() {
                                 <button
                                   type="submit"
                                   disabled={verifyingOtp || otpInput.length < 6}
-                                  style={{ ...btnPrimary, opacity: (verifyingOtp || otpInput.length < 6) ? 0.6 : 1, fontSize: 12, flexShrink: 0 }}
+                                  style={{
+                                    ...btnPrimary,
+                                    opacity: verifyingOtp || otpInput.length < 6 ? 0.6 : 1,
+                                    fontSize: 12,
+                                    flexShrink: 0,
+                                  }}
                                 >
                                   {verifyingOtp ? 'Verifying…' : 'Verify'}
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => { setOtpSent(false); setOtpInput(''); setOtpErr('') }}
+                                  onClick={() => {
+                                    setOtpSent(false)
+                                    setOtpInput('')
+                                    setOtpErr('')
+                                  }}
                                   style={{ ...btnGhost, fontSize: 12, flexShrink: 0 }}
                                 >
                                   Change number
@@ -1202,18 +1766,26 @@ export default function Settings() {
                             {otpErr && <ErrorBanner msg={otpErr} />}
                           </div>
                         ) : (
-                          <div style={{
-                            display: 'flex', alignItems: 'center', gap: 8,
-                            background: 'rgba(5,150,105,0.08)', border: '1px solid rgba(5,150,105,0.2)',
-                            borderRadius: 'var(--radius-sm)', padding: '10px 14px',
-                          }}>
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 8,
+                              background: 'rgba(5,150,105,0.08)',
+                              border: '1px solid rgba(5,150,105,0.2)',
+                              borderRadius: 'var(--radius-sm)',
+                              padding: '10px 14px',
+                            }}
+                          >
                             <CheckCircle size={15} style={{ color: '#059669', flexShrink: 0 }} />
                             <div>
                               <div style={{ fontSize: 13, fontWeight: 600, color: '#059669' }}>
-                                Phone verified{smsStatus.masked_phone ? ` — ${smsStatus.masked_phone}` : ''}
+                                Phone verified
+                                {smsStatus.masked_phone ? ` — ${smsStatus.masked_phone}` : ''}
                               </div>
                               <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-                                SMS alerts are active. To change your number, cancel and re-subscribe.
+                                SMS alerts are active. To change your number, cancel and
+                                re-subscribe.
                               </div>
                             </div>
                           </div>
@@ -1236,13 +1808,25 @@ export default function Settings() {
                   Control who can find you and contact you on the platform.
                 </div>
                 <Section>
-                  <div style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '10px 12px', borderRadius: 'var(--radius-sm)',
-                    background: 'var(--color-bg)',
-                  }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '10px 12px',
+                      borderRadius: 'var(--radius-sm)',
+                      background: 'var(--color-bg)',
+                    }}
+                  >
                     <div>
-                      <div style={{ fontFamily: 'var(--font-condensed)', fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>
+                      <div
+                        style={{
+                          fontFamily: 'var(--font-condensed)',
+                          fontSize: 14,
+                          fontWeight: 600,
+                          color: 'var(--color-text)',
+                        }}
+                      >
                         Show profile in Explore
                       </div>
                       <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
@@ -1253,21 +1837,31 @@ export default function Settings() {
                       onClick={handleVisibilityToggle}
                       disabled={savingPrivacy}
                       style={{
-                        width: 40, height: 22, borderRadius: 11,
+                        width: 40,
+                        height: 22,
+                        borderRadius: 11,
                         background: visibleToOwners ? 'var(--color-brand)' : 'var(--color-border)',
-                        border: 'none', cursor: savingPrivacy ? 'not-allowed' : 'pointer',
-                        position: 'relative', transition: 'background 0.2s', flexShrink: 0,
+                        border: 'none',
+                        cursor: savingPrivacy ? 'not-allowed' : 'pointer',
+                        position: 'relative',
+                        transition: 'background 0.2s',
+                        flexShrink: 0,
                         opacity: savingPrivacy ? 0.6 : 1,
                       }}
                     >
-                      <span style={{
-                        position: 'absolute', top: 3,
-                        left: visibleToOwners ? 20 : 3,
-                        width: 16, height: 16, borderRadius: '50%',
-                        background: '#fff',
-                        transition: 'left 0.2s',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                      }} />
+                      <span
+                        style={{
+                          position: 'absolute',
+                          top: 3,
+                          left: visibleToOwners ? 20 : 3,
+                          width: 16,
+                          height: 16,
+                          borderRadius: '50%',
+                          background: '#fff',
+                          transition: 'left 0.2s',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                        }}
+                      />
                     </button>
                   </div>
                   {privacyMsg && <SavedBanner msg={privacyMsg} />}
@@ -1282,79 +1876,142 @@ export default function Settings() {
 
                 {/* Banners */}
                 {billingBanner === 'success' && (
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    background: 'rgba(5,150,105,0.1)', border: '1px solid rgba(5,150,105,0.3)',
-                    borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: 24,
-                    color: '#059669',
-                  }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      background: 'rgba(5,150,105,0.1)',
+                      border: '1px solid rgba(5,150,105,0.3)',
+                      borderRadius: 'var(--radius-md)',
+                      padding: '12px 16px',
+                      marginBottom: 24,
+                      color: '#059669',
+                    }}
+                  >
                     <CheckCircleIcon size={18} />
-                    <span style={{ fontFamily: 'var(--font-condensed)', fontWeight: 600, fontSize: 15 }}>
+                    <span
+                      style={{ fontFamily: 'var(--font-condensed)', fontWeight: 600, fontSize: 15 }}
+                    >
                       Payment successful — credits added to your account!
                     </span>
                   </div>
                 )}
                 {billingBanner === 'canceled' && (
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.2)',
-                    borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: 24,
-                    color: '#DC2626',
-                  }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      background: 'rgba(220,38,38,0.08)',
+                      border: '1px solid rgba(220,38,38,0.2)',
+                      borderRadius: 'var(--radius-md)',
+                      padding: '12px 16px',
+                      marginBottom: 24,
+                      color: '#DC2626',
+                    }}
+                  >
                     <XCircle size={18} />
-                    <span style={{ fontFamily: 'var(--font-condensed)', fontWeight: 600, fontSize: 15 }}>
+                    <span
+                      style={{ fontFamily: 'var(--font-condensed)', fontWeight: 600, fontSize: 15 }}
+                    >
                       Checkout canceled — no charges were made.
                     </span>
                   </div>
                 )}
 
                 {/* Balance */}
-                <div style={{
-                  background: 'var(--color-surface)', border: '1px solid var(--color-border)',
-                  borderRadius: 'var(--radius-lg)', padding: '24px 28px', marginBottom: 28,
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  flexWrap: 'wrap', gap: 20,
-                }}>
+                <div
+                  style={{
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 'var(--radius-lg)',
+                    padding: '24px 28px',
+                    marginBottom: 28,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: 20,
+                  }}
+                >
                   <div>
-                    <div style={{
-                      fontFamily: 'var(--font-condensed)', fontSize: 11, fontWeight: 700,
-                      letterSpacing: '0.8px', textTransform: 'uppercase',
-                      color: 'var(--color-text-muted)', marginBottom: 8,
-                    }}>
+                    <div
+                      style={{
+                        fontFamily: 'var(--font-condensed)',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        letterSpacing: '0.8px',
+                        textTransform: 'uppercase',
+                        color: 'var(--color-text-muted)',
+                        marginBottom: 8,
+                      }}
+                    >
                       Current Balance
                     </div>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                      <Coins size={26} color="var(--color-brand)" style={{ verticalAlign: 'middle', alignSelf: 'center' }} />
-                      <span style={{
-                        fontFamily: 'var(--font-condensed)', fontSize: 48, fontWeight: 800,
-                        lineHeight: 1, color: 'var(--color-text)',
-                      }}>
+                      <Coins
+                        size={26}
+                        color="var(--color-brand)"
+                        style={{ verticalAlign: 'middle', alignSelf: 'center' }}
+                      />
+                      <span
+                        style={{
+                          fontFamily: 'var(--font-condensed)',
+                          fontSize: 48,
+                          fontWeight: 800,
+                          lineHeight: 1,
+                          color: 'var(--color-text)',
+                        }}
+                      >
                         {profile?.credit_balance ?? 0}
                       </span>
-                      <span style={{
-                        fontFamily: 'var(--font-condensed)', fontSize: 16,
-                        color: 'var(--color-text-muted)', alignSelf: 'flex-end', paddingBottom: 4,
-                      }}>
+                      <span
+                        style={{
+                          fontFamily: 'var(--font-condensed)',
+                          fontSize: 16,
+                          color: 'var(--color-text-muted)',
+                          alignSelf: 'flex-end',
+                          paddingBottom: 4,
+                        }}
+                      >
                         credits
                       </span>
                     </div>
                   </div>
                   <div>
-                    <div style={{
-                      fontFamily: 'var(--font-condensed)', fontSize: 11, fontWeight: 700,
-                      letterSpacing: '0.8px', textTransform: 'uppercase',
-                      color: 'var(--color-text-muted)', marginBottom: 8,
-                    }}>
+                    <div
+                      style={{
+                        fontFamily: 'var(--font-condensed)',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        letterSpacing: '0.8px',
+                        textTransform: 'uppercase',
+                        color: 'var(--color-text-muted)',
+                        marginBottom: 8,
+                      }}
+                    >
                       What credits buy
                     </div>
                     {CREDIT_COSTS.map(c => (
-                      <div key={c.action} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                        <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{c.action}</span>
-                        <span style={{
-                          fontFamily: 'var(--font-condensed)', fontSize: 13, fontWeight: 700,
-                          color: 'var(--color-brand)',
-                          background: 'var(--color-brand-light)', borderRadius: 4, padding: '1px 6px',
-                        }}>
+                      <div
+                        key={c.action}
+                        style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}
+                      >
+                        <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+                          {c.action}
+                        </span>
+                        <span
+                          style={{
+                            fontFamily: 'var(--font-condensed)',
+                            fontSize: 13,
+                            fontWeight: 700,
+                            color: 'var(--color-brand)',
+                            background: 'var(--color-brand-light)',
+                            borderRadius: 4,
+                            padding: '1px 6px',
+                          }}
+                        >
                           {c.cost} cr
                         </span>
                       </div>
@@ -1365,63 +2022,140 @@ export default function Settings() {
                 {/* Buy bundles */}
                 <SectionHeading>Buy Credits</SectionHeading>
                 {buyError && (
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.2)',
-                    borderRadius: 'var(--radius-sm)', padding: '10px 14px', marginBottom: 16,
-                    color: '#DC2626', fontSize: 13,
-                  }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      background: 'rgba(220,38,38,0.08)',
+                      border: '1px solid rgba(220,38,38,0.2)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: '10px 14px',
+                      marginBottom: 16,
+                      color: '#DC2626',
+                      fontSize: 13,
+                    }}
+                  >
                     <XCircle size={15} /> {buyError}
                   </div>
                 )}
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-                  gap: 14, marginBottom: 36,
-                }}>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                    gap: 14,
+                    marginBottom: 36,
+                  }}
+                >
                   {BUNDLES.map(bundle => {
                     const Icon = bundle.icon
                     return (
-                      <div key={bundle.id} style={{
-                        background: 'var(--color-surface)',
-                        border: bundle.popular ? '2px solid var(--color-brand)' : '1px solid var(--color-border)',
-                        borderRadius: 'var(--radius-lg)', padding: '22px 16px',
-                        position: 'relative',
-                        display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
-                      }}>
+                      <div
+                        key={bundle.id}
+                        style={{
+                          background: 'var(--color-surface)',
+                          border: bundle.popular
+                            ? '2px solid var(--color-brand)'
+                            : '1px solid var(--color-border)',
+                          borderRadius: 'var(--radius-lg)',
+                          padding: '22px 16px',
+                          position: 'relative',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          textAlign: 'center',
+                        }}
+                      >
                         {bundle.popular && (
-                          <div style={{
-                            position: 'absolute', top: -11, left: '50%', transform: 'translateX(-50%)',
-                            background: 'var(--color-brand)', color: '#fff',
-                            fontFamily: 'var(--font-condensed)', fontSize: 9, fontWeight: 700,
-                            letterSpacing: '0.8px', textTransform: 'uppercase',
-                            padding: '2px 10px', borderRadius: 99, whiteSpace: 'nowrap',
-                          }}>
+                          <div
+                            style={{
+                              position: 'absolute',
+                              top: -11,
+                              left: '50%',
+                              transform: 'translateX(-50%)',
+                              background: 'var(--color-brand)',
+                              color: '#fff',
+                              fontFamily: 'var(--font-condensed)',
+                              fontSize: 9,
+                              fontWeight: 700,
+                              letterSpacing: '0.8px',
+                              textTransform: 'uppercase',
+                              padding: '2px 10px',
+                              borderRadius: 99,
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
                             Most Popular
                           </div>
                         )}
                         <Icon size={22} color="var(--color-brand)" style={{ marginBottom: 8 }} />
-                        <div style={{ fontFamily: 'var(--font-condensed)', fontSize: 14, fontWeight: 800, color: 'var(--color-text)', marginBottom: 4 }}>
+                        <div
+                          style={{
+                            fontFamily: 'var(--font-condensed)',
+                            fontSize: 14,
+                            fontWeight: 800,
+                            color: 'var(--color-text)',
+                            marginBottom: 4,
+                          }}
+                        >
                           {bundle.name}
                         </div>
-                        <div style={{ fontFamily: 'var(--font-condensed)', fontSize: 30, fontWeight: 800, color: 'var(--color-text)', lineHeight: 1, marginBottom: 2 }}>
+                        <div
+                          style={{
+                            fontFamily: 'var(--font-condensed)',
+                            fontSize: 30,
+                            fontWeight: 800,
+                            color: 'var(--color-text)',
+                            lineHeight: 1,
+                            marginBottom: 2,
+                          }}
+                        >
                           {bundle.credits}
-                          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text-muted)', marginLeft: 2 }}>cr</span>
+                          <span
+                            style={{
+                              fontSize: 14,
+                              fontWeight: 600,
+                              color: 'var(--color-text-muted)',
+                              marginLeft: 2,
+                            }}
+                          >
+                            cr
+                          </span>
                         </div>
-                        <div style={{ fontSize: 10, color: 'var(--color-text-muted)', marginBottom: 12 }}>{bundle.perCredit}</div>
-                        <div style={{ fontFamily: 'var(--font-condensed)', fontSize: 22, fontWeight: 800, color: 'var(--color-text)', marginBottom: 12 }}>
+                        <div
+                          style={{
+                            fontSize: 10,
+                            color: 'var(--color-text-muted)',
+                            marginBottom: 12,
+                          }}
+                        >
+                          {bundle.perCredit}
+                        </div>
+                        <div
+                          style={{
+                            fontFamily: 'var(--font-condensed)',
+                            fontSize: 22,
+                            fontWeight: 800,
+                            color: 'var(--color-text)',
+                            marginBottom: 12,
+                          }}
+                        >
                           {bundle.price}
                         </div>
                         <button
                           onClick={() => handleBuy(bundle.id)}
                           disabled={buying !== null}
                           style={{
-                            width: '100%', padding: '8px 0',
+                            width: '100%',
+                            padding: '8px 0',
                             background: bundle.popular ? 'var(--color-brand)' : 'transparent',
                             border: `1px solid var(--color-brand)`,
                             borderRadius: 'var(--radius-md)',
-                            fontFamily: 'var(--font-condensed)', fontSize: 12, fontWeight: 700,
-                            letterSpacing: '0.5px', textTransform: 'uppercase',
+                            fontFamily: 'var(--font-condensed)',
+                            fontSize: 12,
+                            fontWeight: 700,
+                            letterSpacing: '0.5px',
+                            textTransform: 'uppercase',
                             color: bundle.popular ? '#fff' : 'var(--color-brand)',
                             cursor: buying ? 'not-allowed' : 'pointer',
                             opacity: buying === bundle.id ? 0.6 : 1,
@@ -1438,42 +2172,75 @@ export default function Settings() {
                 {/* Ledger */}
                 <SectionHeading>Recent Activity</SectionHeading>
                 {ledger.length === 0 ? (
-                  <div style={{
-                    background: 'var(--color-surface)', border: '1px solid var(--color-border)',
-                    borderRadius: 'var(--radius-md)', padding: '24px',
-                    textAlign: 'center', color: 'var(--color-text-muted)',
-                    fontFamily: 'var(--font-condensed)', fontSize: 14,
-                  }}>
+                  <div
+                    style={{
+                      background: 'var(--color-surface)',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: 'var(--radius-md)',
+                      padding: '24px',
+                      textAlign: 'center',
+                      color: 'var(--color-text-muted)',
+                      fontFamily: 'var(--font-condensed)',
+                      fontSize: 14,
+                    }}
+                  >
                     No credit activity yet.
                   </div>
                 ) : (
-                  <div style={{
-                    background: 'var(--color-surface)', border: '1px solid var(--color-border)',
-                    borderRadius: 'var(--radius-md)', overflow: 'hidden',
-                  }}>
+                  <div
+                    style={{
+                      background: 'var(--color-surface)',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: 'var(--radius-md)',
+                      overflow: 'hidden',
+                    }}
+                  >
                     {ledger.map((row, i) => (
-                      <div key={row.id} style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        padding: '12px 16px',
-                        borderBottom: i < ledger.length - 1 ? '1px solid var(--color-border)' : 'none',
-                      }}>
+                      <div
+                        key={row.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '12px 16px',
+                          borderBottom:
+                            i < ledger.length - 1 ? '1px solid var(--color-border)' : 'none',
+                        }}
+                      >
                         <div>
-                          <div style={{ fontFamily: 'var(--font-condensed)', fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>
+                          <div
+                            style={{
+                              fontFamily: 'var(--font-condensed)',
+                              fontSize: 14,
+                              fontWeight: 600,
+                              color: 'var(--color-text)',
+                            }}
+                          >
                             {row.description}
                           </div>
-                          <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 2 }}>
+                          <div
+                            style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 2 }}
+                          >
                             {new Date(row.created_at).toLocaleString([], {
-                              month: 'short', day: 'numeric', year: 'numeric',
-                              hour: '2-digit', minute: '2-digit',
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
                             })}
                           </div>
                         </div>
                         <div style={{ textAlign: 'right' }}>
-                          <div style={{
-                            fontFamily: 'var(--font-condensed)', fontSize: 16, fontWeight: 700,
-                            color: row.delta > 0 ? '#059669' : '#DC2626',
-                          }}>
-                            {row.delta > 0 ? '+' : ''}{row.delta}
+                          <div
+                            style={{
+                              fontFamily: 'var(--font-condensed)',
+                              fontSize: 16,
+                              fontWeight: 700,
+                              color: row.delta > 0 ? '#059669' : '#DC2626',
+                            }}
+                          >
+                            {row.delta > 0 ? '+' : ''}
+                            {row.delta}
                           </div>
                           <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
                             Balance: {row.balance_after}
@@ -1501,13 +2268,21 @@ export default function Settings() {
                       <>
                         <VerifiedBadge tier={badgeTier} size="lg" />
                         <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-                          {badgeTier === 'pro_verified' && 'Licensed + fully insured. Highest trust tier.'}
-                          {badgeTier === 'licensed' && 'License verified. Add insurance for Pro Verified.'}
+                          {badgeTier === 'pro_verified' &&
+                            'Licensed + fully insured. Highest trust tier.'}
+                          {badgeTier === 'licensed' &&
+                            'License verified. Add insurance for Pro Verified.'}
                           {badgeTier === 'vouched' && 'Endorsed by a Pro Verified contractor.'}
                         </span>
                       </>
                     ) : (
-                      <span style={{ fontSize: 13, color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
+                      <span
+                        style={{
+                          fontSize: 13,
+                          color: 'var(--color-text-muted)',
+                          fontStyle: 'italic',
+                        }}
+                      >
                         No badge yet. Submit credentials to get verified.
                       </span>
                     )}
@@ -1519,13 +2294,33 @@ export default function Settings() {
                 <Section>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {[
-                      { tier: 'pro_verified' as const, desc: 'License + General Liability + Workers\' Comp — all verified' },
-                      { tier: 'licensed' as const, desc: 'License verified. Insurance not yet on file.' },
-                      { tier: 'vouched' as const, desc: 'Vouched by a Pro Verified contractor in your network.' },
+                      {
+                        tier: 'pro_verified' as const,
+                        desc: "License + General Liability + Workers' Comp — all verified",
+                      },
+                      {
+                        tier: 'licensed' as const,
+                        desc: 'License verified. Insurance not yet on file.',
+                      },
+                      {
+                        tier: 'vouched' as const,
+                        desc: 'Vouched by a Pro Verified contractor in your network.',
+                      },
                     ].map(({ tier, desc }) => (
-                      <div key={tier} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                      <div
+                        key={tier}
+                        style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}
+                      >
                         <VerifiedBadge tier={tier} size="sm" />
-                        <span style={{ fontSize: 12, color: 'var(--color-text-muted)', lineHeight: 1.5 }}>{desc}</span>
+                        <span
+                          style={{
+                            fontSize: 12,
+                            color: 'var(--color-text-muted)',
+                            lineHeight: 1.5,
+                          }}
+                        >
+                          {desc}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -1533,45 +2328,88 @@ export default function Settings() {
 
                 {/* Submitted credentials */}
                 {credsLoading ? (
-                  <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--color-text-muted)', fontSize: 13 }}>
+                  <div
+                    style={{
+                      textAlign: 'center',
+                      padding: '20px 0',
+                      color: 'var(--color-text-muted)',
+                      fontSize: 13,
+                    }}
+                  >
                     Loading credentials…
                   </div>
-                ) : creds.length > 0 && (
-                  <>
-                    <SectionHeading>Submitted credentials</SectionHeading>
-                    <Section>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        {creds.map(c => (
-                          <div key={c.id} style={{
-                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                            background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)',
-                            padding: '10px 12px', gap: 10,
-                          }}>
-                            <div style={{ minWidth: 0 }}>
-                              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text)' }}>
-                                {c.credential_type === 'license' ? 'License'
-                                  : c.credential_type === 'general_liability' ? 'General Liability Insurance'
-                                  : c.credential_type === 'workers_comp' ? 'Workers\' Comp Insurance'
-                                  : c.credential_type}
-                                {c.issuing_state && ` — ${c.issuing_state}`}
+                ) : (
+                  creds.length > 0 && (
+                    <>
+                      <SectionHeading>Submitted credentials</SectionHeading>
+                      <Section>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          {creds.map(c => (
+                            <div
+                              key={c.id}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                background: 'var(--color-bg)',
+                                borderRadius: 'var(--radius-sm)',
+                                padding: '10px 12px',
+                                gap: 10,
+                              }}
+                            >
+                              <div style={{ minWidth: 0 }}>
+                                <div
+                                  style={{
+                                    fontSize: 13,
+                                    fontWeight: 600,
+                                    color: 'var(--color-text)',
+                                  }}
+                                >
+                                  {c.credential_type === 'license'
+                                    ? 'License'
+                                    : c.credential_type === 'general_liability'
+                                      ? 'General Liability Insurance'
+                                      : c.credential_type === 'workers_comp'
+                                        ? "Workers' Comp Insurance"
+                                        : c.credential_type}
+                                  {c.issuing_state && ` — ${c.issuing_state}`}
+                                </div>
+                                <div
+                                  style={{
+                                    fontSize: 11,
+                                    color: 'var(--color-text-muted)',
+                                    marginTop: 2,
+                                  }}
+                                >
+                                  {c.masked_display}
+                                </div>
                               </div>
-                              <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 2 }}>{c.masked_display}</div>
+                              <span
+                                style={{
+                                  fontSize: 10,
+                                  fontWeight: 700,
+                                  borderRadius: 10,
+                                  padding: '2px 7px',
+                                  flexShrink: 0,
+                                  ...(c.verified_at
+                                    ? { color: '#059669', background: 'rgba(5,150,105,0.1)' }
+                                    : c.status === 'pending'
+                                      ? { color: '#D97706', background: 'rgba(217,119,6,0.1)' }
+                                      : { color: '#DC2626', background: 'rgba(220,38,38,0.1)' }),
+                                }}
+                              >
+                                {c.verified_at
+                                  ? '✓ Verified'
+                                  : c.status === 'pending'
+                                    ? 'Pending Review'
+                                    : c.status}
+                              </span>
                             </div>
-                            <span style={{
-                              fontSize: 10, fontWeight: 700, borderRadius: 10, padding: '2px 7px', flexShrink: 0,
-                              ...(c.verified_at
-                                ? { color: '#059669', background: 'rgba(5,150,105,0.1)' }
-                                : c.status === 'pending'
-                                  ? { color: '#D97706', background: 'rgba(217,119,6,0.1)' }
-                                  : { color: '#DC2626', background: 'rgba(220,38,38,0.1)' }),
-                            }}>
-                              {c.verified_at ? '✓ Verified' : c.status === 'pending' ? 'Pending Review' : c.status}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </Section>
-                  </>
+                          ))}
+                        </div>
+                      </Section>
+                    </>
+                  )
                 )}
 
                 {/* Submit credential */}
@@ -1579,19 +2417,40 @@ export default function Settings() {
                   <>
                     <SectionHeading>Submit a credential</SectionHeading>
                     <Section>
-                      <form onSubmit={handleSubmitCredential} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <form
+                        onSubmit={handleSubmitCredential}
+                        style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+                      >
                         <div>
-                          <label style={{ fontSize: 12, color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>
+                          <label
+                            style={{
+                              fontSize: 12,
+                              color: 'var(--color-text-muted)',
+                              display: 'block',
+                              marginBottom: 4,
+                            }}
+                          >
                             Credential type
                           </label>
-                          <select value={credType} onChange={e => setCredType(e.target.value)} style={inputStyle}>
+                          <select
+                            value={credType}
+                            onChange={e => setCredType(e.target.value)}
+                            style={inputStyle}
+                          >
                             <option value="license">Contractor / Trade License</option>
                             <option value="general_liability">General Liability Insurance</option>
                             <option value="workers_comp">Workers&apos; Comp Insurance</option>
                           </select>
                         </div>
                         <div>
-                          <label style={{ fontSize: 12, color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>
+                          <label
+                            style={{
+                              fontSize: 12,
+                              color: 'var(--color-text-muted)',
+                              display: 'block',
+                              marginBottom: 4,
+                            }}
+                          >
                             License / policy display (e.g. ending in 1234)
                           </label>
                           <input
@@ -1602,13 +2461,23 @@ export default function Settings() {
                             required
                             style={inputStyle}
                           />
-                          <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>
-                            Only masked info is stored publicly. Our team will verify via the issuing authority.
+                          <p
+                            style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}
+                          >
+                            Only masked info is stored publicly. Our team will verify via the
+                            issuing authority.
                           </p>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                           <div>
-                            <label style={{ fontSize: 12, color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>
+                            <label
+                              style={{
+                                fontSize: 12,
+                                color: 'var(--color-text-muted)',
+                                display: 'block',
+                                marginBottom: 4,
+                              }}
+                            >
                               Issuing state (optional)
                             </label>
                             <input
@@ -1621,7 +2490,14 @@ export default function Settings() {
                             />
                           </div>
                           <div>
-                            <label style={{ fontSize: 12, color: 'var(--color-text-muted)', display: 'block', marginBottom: 4 }}>
+                            <label
+                              style={{
+                                fontSize: 12,
+                                color: 'var(--color-text-muted)',
+                                display: 'block',
+                                marginBottom: 4,
+                              }}
+                            >
                               Expiry date (optional)
                             </label>
                             <input
@@ -1636,7 +2512,10 @@ export default function Settings() {
                           <button
                             type="submit"
                             disabled={submittingCred || !credDisplay.trim()}
-                            style={{ ...btnPrimary, opacity: (submittingCred || !credDisplay.trim()) ? 0.6 : 1 }}
+                            style={{
+                              ...btnPrimary,
+                              opacity: submittingCred || !credDisplay.trim() ? 0.6 : 1,
+                            }}
                           >
                             {submittingCred ? 'Submitting…' : 'Submit for Verification'}
                           </button>
@@ -1656,53 +2535,124 @@ export default function Settings() {
                 <TabHeading>Crypto Wallet</TabHeading>
 
                 {walletLoading || walletPubkey === undefined ? (
-                  <div style={{ color: 'var(--color-text-muted)', fontSize: 13, padding: '12px 0' }}>Loading…</div>
+                  <div
+                    style={{ color: 'var(--color-text-muted)', fontSize: 13, padding: '12px 0' }}
+                  >
+                    Loading…
+                  </div>
                 ) : walletPubkey ? (
                   <div>
-                    <div style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 20, lineHeight: 1.6 }}>
-                      Your Solana wallet is active. TraydBook may send SOL reward drops to this address.
+                    <div
+                      style={{
+                        fontSize: 13,
+                        color: 'var(--color-text-muted)',
+                        marginBottom: 20,
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      Your Solana wallet is active. TraydBook may send SOL reward drops to this
+                      address.
                     </div>
 
                     <Section>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                        <div style={{
-                          width: 32, height: 32, borderRadius: 8,
-                          background: 'linear-gradient(135deg, #9945ff, #14f195)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 16, flexShrink: 0,
-                        }}>◎</div>
-                        <div style={{ fontFamily: 'var(--font-condensed)', fontSize: 14, fontWeight: 700, color: 'var(--color-text)' }}>
+                      <div
+                        style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}
+                      >
+                        <div
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 8,
+                            background: 'linear-gradient(135deg, #9945ff, #14f195)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: 16,
+                            flexShrink: 0,
+                          }}
+                        >
+                          ◎
+                        </div>
+                        <div
+                          style={{
+                            fontFamily: 'var(--font-condensed)',
+                            fontSize: 14,
+                            fontWeight: 700,
+                            color: 'var(--color-text)',
+                          }}
+                        >
                           Active Wallet
                         </div>
-                        <span style={{
-                          background: 'rgba(5,150,105,0.1)', color: '#059669',
-                          borderRadius: 99, padding: '2px 10px', fontSize: 11,
-                          fontWeight: 700, fontFamily: 'var(--font-condensed)',
-                          letterSpacing: '0.5px', textTransform: 'uppercase',
-                        }}>Connected</span>
+                        <span
+                          style={{
+                            background: 'rgba(5,150,105,0.1)',
+                            color: '#059669',
+                            borderRadius: 99,
+                            padding: '2px 10px',
+                            fontSize: 11,
+                            fontWeight: 700,
+                            fontFamily: 'var(--font-condensed)',
+                            letterSpacing: '0.5px',
+                            textTransform: 'uppercase',
+                          }}
+                        >
+                          Connected
+                        </span>
                       </div>
 
-                      <div style={{ fontSize: 11, color: 'var(--color-text-muted)', fontFamily: 'var(--font-condensed)', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: 6 }}>
+                      <div
+                        style={{
+                          fontSize: 11,
+                          color: 'var(--color-text-muted)',
+                          fontFamily: 'var(--font-condensed)',
+                          fontWeight: 700,
+                          letterSpacing: '0.5px',
+                          textTransform: 'uppercase',
+                          marginBottom: 6,
+                        }}
+                      >
                         Wallet Address (Public Key)
                       </div>
-                      <div style={{
-                        display: 'flex', alignItems: 'center', gap: 8,
-                        background: 'var(--color-bg)', border: '1px solid var(--color-border)',
-                        borderRadius: 8, padding: '10px 12px', marginBottom: 16,
-                      }}>
-                        <code style={{ flex: 1, fontSize: 12, fontFamily: 'monospace', color: 'var(--color-text)', wordBreak: 'break-all', lineHeight: 1.5 }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          background: 'var(--color-bg)',
+                          border: '1px solid var(--color-border)',
+                          borderRadius: 8,
+                          padding: '10px 12px',
+                          marginBottom: 16,
+                        }}
+                      >
+                        <code
+                          style={{
+                            flex: 1,
+                            fontSize: 12,
+                            fontFamily: 'monospace',
+                            color: 'var(--color-text)',
+                            wordBreak: 'break-all',
+                            lineHeight: 1.5,
+                          }}
+                        >
                           {walletPubkey}
                         </code>
                         <button
                           onClick={handleCopyPubkey}
                           style={{
-                            padding: '5px 10px', background: walletCopied ? 'rgba(5,150,105,0.12)' : 'transparent',
+                            padding: '5px 10px',
+                            background: walletCopied ? 'rgba(5,150,105,0.12)' : 'transparent',
                             border: `1px solid ${walletCopied ? 'rgba(5,150,105,0.3)' : 'var(--color-border)'}`,
-                            borderRadius: 6, cursor: 'pointer', fontSize: 11,
+                            borderRadius: 6,
+                            cursor: 'pointer',
+                            fontSize: 11,
                             color: walletCopied ? '#059669' : 'var(--color-text-muted)',
-                            fontFamily: 'var(--font-condensed)', fontWeight: 700,
-                            letterSpacing: '0.3px', textTransform: 'uppercase',
-                            flexShrink: 0, transition: 'all 0.15s',
+                            fontFamily: 'var(--font-condensed)',
+                            fontWeight: 700,
+                            letterSpacing: '0.3px',
+                            textTransform: 'uppercase',
+                            flexShrink: 0,
+                            transition: 'all 0.15s',
                           }}
                         >
                           {walletCopied ? '✓ Copied' : 'Copy'}
@@ -1710,10 +2660,15 @@ export default function Settings() {
                       </div>
 
                       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-                        <div style={{
-                          background: '#fff', padding: 12, borderRadius: 10,
-                          border: '1px solid var(--color-border)', display: 'inline-block',
-                        }}>
+                        <div
+                          style={{
+                            background: '#fff',
+                            padding: 12,
+                            borderRadius: 10,
+                            border: '1px solid var(--color-border)',
+                            display: 'inline-block',
+                          }}
+                        >
                           <QRCodeSVG value={walletPubkey} size={140} />
                         </div>
                       </div>
@@ -1723,8 +2678,11 @@ export default function Settings() {
                           onClick={handleRemoveWallet}
                           disabled={walletActionLoading}
                           style={{
-                            ...btnGhost, fontSize: 12, padding: '7px 14px',
-                            color: '#DC2626', borderColor: 'rgba(220,38,38,0.3)',
+                            ...btnGhost,
+                            fontSize: 12,
+                            padding: '7px 14px',
+                            color: '#DC2626',
+                            borderColor: 'rgba(220,38,38,0.3)',
                             opacity: walletActionLoading ? 0.6 : 1,
                           }}
                         >
@@ -1733,7 +2691,12 @@ export default function Settings() {
                         <button
                           onClick={() => navigate('/wallet-setup')}
                           disabled={walletActionLoading}
-                          style={{ ...btnGhost, fontSize: 12, padding: '7px 14px', opacity: walletActionLoading ? 0.6 : 1 }}
+                          style={{
+                            ...btnGhost,
+                            fontSize: 12,
+                            padding: '7px 14px',
+                            opacity: walletActionLoading ? 0.6 : 1,
+                          }}
                         >
                           Replace Wallet
                         </button>
@@ -1745,22 +2708,61 @@ export default function Settings() {
 
                     <SectionHeading>Import into a Wallet App</SectionHeading>
                     <Section>
-                      <p style={{ fontSize: 13, color: 'var(--color-text-muted)', lineHeight: 1.6, marginBottom: 12 }}>
-                        You can import your TraydBook wallet into <strong style={{ color: 'var(--color-text)' }}>Phantom</strong> or <strong style={{ color: 'var(--color-text)' }}>Solflare</strong> using the private key JSON array you saved during setup.
+                      <p
+                        style={{
+                          fontSize: 13,
+                          color: 'var(--color-text-muted)',
+                          lineHeight: 1.6,
+                          marginBottom: 12,
+                        }}
+                      >
+                        You can import your TraydBook wallet into{' '}
+                        <strong style={{ color: 'var(--color-text)' }}>Phantom</strong> or{' '}
+                        <strong style={{ color: 'var(--color-text)' }}>Solflare</strong> using the
+                        private key JSON array you saved during setup.
                       </p>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {[
-                          { app: 'Phantom', steps: 'Open Phantom → Add / Connect Wallet → Import Private Key → paste the JSON array' },
-                          { app: 'Solflare', steps: 'Open Solflare → Access Existing Wallet → Private Key → paste the JSON array' },
+                          {
+                            app: 'Phantom',
+                            steps:
+                              'Open Phantom → Add / Connect Wallet → Import Private Key → paste the JSON array',
+                          },
+                          {
+                            app: 'Solflare',
+                            steps:
+                              'Open Solflare → Access Existing Wallet → Private Key → paste the JSON array',
+                          },
                         ].map(({ app, steps }) => (
-                          <div key={app} style={{
-                            background: 'var(--color-bg)', border: '1px solid var(--color-border)',
-                            borderRadius: 8, padding: '12px 14px',
-                          }}>
-                            <div style={{ fontFamily: 'var(--font-condensed)', fontSize: 13, fontWeight: 700, color: 'var(--color-text)', marginBottom: 4 }}>
+                          <div
+                            key={app}
+                            style={{
+                              background: 'var(--color-bg)',
+                              border: '1px solid var(--color-border)',
+                              borderRadius: 8,
+                              padding: '12px 14px',
+                            }}
+                          >
+                            <div
+                              style={{
+                                fontFamily: 'var(--font-condensed)',
+                                fontSize: 13,
+                                fontWeight: 700,
+                                color: 'var(--color-text)',
+                                marginBottom: 4,
+                              }}
+                            >
                               {app}
                             </div>
-                            <div style={{ fontSize: 12, color: 'var(--color-text-muted)', lineHeight: 1.5 }}>{steps}</div>
+                            <div
+                              style={{
+                                fontSize: 12,
+                                color: 'var(--color-text-muted)',
+                                lineHeight: 1.5,
+                              }}
+                            >
+                              {steps}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -1771,28 +2773,59 @@ export default function Settings() {
                       <button
                         onClick={() => setSolanaAccordionOpen(o => !o)}
                         style={{
-                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                          width: '100%', background: 'none', border: 'none', cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          width: '100%',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
                           padding: 0,
                         }}
                       >
-                        <span style={{ fontFamily: 'var(--font-condensed)', fontSize: 14, fontWeight: 700, color: 'var(--color-text)' }}>
+                        <span
+                          style={{
+                            fontFamily: 'var(--font-condensed)',
+                            fontSize: 14,
+                            fontWeight: 700,
+                            color: 'var(--color-text)',
+                          }}
+                        >
                           What is Solana? ◇
                         </span>
-                        <span style={{ fontSize: 12, color: 'var(--color-text-muted)', fontWeight: 600 }}>
+                        <span
+                          style={{
+                            fontSize: 12,
+                            color: 'var(--color-text-muted)',
+                            fontWeight: 600,
+                          }}
+                        >
                           {solanaAccordionOpen ? '▲ Hide' : '▼ Show'}
                         </span>
                       </button>
                       {solanaAccordionOpen && (
-                        <div style={{ marginTop: 12, fontSize: 13, color: 'var(--color-text-muted)', lineHeight: 1.7 }}>
+                        <div
+                          style={{
+                            marginTop: 12,
+                            fontSize: 13,
+                            color: 'var(--color-text-muted)',
+                            lineHeight: 1.7,
+                          }}
+                        >
                           <p style={{ marginBottom: 8 }}>
-                            Solana is a fast, low-cost blockchain. SOL is its native token used to pay for transactions and as a store of value.
+                            Solana is a fast, low-cost blockchain. SOL is its native token used to
+                            pay for transactions and as a store of value.
                           </p>
                           <p style={{ marginBottom: 8 }}>
-                            TraydBook uses Solana to send on-chain reward drops (SOL tokens) directly to your wallet as a thank-you for your activity on the platform.
+                            TraydBook uses Solana to send on-chain reward drops (SOL tokens)
+                            directly to your wallet as a thank-you for your activity on the
+                            platform.
                           </p>
                           <p style={{ marginBottom: 0 }}>
-                            <strong style={{ color: 'var(--color-text)' }}>Disclaimer:</strong> TraydBook is not a custodian. We do not hold, store, or control your private key. You are solely responsible for the security of your wallet credentials.
+                            <strong style={{ color: 'var(--color-text)' }}>Disclaimer:</strong>{' '}
+                            TraydBook is not a custodian. We do not hold, store, or control your
+                            private key. You are solely responsible for the security of your wallet
+                            credentials.
                           </p>
                         </div>
                       )}
@@ -1800,20 +2833,46 @@ export default function Settings() {
                   </div>
                 ) : (
                   <div>
-                    <div style={{ fontSize: 13, color: 'var(--color-text-muted)', lineHeight: 1.6, marginBottom: 24 }}>
-                      You don't have a wallet connected yet. Set one up to receive SOL reward drops from TraydBook directly on-chain.
+                    <div
+                      style={{
+                        fontSize: 13,
+                        color: 'var(--color-text-muted)',
+                        lineHeight: 1.6,
+                        marginBottom: 24,
+                      }}
+                    >
+                      You don't have a wallet connected yet. Set one up to receive SOL reward drops
+                      from TraydBook directly on-chain.
                     </div>
 
                     <Section>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                        <div style={{
-                          width: 40, height: 40, borderRadius: 10,
-                          background: 'linear-gradient(135deg, #9945ff, #14f195)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 20, flexShrink: 0,
-                        }}>◎</div>
+                      <div
+                        style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}
+                      >
+                        <div
+                          style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 10,
+                            background: 'linear-gradient(135deg, #9945ff, #14f195)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: 20,
+                            flexShrink: 0,
+                          }}
+                        >
+                          ◎
+                        </div>
                         <div>
-                          <div style={{ fontFamily: 'var(--font-condensed)', fontSize: 15, fontWeight: 800, color: 'var(--color-text)' }}>
+                          <div
+                            style={{
+                              fontFamily: 'var(--font-condensed)',
+                              fontSize: 15,
+                              fontWeight: 800,
+                              color: 'var(--color-text)',
+                            }}
+                          >
                             Solana Wallet
                           </div>
                           <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
@@ -1821,8 +2880,17 @@ export default function Settings() {
                           </div>
                         </div>
                       </div>
-                      <p style={{ fontSize: 13, color: 'var(--color-text-muted)', lineHeight: 1.6, marginBottom: 16 }}>
-                        Your wallet keypair is generated entirely in your browser — the private key never leaves your device and TraydBook never sees it. We only store your public key (wallet address).
+                      <p
+                        style={{
+                          fontSize: 13,
+                          color: 'var(--color-text-muted)',
+                          lineHeight: 1.6,
+                          marginBottom: 16,
+                        }}
+                      >
+                        Your wallet keypair is generated entirely in your browser — the private key
+                        never leaves your device and TraydBook never sees it. We only store your
+                        public key (wallet address).
                       </p>
                       <button
                         onClick={() => navigate('/wallet-setup')}
@@ -1854,18 +2922,34 @@ export default function Settings() {
                 <div style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 20 }}>
                   Destructive account actions. These cannot be undone.
                 </div>
-                <div style={{
-                  background: 'rgba(220,38,38,0.06)', border: '1px solid rgba(220,38,38,0.18)',
-                  borderRadius: 'var(--radius-md)', padding: '20px',
-                }}>
-                  <div style={{ fontFamily: 'var(--font-condensed)', fontSize: 14, fontWeight: 700, color: '#DC2626', marginBottom: 6 }}>
+                <div
+                  style={{
+                    background: 'rgba(220,38,38,0.06)',
+                    border: '1px solid rgba(220,38,38,0.18)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '20px',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontFamily: 'var(--font-condensed)',
+                      fontSize: 14,
+                      fontWeight: 700,
+                      color: '#DC2626',
+                      marginBottom: 6,
+                    }}
+                  >
                     Delete Account
                   </div>
                   <div style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 14 }}>
-                    This will deactivate your account. Your data will be soft-deleted and you will be signed out.
-                    Type <strong style={{ color: 'var(--color-text)' }}>CONFIRM</strong> below to proceed.
+                    This will deactivate your account. Your data will be soft-deleted and you will
+                    be signed out. Type{' '}
+                    <strong style={{ color: 'var(--color-text)' }}>CONFIRM</strong> below to
+                    proceed.
                   </div>
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                  <div
+                    style={{ display: 'flex', gap: 10, alignItems: 'flex-start', flexWrap: 'wrap' }}
+                  >
                     <input
                       type="text"
                       value={deleteConfirmText}
@@ -1881,10 +2965,16 @@ export default function Settings() {
                         background: deleteConfirmText === 'CONFIRM' ? '#DC2626' : 'var(--color-bg)',
                         border: '1px solid rgba(220,38,38,0.4)',
                         borderRadius: 'var(--radius-md)',
-                        fontFamily: 'var(--font-condensed)', fontSize: 13, fontWeight: 700,
-                        letterSpacing: '0.5px', textTransform: 'uppercase',
+                        fontFamily: 'var(--font-condensed)',
+                        fontSize: 13,
+                        fontWeight: 700,
+                        letterSpacing: '0.5px',
+                        textTransform: 'uppercase',
                         color: deleteConfirmText === 'CONFIRM' ? '#fff' : '#DC2626',
-                        cursor: (deletingAccount || deleteConfirmText !== 'CONFIRM') ? 'not-allowed' : 'pointer',
+                        cursor:
+                          deletingAccount || deleteConfirmText !== 'CONFIRM'
+                            ? 'not-allowed'
+                            : 'pointer',
                         opacity: deletingAccount ? 0.6 : 1,
                       }}
                     >
@@ -1904,10 +2994,17 @@ export default function Settings() {
 
 function TabHeading({ children }: { children: React.ReactNode }) {
   return (
-    <h2 style={{
-      fontFamily: 'var(--font-condensed)', fontSize: 20, fontWeight: 800,
-      letterSpacing: '0.2px', color: 'var(--color-text)', marginBottom: 20, marginTop: 0,
-    }}>
+    <h2
+      style={{
+        fontFamily: 'var(--font-condensed)',
+        fontSize: 20,
+        fontWeight: 800,
+        letterSpacing: '0.2px',
+        color: 'var(--color-text)',
+        marginBottom: 20,
+        marginTop: 0,
+      }}
+    >
       {children}
     </h2>
   )
@@ -1915,11 +3012,18 @@ function TabHeading({ children }: { children: React.ReactNode }) {
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{
-      fontFamily: 'var(--font-condensed)', fontSize: 11, fontWeight: 700,
-      letterSpacing: '0.7px', textTransform: 'uppercase',
-      color: 'var(--color-text-muted)', marginBottom: 10, marginTop: 24,
-    }}>
+    <div
+      style={{
+        fontFamily: 'var(--font-condensed)',
+        fontSize: 11,
+        fontWeight: 700,
+        letterSpacing: '0.7px',
+        textTransform: 'uppercase',
+        color: 'var(--color-text-muted)',
+        marginBottom: 10,
+        marginTop: 24,
+      }}
+    >
       {children}
     </div>
   )
@@ -1927,10 +3031,14 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
 
 function Section({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{
-      background: 'var(--color-surface)', border: '1px solid var(--color-border)',
-      borderRadius: 'var(--radius-lg)', padding: '16px 20px',
-    }}>
+    <div
+      style={{
+        background: 'var(--color-surface)',
+        border: '1px solid var(--color-border)',
+        borderRadius: 'var(--radius-lg)',
+        padding: '16px 20px',
+      }}
+    >
       {children}
     </div>
   )

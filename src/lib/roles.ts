@@ -17,7 +17,8 @@ export const STAFF_ROLES: { value: StaffRole; label: string; description: string
   {
     value: 'hired_dev',
     label: 'Hired Dev',
-    description: 'IT and technical access. Can view system internals and assist with platform issues.',
+    description:
+      'IT and technical access. Can view system internals and assist with platform issues.',
   },
   {
     value: 'moderator',
@@ -27,10 +28,10 @@ export const STAFF_ROLES: { value: StaffRole; label: string; description: string
 ]
 
 export const PLATFORM_ROLES: { value: PlatformRole; label: string }[] = [
-  { value: 'contractor',    label: 'Contractor' },
+  { value: 'contractor', label: 'Contractor' },
   { value: 'project_owner', label: 'Project Owner' },
-  { value: 'agent',         label: 'Agent' },
-  { value: 'homeowner',     label: 'Homeowner' },
+  { value: 'agent', label: 'Agent' },
+  { value: 'homeowner', label: 'Homeowner' },
 ]
 
 export const ALL_INVITE_ROLES = [...STAFF_ROLES, ...PLATFORM_ROLES]

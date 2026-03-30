@@ -12,10 +12,12 @@ import '../styles/feed.css'
 
 function compositeScore(post: FeedPost, connIds: Set<string>): number {
   const hoursOld = (Date.now() - new Date(post.created_at).getTime()) / 3600000
-  return (1000 / (hoursOld + 1))
-    + (post.is_boosted ? 200 : 0)
-    + (post.is_urgent ? 100 : 0)
-    + (connIds.has(post.author_id) ? 150 : 0)
+  return (
+    1000 / (hoursOld + 1) +
+    (post.is_boosted ? 200 : 0) +
+    (post.is_urgent ? 100 : 0) +
+    (connIds.has(post.author_id) ? 150 : 0)
+  )
 }
 
 function sortByScore(list: FeedPost[], connIds: Set<string>): FeedPost[] {
@@ -26,7 +28,10 @@ function SkeletonCard() {
   return (
     <div className="card" style={{ padding: 20 }}>
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-        <div className="feed-skeleton" style={{ width: 44, height: 44, borderRadius: 'var(--radius-sm)', flexShrink: 0 }} />
+        <div
+          className="feed-skeleton"
+          style={{ width: 44, height: 44, borderRadius: 'var(--radius-sm)', flexShrink: 0 }}
+        />
         <div style={{ flex: 1 }}>
           <div className="feed-skeleton" style={{ height: 14, width: '40%', marginBottom: 8 }} />
           <div className="feed-skeleton" style={{ height: 12, width: '25%' }} />
@@ -108,11 +113,21 @@ export default function Feed() {
       .select('user_id, primary_trade')
       .in('user_id', authorIds)
     if (!data) return rawPosts
-    const tradeMap = new Map(data.map((c: { user_id: string; primary_trade: string | null }) => [c.user_id, c.primary_trade]))
+    const tradeMap = new Map(
+      data.map((c: { user_id: string; primary_trade: string | null }) => [
+        c.user_id,
+        c.primary_trade,
+      ])
+    )
     return rawPosts.map(p => ({ ...p, author_trade: tradeMap.get(p.author_id) ?? null }))
   }
 
-  async function doFetchPosts(connIds: Set<string>, filter: FilterType, reset: boolean, mode?: 'foryou' | 'following') {
+  async function doFetchPosts(
+    connIds: Set<string>,
+    filter: FilterType,
+    reset: boolean,
+    mode?: 'foryou' | 'following'
+  ) {
     const currentPage = reset ? 0 : pageRef.current
     if (!reset) setLoadingMore(true)
     else setLoading(true)
@@ -121,12 +136,14 @@ export default function Feed() {
 
     let query = supabase
       .from('posts')
-      .select(`
+      .select(
+        `
         id, post_type, body, media_urls, hashtags, like_count, comment_count, share_count,
         is_urgent, is_boosted, created_at, author_id, tagged_user_id, linked_job_id, linked_rfq_id,
         users!author_id (display_name, handle, avatar_url, account_type),
         contractor_profiles!author_id (primary_trade)
-      `)
+      `
+      )
       .order('is_boosted', { ascending: false })
       .order('is_urgent', { ascending: false })
       .order('created_at', { ascending: false })
@@ -157,8 +174,13 @@ export default function Feed() {
     let rawMapped: FeedPost[]
     {
       rawMapped = data.map((row: Record<string, unknown>) => {
-        const u = (row.users as unknown) as { display_name: string; handle: string; avatar_url: string | null; account_type: string } | null
-        const cp = (row.contractor_profiles as unknown) as { primary_trade: string | null } | null
+        const u = row.users as unknown as {
+          display_name: string
+          handle: string
+          avatar_url: string | null
+          account_type: string
+        } | null
+        const cp = row.contractor_profiles as unknown as { primary_trade: string | null } | null
         return {
           id: row.id as string,
           post_type: row.post_type as FeedPost['post_type'],
@@ -203,11 +225,7 @@ export default function Feed() {
   useEffect(() => {
     if (!profile) return
     void (async () => {
-      const [ids] = await Promise.all([
-        fetchConnectionIds(),
-        loadStats(),
-        loadMyProfileInfo(),
-      ])
+      const [ids] = await Promise.all([fetchConnectionIds(), loadStats(), loadMyProfileInfo()])
       connIdsRef.current = ids
       setConnectedAuthorIds(ids)
       await doFetchPosts(ids, activeFilter, true)
@@ -281,14 +299,16 @@ export default function Feed() {
       // Fetch extra candidates so we can prefer same-city ones client-side
       const { data } = await supabase
         .from('contractor_profiles')
-        .select('user_id, primary_trade, users!user_id (id, display_name, handle, avatar_url, account_type, location_city, location_state)')
+        .select(
+          'user_id, primary_trade, users!user_id (id, display_name, handle, avatar_url, account_type, location_city, location_state)'
+        )
         .eq('primary_trade', myTrade)
         .neq('user_id', profile.id)
         .limit(20)
       let candidates = (data ?? []) as SidebarRow[]
       if (myCity && candidates.length > 0) {
         const sameCity = candidates.filter(cp => {
-          const u = (cp.users as unknown) as { location_city: string | null } | null
+          const u = cp.users as unknown as { location_city: string | null } | null
           return u?.location_city === myCity
         })
         candidates = sameCity.length >= 2 ? sameCity : candidates
@@ -297,7 +317,9 @@ export default function Feed() {
     } else if (myCity) {
       const { data } = await supabase
         .from('users')
-        .select('id, display_name, handle, avatar_url, account_type, location_city, location_state, contractor_profiles!user_id (primary_trade)')
+        .select(
+          'id, display_name, handle, avatar_url, account_type, location_city, location_state, contractor_profiles!user_id (primary_trade)'
+        )
         .eq('account_type', 'contractor')
         .eq('location_city', myCity)
         .neq('id', profile.id)
@@ -306,7 +328,9 @@ export default function Feed() {
     } else {
       const { data } = await supabase
         .from('users')
-        .select('id, display_name, handle, avatar_url, account_type, location_city, location_state, contractor_profiles!user_id (primary_trade)')
+        .select(
+          'id, display_name, handle, avatar_url, account_type, location_city, location_state, contractor_profiles!user_id (primary_trade)'
+        )
         .eq('account_type', 'contractor')
         .neq('id', profile.id)
         .limit(6)
@@ -320,7 +344,15 @@ export default function Feed() {
 
     const mapped: SidebarUser[] = rows.slice(0, 4).map(row => {
       if (row.user_id) {
-        const u = (row.users as unknown) as { id: string; display_name: string; handle: string; avatar_url: string | null; account_type: string; location_city: string | null; location_state: string | null } | null
+        const u = row.users as unknown as {
+          id: string
+          display_name: string
+          handle: string
+          avatar_url: string | null
+          account_type: string
+          location_city: string | null
+          location_state: string | null
+        } | null
         return {
           id: u?.id ?? row.user_id,
           display_name: u?.display_name ?? 'Unknown',
@@ -331,7 +363,7 @@ export default function Feed() {
           location: [u?.location_city, u?.location_state].filter(Boolean).join(', ') || null,
         }
       } else {
-        const cp = (row.contractor_profiles as unknown) as { primary_trade: string | null } | null
+        const cp = row.contractor_profiles as unknown as { primary_trade: string | null } | null
         return {
           id: row.id ?? '',
           display_name: row.display_name ?? 'Unknown',
@@ -419,35 +451,85 @@ export default function Feed() {
   }
 
   const initials = profile?.display_name
-    ? profile.display_name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+    ? profile.display_name
+        .split(' ')
+        .map(w => w[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase()
     : '?'
 
   return (
     <>
       <FeedFilterBar />
 
-      <div className="feed-layout" style={{ display: 'flex', gap: 24, alignItems: 'flex-start', maxWidth: 1100, margin: '0 auto', padding: '24px 20px' }}>
-
-        <aside style={{ width: 240, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16, position: 'sticky', top: 104 }} className="feed-sidebar-left">
+      <div
+        className="feed-layout"
+        style={{
+          display: 'flex',
+          gap: 24,
+          alignItems: 'flex-start',
+          maxWidth: 1100,
+          margin: '0 auto',
+          padding: '24px 20px',
+        }}
+      >
+        <aside
+          style={{
+            width: 240,
+            flexShrink: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 16,
+            position: 'sticky',
+            top: 104,
+          }}
+          className="feed-sidebar-left"
+        >
           {profile && (
             <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div style={{ height: 44, background: 'linear-gradient(135deg, var(--color-brand) 0%, #C44D00 100%)', opacity: 0.8 }} />
+              <div
+                style={{
+                  height: 44,
+                  background: 'linear-gradient(135deg, var(--color-brand) 0%, #C44D00 100%)',
+                  opacity: 0.8,
+                }}
+              />
               <div style={{ padding: '0 16px 16px', marginTop: -24 }}>
-                <div style={{
-                  width: 48, height: 48, borderRadius: 'var(--radius-sm)',
-                  background: 'var(--color-brand)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: 'var(--font-condensed)', fontSize: 18, fontWeight: 700, color: '#fff',
-                  border: '3px solid var(--color-surface)',
-                }}>
+                <div
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'var(--color-brand)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontFamily: 'var(--font-condensed)',
+                    fontSize: 18,
+                    fontWeight: 700,
+                    color: '#fff',
+                    border: '3px solid var(--color-surface)',
+                  }}
+                >
                   {initials}
                 </div>
-                <p style={{ fontWeight: 700, fontSize: 14, marginTop: 8 }}>{profile.display_name}</p>
-                <p style={{ fontSize: 11, color: 'var(--color-text-muted)', textTransform: 'capitalize' }}>
+                <p style={{ fontWeight: 700, fontSize: 14, marginTop: 8 }}>
+                  {profile.display_name}
+                </p>
+                <p
+                  style={{
+                    fontSize: 11,
+                    color: 'var(--color-text-muted)',
+                    textTransform: 'capitalize',
+                  }}
+                >
                   {profile.account_type?.replace('_', ' ')}
                 </p>
                 {profile.handle && (
-                  <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 1 }}>@{profile.handle}</p>
+                  <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 1 }}>
+                    @{profile.handle}
+                  </p>
                 )}
                 {[myCity, myState].filter(Boolean).length > 0 && (
                   <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 1 }}>
@@ -455,12 +537,16 @@ export default function Feed() {
                   </p>
                 )}
 
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: isContractor ? '1fr 1fr 1fr' : '1fr 1fr',
-                  gap: 4,
-                  marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--color-border)',
-                }}>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: isContractor ? '1fr 1fr 1fr' : '1fr 1fr',
+                    gap: 4,
+                    marginTop: 14,
+                    paddingTop: 14,
+                    borderTop: '1px solid var(--color-border)',
+                  }}
+                >
                   <div className="sidebar-stat">
                     <span className="sidebar-stat-value">{networkCount ?? '—'}</span>
                     <span className="sidebar-stat-label">Network</span>
@@ -475,9 +561,7 @@ export default function Feed() {
                     <span className="sidebar-stat-value">
                       {isContractor ? (openJobsCount ?? '—') : (profile.credit_balance ?? 0)}
                     </span>
-                    <span className="sidebar-stat-label">
-                      {isContractor ? 'Jobs' : 'Credits'}
-                    </span>
+                    <span className="sidebar-stat-label">{isContractor ? 'Jobs' : 'Credits'}</span>
                   </div>
                 </div>
               </div>
@@ -485,11 +569,17 @@ export default function Feed() {
           )}
 
           <div className="card" style={{ padding: '14px 16px' }}>
-            <p style={{
-              fontFamily: 'var(--font-condensed)', fontSize: 12, fontWeight: 700,
-              letterSpacing: '0.6px', textTransform: 'uppercase',
-              color: 'var(--color-text-muted)', marginBottom: 10,
-            }}>
+            <p
+              style={{
+                fontFamily: 'var(--font-condensed)',
+                fontSize: 12,
+                fontWeight: 700,
+                letterSpacing: '0.6px',
+                textTransform: 'uppercase',
+                color: 'var(--color-text-muted)',
+                marginBottom: 10,
+              }}
+            >
               Post Types
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -497,8 +587,18 @@ export default function Feed() {
                 .filter(([k]) => k !== 'story')
                 .map(([key, b]) => (
                   <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: b.text, flexShrink: 0 }} />
-                    <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{b.label}</span>
+                    <span
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: '50%',
+                        background: b.text,
+                        flexShrink: 0,
+                      }}
+                    />
+                    <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+                      {b.label}
+                    </span>
                   </div>
                 ))}
             </div>
@@ -507,7 +607,17 @@ export default function Feed() {
 
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* For You / Following toggle */}
-          <div style={{ display: 'flex', background: 'var(--color-surface)', border: '1.5px solid var(--color-border)', borderRadius: 'var(--radius-sm)', padding: 3, gap: 2, alignSelf: 'flex-start' }}>
+          <div
+            style={{
+              display: 'flex',
+              background: 'var(--color-surface)',
+              border: '1.5px solid var(--color-border)',
+              borderRadius: 'var(--radius-sm)',
+              padding: 3,
+              gap: 2,
+              alignSelf: 'flex-start',
+            }}
+          >
             {(['foryou', 'following'] as const).map(mode => (
               <button
                 key={mode}
@@ -534,13 +644,22 @@ export default function Feed() {
           <div className="card" style={{ padding: 20 }}>
             <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
               {profile && (
-                <div style={{
-                  width: 40, height: 40, borderRadius: 'var(--radius-sm)',
-                  background: 'var(--color-brand)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: 'var(--font-condensed)', fontSize: 14, fontWeight: 700, color: '#fff',
-                  flexShrink: 0,
-                }}>
+                <div
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'var(--color-brand)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontFamily: 'var(--font-condensed)',
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color: '#fff',
+                    flexShrink: 0,
+                  }}
+                >
                   {initials}
                 </div>
               )}
@@ -548,44 +667,80 @@ export default function Feed() {
                 What's happening on your project?
               </button>
             </div>
-            <div style={{
-              display: 'flex', gap: 8, marginTop: 12, paddingTop: 12,
-              borderTop: '1px solid var(--color-border)',
-            }}>
+            <div
+              style={{
+                display: 'flex',
+                gap: 8,
+                marginTop: 12,
+                paddingTop: 12,
+                borderTop: '1px solid var(--color-border)',
+              }}
+            >
               {[
-                { label: 'Update', color: '#2563EB', onClick: () => setComposeOpen(true), allowed: true },
-                { label: 'Post Job', color: '#DC2626', onClick: () => navigate('/jobs/post'), allowed: canDelegate('job_post') },
-                { label: 'Open Bid', color: 'var(--color-brand)', onClick: () => navigate('/bids/post'), allowed: canDelegate('bid') },
-              ].filter(btn => btn.allowed).map(btn => (
-                <button
-                  key={btn.label}
-                  onClick={btn.onClick}
-                  style={{
-                    background: 'none', border: 'none',
-                    color: 'var(--color-text-muted)', fontSize: 12, fontWeight: 700,
-                    cursor: 'pointer', padding: '4px 8px', borderRadius: 'var(--radius-sm)',
-                    fontFamily: 'var(--font-condensed)', letterSpacing: '0.5px', textTransform: 'uppercase',
-                    transition: 'color 0.15s', display: 'flex', alignItems: 'center', gap: 4,
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.color = btn.color}
-                  onMouseLeave={e => e.currentTarget.style.color = 'var(--color-text-muted)'}
-                >
-                  <Plus size={12} /> {btn.label}
-                </button>
-              ))}
+                {
+                  label: 'Update',
+                  color: '#2563EB',
+                  onClick: () => setComposeOpen(true),
+                  allowed: true,
+                },
+                {
+                  label: 'Post Job',
+                  color: '#DC2626',
+                  onClick: () => navigate('/jobs/post'),
+                  allowed: canDelegate('job_post'),
+                },
+                {
+                  label: 'Open Bid',
+                  color: 'var(--color-brand)',
+                  onClick: () => navigate('/bids/post'),
+                  allowed: canDelegate('bid'),
+                },
+              ]
+                .filter(btn => btn.allowed)
+                .map(btn => (
+                  <button
+                    key={btn.label}
+                    onClick={btn.onClick}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--color-text-muted)',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      padding: '4px 8px',
+                      borderRadius: 'var(--radius-sm)',
+                      fontFamily: 'var(--font-condensed)',
+                      letterSpacing: '0.5px',
+                      textTransform: 'uppercase',
+                      transition: 'color 0.15s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.color = btn.color)}
+                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--color-text-muted)')}
+                  >
+                    <Plus size={12} /> {btn.label}
+                  </button>
+                ))}
             </div>
           </div>
 
           {loading ? (
-            <><SkeletonCard /><SkeletonCard /><SkeletonCard /></>
+            <>
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+            </>
           ) : posts.length === 0 ? (
             <div className="card" style={{ padding: 40, textAlign: 'center' }}>
               <p style={{ fontSize: 14, color: 'var(--color-text-muted)' }}>
                 {feedMode === 'following'
                   ? connectedAuthorIds.size === 0
-                    ? "Connect with people to see their posts here."
+                    ? 'Connect with people to see their posts here.'
                     : "No posts from people you're connected with yet."
-                  : "No posts in this category yet — be the first to share something!"}
+                  : 'No posts in this category yet — be the first to share something!'}
               </p>
             </div>
           ) : (
@@ -605,8 +760,13 @@ export default function Feed() {
               disabled={loadingMore}
               className="btn btn-secondary"
               style={{
-                width: '100%', padding: '10px', fontSize: 13,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                width: '100%',
+                padding: '10px',
+                fontSize: 13,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
               }}
             >
               {loadingMore ? <Loader size={14} className="spin" /> : <RefreshCw size={14} />}
@@ -615,13 +775,40 @@ export default function Feed() {
           )}
         </div>
 
-        <aside style={{ width: 256, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16, position: 'sticky', top: 104 }} className="feed-sidebar-right">
+        <aside
+          style={{
+            width: 256,
+            flexShrink: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 16,
+            position: 'sticky',
+            top: 104,
+          }}
+          className="feed-sidebar-right"
+        >
           {sidebarUsers.length > 0 && (
             <div className="card" style={{ padding: '14px 16px' }}>
-              <h3 style={{ fontFamily: 'var(--font-condensed)', fontSize: 14, fontWeight: 800, marginBottom: 14, letterSpacing: '-0.2px' }}>
+              <h3
+                style={{
+                  fontFamily: 'var(--font-condensed)',
+                  fontSize: 14,
+                  fontWeight: 800,
+                  marginBottom: 14,
+                  letterSpacing: '-0.2px',
+                }}
+              >
                 People to Connect With
                 {myTrade && (
-                  <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--color-text-muted)', display: 'block', marginTop: 2 }}>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 500,
+                      color: 'var(--color-text-muted)',
+                      display: 'block',
+                      marginTop: 2,
+                    }}
+                  >
                     {myTrade} near you
                   </span>
                 )}
@@ -631,10 +818,26 @@ export default function Feed() {
                   <div key={u.id} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                     <AuthorAvatar name={u.display_name} avatar={u.avatar_url} size={36} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontWeight: 600, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <p
+                        style={{
+                          fontWeight: 600,
+                          fontSize: 12,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
                         {u.display_name}
                       </p>
-                      <p style={{ fontSize: 11, color: 'var(--color-text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <p
+                        style={{
+                          fontSize: 11,
+                          color: 'var(--color-text-muted)',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
                         {[u.primary_trade, u.location].filter(Boolean).join(' · ')}
                       </p>
                     </div>
@@ -642,9 +845,23 @@ export default function Feed() {
                       onClick={() => void handleConnect(u.id)}
                       disabled={connectedIds.has(u.id)}
                       className="btn btn-secondary"
-                      style={{ padding: '3px 8px', fontSize: 11, display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0, opacity: connectedIds.has(u.id) ? 0.6 : 1 }}
+                      style={{
+                        padding: '3px 8px',
+                        fontSize: 11,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 3,
+                        flexShrink: 0,
+                        opacity: connectedIds.has(u.id) ? 0.6 : 1,
+                      }}
                     >
-                      {connectedIds.has(u.id) ? '✓' : <><UserPlus size={10} /> Connect</>}
+                      {connectedIds.has(u.id) ? (
+                        '✓'
+                      ) : (
+                        <>
+                          <UserPlus size={10} /> Connect
+                        </>
+                      )}
                     </button>
                   </div>
                 ))}
@@ -654,14 +871,33 @@ export default function Feed() {
 
           {trendingTags.length > 0 && (
             <div className="card" style={{ padding: '14px 16px' }}>
-              <h3 style={{ fontFamily: 'var(--font-condensed)', fontSize: 14, fontWeight: 800, marginBottom: 12, letterSpacing: '-0.2px', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <h3
+                style={{
+                  fontFamily: 'var(--font-condensed)',
+                  fontSize: 14,
+                  fontWeight: 800,
+                  marginBottom: 12,
+                  letterSpacing: '-0.2px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
                 <TrendingUp size={14} color="var(--color-brand)" /> Trending
               </h3>
               <div>
                 {trendingTags.map(({ tag, count }) => (
-                  <div key={tag} className="trending-tag" onClick={() => navigate(`/feed?q=%23${tag}`)}>
-                    <span style={{ fontSize: 13, color: 'var(--color-brand)', fontWeight: 600 }}>#{tag}</span>
-                    <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{count} post{count !== 1 ? 's' : ''}</span>
+                  <div
+                    key={tag}
+                    className="trending-tag"
+                    onClick={() => navigate(`/feed?q=%23${tag}`)}
+                  >
+                    <span style={{ fontSize: 13, color: 'var(--color-brand)', fontWeight: 600 }}>
+                      #{tag}
+                    </span>
+                    <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
+                      {count} post{count !== 1 ? 's' : ''}
+                    </span>
                   </div>
                 ))}
               </div>

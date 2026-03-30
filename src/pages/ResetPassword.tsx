@@ -17,7 +17,9 @@ export default function ResetPassword() {
       if (data.session) setValidSession(true)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(event => {
       if (event === 'PASSWORD_RECOVERY') setValidSession(true)
     })
     return () => subscription.unsubscribe()
@@ -26,8 +28,14 @@ export default function ResetPassword() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError('')
-    if (password !== confirmPassword) { setError('Passwords do not match.'); return }
-    if (password.length < 8) { setError('Password must be at least 8 characters.'); return }
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.')
+      return
+    }
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.')
+      return
+    }
     setLoading(true)
     const { error } = await supabase.auth.updateUser({ password })
     setLoading(false)
@@ -45,12 +53,38 @@ export default function ResetPassword() {
         <Link to="/" className="auth-logo">
           <div className="auth-logo-icon">
             <svg viewBox="0 0 17 17" fill="none" width={16} height={16}>
-              <rect x="2" y="1.5" width="9" height="13" rx="1.5" fill="rgba(255,255,255,0.12)" stroke="white" strokeWidth="1.2" />
-              <rect x="5" y="1.5" width="9" height="13" rx="1.5" fill="rgba(255,255,255,0.25)" stroke="white" strokeWidth="1.2" />
-              <path d="M7 6h4M7 9h3M7 12h2" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
+              <rect
+                x="2"
+                y="1.5"
+                width="9"
+                height="13"
+                rx="1.5"
+                fill="rgba(255,255,255,0.12)"
+                stroke="white"
+                strokeWidth="1.2"
+              />
+              <rect
+                x="5"
+                y="1.5"
+                width="9"
+                height="13"
+                rx="1.5"
+                fill="rgba(255,255,255,0.25)"
+                stroke="white"
+                strokeWidth="1.2"
+              />
+              <path
+                d="M7 6h4M7 9h3M7 12h2"
+                stroke="white"
+                strokeWidth="1.2"
+                strokeLinecap="round"
+              />
             </svg>
           </div>
-          <div className="auth-logo-word"><span className="trayd">Trayd</span><span className="book">Book</span></div>
+          <div className="auth-logo-word">
+            <span className="trayd">Trayd</span>
+            <span className="book">Book</span>
+          </div>
         </Link>
 
         <h1 className="auth-title">Set new password</h1>
@@ -61,9 +95,18 @@ export default function ResetPassword() {
             Password updated! Redirecting you to the app…
           </div>
         ) : !validSession ? (
-          <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--color-text-muted)', fontSize: 14 }}>
+          <div
+            style={{
+              textAlign: 'center',
+              padding: '20px 0',
+              color: 'var(--color-text-muted)',
+              fontSize: 14,
+            }}
+          >
             This link may have expired.{' '}
-            <Link to="/login" style={{ color: 'var(--color-brand)' }}>Request a new one</Link>
+            <Link to="/login" style={{ color: 'var(--color-brand)' }}>
+              Request a new one
+            </Link>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="auth-form">

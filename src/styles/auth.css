@@ -43,8 +43,12 @@
   line-height: 1;
 }
 
-.auth-logo-word .trayd { color: var(--color-text); }
-.auth-logo-word .book { color: var(--color-brand); }
+.auth-logo-word .trayd {
+  color: var(--color-text);
+}
+.auth-logo-word .book {
+  color: var(--color-brand);
+}
 
 .auth-title {
   font-family: var(--font-condensed);
@@ -162,7 +166,9 @@
   font-weight: 600;
 }
 
-.auth-footer-text a:hover { text-decoration: underline; }
+.auth-footer-text a:hover {
+  text-decoration: underline;
+}
 
 /* Step indicator */
 .signup-steps {
@@ -205,7 +211,9 @@
   border-radius: var(--radius-md);
   padding: 14px;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
   text-align: left;
 }
 
@@ -218,7 +226,10 @@
   background: var(--color-brand-light);
 }
 
-.atc-icon { font-size: 22px; margin-bottom: 8px; }
+.atc-icon {
+  font-size: 22px;
+  margin-bottom: 8px;
+}
 .atc-title {
   font-family: var(--font-condensed);
   font-size: 14px;
@@ -227,7 +238,11 @@
   margin-bottom: 4px;
   color: var(--color-text);
 }
-.atc-desc { font-size: 12px; color: var(--color-text-muted); line-height: 1.4; }
+.atc-desc {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
 .atc-badge {
   display: inline-block;
   background: var(--color-brand-light);
@@ -272,4 +287,6 @@
   transition: background 0.15s;
 }
 
-.btn-secondary:hover { background: var(--color-bg); }
+.btn-secondary:hover {
+  background: var(--color-bg);
+}

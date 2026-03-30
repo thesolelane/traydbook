@@ -17,10 +17,14 @@ router.post('/api/team/invite', requireAuth, async (req, res) => {
   }
 
   const { data: principalRow, error: principalErr } = await supabaseAdmin
-    .from('users').select('display_name, is_delegate').eq('id', principalId).single()
+    .from('users')
+    .select('display_name, is_delegate')
+    .eq('id', principalId)
+    .single()
 
   if (principalErr || !principalRow) return res.status(404).json({ error: 'User not found' })
-  if (principalRow.is_delegate) return res.status(403).json({ error: 'Delegates cannot invite other delegates' })
+  if (principalRow.is_delegate)
+    return res.status(403).json({ error: 'Delegates cannot invite other delegates' })
 
   const token = crypto.randomBytes(32).toString('hex')
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
@@ -48,9 +52,16 @@ router.post('/api/team/invite', requireAuth, async (req, res) => {
 
   const joinUrl = `${APP_ORIGIN}/join/${token}`
   const roleLabel = role === 'admin' ? 'Team Admin' : 'Contributor'
-  console.log(`[team/invite] Invite created for ${inviteEmail} (${roleLabel}) by ${principalId}. Join URL: ${joinUrl}`)
+  console.log(
+    `[team/invite] Invite created for ${inviteEmail} (${roleLabel}) by ${principalId}. Join URL: ${joinUrl}`
+  )
 
-  res.json({ success: true, delegationId: delegation.id, joinUrl, message: `Invite created for ${inviteEmail}. Share this link: ${joinUrl}` })
+  res.json({
+    success: true,
+    delegationId: delegation.id,
+    joinUrl,
+    message: `Invite created for ${inviteEmail}. Share this link: ${joinUrl}`,
+  })
 })
 
 router.post('/api/team/revoke', requireAuth, async (req, res) => {
@@ -60,13 +71,19 @@ router.post('/api/team/revoke', requireAuth, async (req, res) => {
   if (!delegationId) return res.status(400).json({ error: 'Missing delegationId' })
 
   const { data: delegation, error: fetchErr } = await supabaseAdmin
-    .from('account_delegations').select('id, principal_id, delegate_id, status').eq('id', delegationId).single()
+    .from('account_delegations')
+    .select('id, principal_id, delegate_id, status')
+    .eq('id', delegationId)
+    .single()
 
   if (fetchErr || !delegation) return res.status(404).json({ error: 'Delegation not found' })
   if (delegation.principal_id !== principalId) return res.status(403).json({ error: 'Forbidden' })
   if (delegation.status === 'revoked') return res.status(400).json({ error: 'Already revoked' })
 
-  const { error: updateErr } = await supabaseAdmin.from('account_delegations').update({ status: 'revoked' }).eq('id', delegationId)
+  const { error: updateErr } = await supabaseAdmin
+    .from('account_delegations')
+    .update({ status: 'revoked' })
+    .eq('id', delegationId)
 
   if (updateErr) {
     console.error('[team/revoke] DB error:', updateErr.message)
@@ -74,7 +91,10 @@ router.post('/api/team/revoke', requireAuth, async (req, res) => {
   }
 
   if (delegation.delegate_id) {
-    await supabaseAdmin.from('users').update({ is_delegate: false, delegate_principal_id: null }).eq('id', delegation.delegate_id)
+    await supabaseAdmin
+      .from('users')
+      .update({ is_delegate: false, delegate_principal_id: null })
+      .eq('id', delegation.delegate_id)
   }
 
   res.json({ success: true })
@@ -94,7 +114,10 @@ router.get('/api/team', requireAuth, async (req, res) => {
   const delegateIds = delegations.filter(d => d.delegate_id).map(d => d.delegate_id)
   let delegateProfiles = []
   if (delegateIds.length > 0) {
-    const { data: profiles } = await supabaseAdmin.from('users').select('id, display_name, avatar_url, created_at').in('id', delegateIds)
+    const { data: profiles } = await supabaseAdmin
+      .from('users')
+      .select('id, display_name, avatar_url, created_at')
+      .in('id', delegateIds)
     delegateProfiles = profiles ?? []
   }
 

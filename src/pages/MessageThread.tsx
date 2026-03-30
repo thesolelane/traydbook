@@ -28,7 +28,11 @@ function formatTime(iso: string) {
   const now = new Date()
   const sameDay = d.toDateString() === now.toDateString()
   if (sameDay) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  return (
+    d.toLocaleDateString([], { month: 'short', day: 'numeric' }) +
+    ' ' +
+    d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  )
 }
 
 const COLD_MSG_COST = 3
@@ -66,9 +70,7 @@ export default function MessageThread() {
     setIsFirstContact(msgs.length === 0)
 
     // Mark unread messages as read
-    const unreadIds = msgs
-      .filter(m => m.recipient_id === profile.id && !m.read_at)
-      .map(m => m.id)
+    const unreadIds = msgs.filter(m => m.recipient_id === profile.id && !m.read_at).map(m => m.id)
     if (unreadIds.length > 0) {
       await supabase
         .from('messages')
@@ -77,23 +79,26 @@ export default function MessageThread() {
     }
   }, [profile, threadId])
 
-  const loadOtherUser = useCallback(async (msgs: Message[]) => {
-    // Prefer the explicit ?with= param; fall back to deriving from messages
-    let targetId = withId
-    if (!targetId && profile && msgs.length > 0) {
-      const m = msgs[0]
-      targetId = m.sender_id === profile.id ? m.recipient_id : m.sender_id
-    }
-    if (!targetId) return
+  const loadOtherUser = useCallback(
+    async (msgs: Message[]) => {
+      // Prefer the explicit ?with= param; fall back to deriving from messages
+      let targetId = withId
+      if (!targetId && profile && msgs.length > 0) {
+        const m = msgs[0]
+        targetId = m.sender_id === profile.id ? m.recipient_id : m.sender_id
+      }
+      if (!targetId) return
 
-    const { data } = await supabase
-      .from('users')
-      .select('id, display_name, handle, avatar_url, account_type')
-      .eq('id', targetId)
-      .single()
+      const { data } = await supabase
+        .from('users')
+        .select('id, display_name, handle, avatar_url, account_type')
+        .eq('id', targetId)
+        .single()
 
-    if (data) setOtherUser(data as OtherUser)
-  }, [withId, profile])
+      if (data) setOtherUser(data as OtherUser)
+    },
+    [withId, profile]
+  )
 
   useEffect(() => {
     async function init() {
@@ -115,27 +120,33 @@ export default function MessageThread() {
     if (!profile || !threadId) return
     const channel = supabase
       .channel(`thread:${threadId}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages',
-        filter: `thread_id=eq.${threadId}`,
-      }, async (payload) => {
-        const msg = payload.new as Message
-        setMessages(prev => {
-          if (prev.some(m => m.id === msg.id)) return prev
-          return [...prev, msg]
-        })
-        setIsFirstContact(false)
-        if (msg.recipient_id === profile.id && !msg.read_at) {
-          await supabase
-            .from('messages')
-            .update({ read_at: new Date().toISOString() })
-            .eq('id', msg.id)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `thread_id=eq.${threadId}`,
+        },
+        async payload => {
+          const msg = payload.new as Message
+          setMessages(prev => {
+            if (prev.some(m => m.id === msg.id)) return prev
+            return [...prev, msg]
+          })
+          setIsFirstContact(false)
+          if (msg.recipient_id === profile.id && !msg.read_at) {
+            await supabase
+              .from('messages')
+              .update({ read_at: new Date().toISOString() })
+              .eq('id', msg.id)
+          }
         }
-      })
+      )
       .subscribe()
-    return () => { supabase.removeChannel(channel) }
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [profile, threadId])
 
   useEffect(() => {
@@ -194,7 +205,15 @@ export default function MessageThread() {
 
   if (loading) {
     return (
-      <div style={{ maxWidth: 680, margin: '0 auto', padding: '24px 20px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+      <div
+        style={{
+          maxWidth: 680,
+          margin: '0 auto',
+          padding: '24px 20px',
+          textAlign: 'center',
+          color: 'var(--color-text-muted)',
+        }}
+      >
         Loading...
       </div>
     )
@@ -209,24 +228,58 @@ export default function MessageThread() {
   const color = otherUser ? COLORS[otherUser.id.charCodeAt(0) % COLORS.length] : '#ccc'
 
   return (
-    <div style={{ maxWidth: 680, margin: '0 auto', padding: '24px 20px', display: 'flex', flexDirection: 'column', height: 'calc(100vh - 56px)' }}>
+    <div
+      style={{
+        maxWidth: 680,
+        margin: '0 auto',
+        padding: '24px 20px',
+        display: 'flex',
+        flexDirection: 'column',
+        height: 'calc(100vh - 56px)',
+      }}
+    >
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexShrink: 0 }}>
-        <button onClick={() => navigate('/messages')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', padding: 4 }}>
+      <div
+        style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexShrink: 0 }}
+      >
+        <button
+          onClick={() => navigate('/messages')}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: 'var(--color-text-muted)',
+            padding: 4,
+          }}
+        >
           <ArrowLeft size={20} />
         </button>
         {otherUser ? (
-          <Link to={`/profile/${otherUser.handle}`} style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+          <Link
+            to={`/profile/${otherUser.handle}`}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}
+          >
             {otherUser.avatar_url ? (
-              <img src={otherUser.avatar_url} alt="" style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }} />
+              <img
+                src={otherUser.avatar_url}
+                alt=""
+                style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }}
+              />
             ) : (
-              <div className="avatar-placeholder" style={{ width: 36, height: 36, background: color, fontSize: 12 }}>
+              <div
+                className="avatar-placeholder"
+                style={{ width: 36, height: 36, background: color, fontSize: 12 }}
+              >
                 {initials}
               </div>
             )}
             <div>
-              <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--color-text)' }}>{otherUser.display_name}</div>
-              <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>@{otherUser.handle}</div>
+              <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--color-text)' }}>
+                {otherUser.display_name}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
+                @{otherUser.handle}
+              </div>
             </div>
           </Link>
         ) : (
@@ -236,37 +289,77 @@ export default function MessageThread() {
 
       {/* First-contact inquiry prompt for non-contractors messaging contractors */}
       {isNonContractorToContractor && isFirstContact && (
-        <div style={{
-          background: 'var(--color-surface)',
-          border: '1px solid var(--color-border)',
-          borderRadius: 12, padding: '20px 20px', marginBottom: 12,
-          textAlign: 'center',
-        }}>
-          <div style={{
-            width: 44, height: 44, borderRadius: '50%',
-            background: 'var(--color-brand-light)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 12px',
-          }}>
+        <div
+          style={{
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 12,
+            padding: '20px 20px',
+            marginBottom: 12,
+            textAlign: 'center',
+          }}
+        >
+          <div
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: '50%',
+              background: 'var(--color-brand-light)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 12px',
+            }}
+          >
             <FileText size={20} color="var(--color-brand)" />
           </div>
-          <div style={{
-            fontFamily: 'var(--font-condensed)', fontSize: 16, fontWeight: 800,
-            color: 'var(--color-text)', marginBottom: 6,
-          }}>
+          <div
+            style={{
+              fontFamily: 'var(--font-condensed)',
+              fontSize: 16,
+              fontWeight: 800,
+              color: 'var(--color-text)',
+              marginBottom: 6,
+            }}
+          >
             Send a Project Inquiry
           </div>
-          <div style={{ fontSize: 13, color: 'var(--color-text-muted)', lineHeight: 1.5, marginBottom: 16, maxWidth: 380, margin: '0 auto 16px' }}>
-            Fill out a structured request — trade, location, timeline, and budget — so {otherUser?.display_name ?? 'this contractor'} gets everything they need to give you a real answer.
+          <div
+            style={{
+              fontSize: 13,
+              color: 'var(--color-text-muted)',
+              lineHeight: 1.5,
+              marginBottom: 16,
+              maxWidth: 380,
+              margin: '0 auto 16px',
+            }}
+          >
+            Fill out a structured request — trade, location, timeline, and budget — so{' '}
+            {otherUser?.display_name ?? 'this contractor'} gets everything they need to give you a
+            real answer.
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 16 }}>
-            <span style={{
-              fontFamily: 'var(--font-condensed)', fontSize: 12, fontWeight: 700,
-              letterSpacing: '0.5px', textTransform: 'uppercase',
-              color: 'var(--color-brand)',
-              background: 'var(--color-brand-light)',
-              borderRadius: 99, padding: '3px 10px',
-            }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              marginBottom: 16,
+            }}
+          >
+            <span
+              style={{
+                fontFamily: 'var(--font-condensed)',
+                fontSize: 12,
+                fontWeight: 700,
+                letterSpacing: '0.5px',
+                textTransform: 'uppercase',
+                color: 'var(--color-brand)',
+                background: 'var(--color-brand-light)',
+                borderRadius: 99,
+                padding: '3px 10px',
+              }}
+            >
               {COLD_MSG_COST} credits to send
             </span>
             <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
@@ -284,37 +377,77 @@ export default function MessageThread() {
       )}
 
       {/* Messages */}
-      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 12 }}>
+      <div
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 10,
+          paddingBottom: 12,
+        }}
+      >
         {messages.length === 0 && (
-          <div style={{ textAlign: 'center', color: 'var(--color-text-muted)', fontSize: 13, marginTop: 40 }}>
+          <div
+            style={{
+              textAlign: 'center',
+              color: 'var(--color-text-muted)',
+              fontSize: 13,
+              marginTop: 40,
+            }}
+          >
             No messages yet. Say hello!
           </div>
         )}
         {messages.map(m => (
-          <div key={m.id} style={{ display: 'flex', flexDirection: isMe(m) ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-end' }}>
+          <div
+            key={m.id}
+            style={{
+              display: 'flex',
+              flexDirection: isMe(m) ? 'row-reverse' : 'row',
+              gap: 8,
+              alignItems: 'flex-end',
+            }}
+          >
             {!isMe(m) && otherUser && (
               <div style={{ flexShrink: 0 }}>
                 {otherUser.avatar_url ? (
-                  <img src={otherUser.avatar_url} alt="" style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} />
+                  <img
+                    src={otherUser.avatar_url}
+                    alt=""
+                    style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }}
+                  />
                 ) : (
-                  <div className="avatar-placeholder" style={{ width: 28, height: 28, background: color, fontSize: 10 }}>
+                  <div
+                    className="avatar-placeholder"
+                    style={{ width: 28, height: 28, background: color, fontSize: 10 }}
+                  >
                     {initials}
                   </div>
                 )}
               </div>
             )}
-            <div style={{
-              maxWidth: '72%',
-              background: isMe(m) ? 'var(--color-brand)' : 'var(--color-surface)',
-              color: isMe(m) ? '#fff' : 'var(--color-text)',
-              borderRadius: isMe(m) ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-              padding: '9px 13px',
-              fontSize: 14,
-              lineHeight: 1.5,
-              border: isMe(m) ? 'none' : '1px solid var(--color-border)',
-            }}>
+            <div
+              style={{
+                maxWidth: '72%',
+                background: isMe(m) ? 'var(--color-brand)' : 'var(--color-surface)',
+                color: isMe(m) ? '#fff' : 'var(--color-text)',
+                borderRadius: isMe(m) ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                padding: '9px 13px',
+                fontSize: 14,
+                lineHeight: 1.5,
+                border: isMe(m) ? 'none' : '1px solid var(--color-border)',
+              }}
+            >
               <p style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.body}</p>
-              <p style={{ margin: '4px 0 0', fontSize: 10, opacity: 0.65, textAlign: isMe(m) ? 'right' : 'left' }}>
+              <p
+                style={{
+                  margin: '4px 0 0',
+                  fontSize: 10,
+                  opacity: 0.65,
+                  textAlign: isMe(m) ? 'right' : 'left',
+                }}
+              >
                 {formatTime(m.created_at)}
               </p>
             </div>
@@ -327,10 +460,33 @@ export default function MessageThread() {
       {!(isNonContractorToContractor && isFirstContact) && (
         <div style={{ flexShrink: 0, borderTop: '1px solid var(--color-border)', paddingTop: 12 }}>
           {sendError && (
-            <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, padding: '8px 12px', marginBottom: 10, fontSize: 13, color: '#DC2626', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div
+              style={{
+                background: '#FEF2F2',
+                border: '1px solid #FECACA',
+                borderRadius: 8,
+                padding: '8px 12px',
+                marginBottom: 10,
+                fontSize: 13,
+                color: '#DC2626',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
               <AlertCircle size={14} /> {sendError}
               {sendError.includes('credits') && (
-                <Link to="/credits" style={{ color: 'var(--color-brand)', fontWeight: 600, textDecoration: 'none', marginLeft: 4 }}>Buy credits →</Link>
+                <Link
+                  to="/credits"
+                  style={{
+                    color: 'var(--color-brand)',
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                    marginLeft: 4,
+                  }}
+                >
+                  Buy credits →
+                </Link>
               )}
             </div>
           )}
@@ -343,10 +499,16 @@ export default function MessageThread() {
               placeholder="Type a message… (Enter to send)"
               rows={2}
               style={{
-                flex: 1, padding: '9px 12px',
-                border: '1.5px solid var(--color-border)', borderRadius: 10,
-                fontSize: 14, resize: 'none', outline: 'none', lineHeight: 1.5,
-                background: 'var(--color-surface)', color: 'var(--color-text)',
+                flex: 1,
+                padding: '9px 12px',
+                border: '1.5px solid var(--color-border)',
+                borderRadius: 10,
+                fontSize: 14,
+                resize: 'none',
+                outline: 'none',
+                lineHeight: 1.5,
+                background: 'var(--color-surface)',
+                color: 'var(--color-text)',
                 fontFamily: 'var(--font-sans)',
               }}
             />
@@ -354,7 +516,14 @@ export default function MessageThread() {
               onClick={() => handleSend()}
               disabled={sending || !body.trim()}
               className="btn btn-primary"
-              style={{ padding: '10px 14px', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}
+              style={{
+                padding: '10px 14px',
+                borderRadius: 10,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                flexShrink: 0,
+              }}
             >
               <Send size={15} /> {sending ? '…' : 'Send'}
             </button>

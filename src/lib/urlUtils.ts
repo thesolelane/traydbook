@@ -11,7 +11,9 @@ export function safeExternalUrl(url: string | undefined | null): string | null {
   }
 }
 
-export function sanitizeSocialLinks(raw: Record<string, string | undefined>): Record<string, string> {
+export function sanitizeSocialLinks(
+  raw: Record<string, string | undefined>
+): Record<string, string> {
   const result: Record<string, string> = {}
   for (const [key, val] of Object.entries(raw)) {
     const safe = safeExternalUrl(val)

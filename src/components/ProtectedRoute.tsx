@@ -8,19 +8,27 @@ interface ProtectedRouteProps {
 
 function Spinner() {
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      height: '100vh', background: 'var(--color-bg)',
-    }}>
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+        background: 'var(--color-bg)',
+      }}
+    >
       <div style={{ textAlign: 'center' }}>
-        <div style={{
-          width: 40, height: 40,
-          border: '3px solid var(--color-border)',
-          borderTopColor: 'var(--color-brand)',
-          borderRadius: '50%',
-          animation: 'spin 0.8s linear infinite',
-          margin: '0 auto 12px',
-        }} />
+        <div
+          style={{
+            width: 40,
+            height: 40,
+            border: '3px solid var(--color-border)',
+            borderTopColor: 'var(--color-brand)',
+            borderRadius: '50%',
+            animation: 'spin 0.8s linear infinite',
+            margin: '0 auto 12px',
+          }}
+        />
         <p style={{ color: 'var(--color-text-muted)', fontSize: 14 }}>Loading...</p>
       </div>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>

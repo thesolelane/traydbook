@@ -6,31 +6,125 @@ import type { AccountType } from '../lib/database.types'
 import '../styles/auth.css'
 
 const TRADES = [
-  'Electrician', 'Plumber', 'HVAC Tech', 'Carpenter', 'Ironworker',
-  'Mason / Bricklayer', 'Painter', 'Roofer', 'Welder', 'Pipefitter',
-  'Sheet Metal Worker', 'Concrete / Flatwork', 'Drywall / Finisher',
-  'Flooring', 'Tile Setter', 'Glazier', 'Insulation', 'Landscaping',
-  'General Contractor', 'Construction Manager', 'Other',
+  'Electrician',
+  'Plumber',
+  'HVAC Tech',
+  'Carpenter',
+  'Ironworker',
+  'Mason / Bricklayer',
+  'Painter',
+  'Roofer',
+  'Welder',
+  'Pipefitter',
+  'Sheet Metal Worker',
+  'Concrete / Flatwork',
+  'Drywall / Finisher',
+  'Flooring',
+  'Tile Setter',
+  'Glazier',
+  'Insulation',
+  'Landscaping',
+  'General Contractor',
+  'Construction Manager',
+  'Other',
 ]
 
 const US_STATES = [
-  'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA',
-  'KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ',
-  'NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT',
-  'VA','WA','WV','WI','WY','DC',
+  'AL',
+  'AK',
+  'AZ',
+  'AR',
+  'CA',
+  'CO',
+  'CT',
+  'DE',
+  'FL',
+  'GA',
+  'HI',
+  'ID',
+  'IL',
+  'IN',
+  'IA',
+  'KS',
+  'KY',
+  'LA',
+  'ME',
+  'MD',
+  'MA',
+  'MI',
+  'MN',
+  'MS',
+  'MO',
+  'MT',
+  'NE',
+  'NV',
+  'NH',
+  'NJ',
+  'NM',
+  'NY',
+  'NC',
+  'ND',
+  'OH',
+  'OK',
+  'OR',
+  'PA',
+  'RI',
+  'SC',
+  'SD',
+  'TN',
+  'TX',
+  'UT',
+  'VT',
+  'VA',
+  'WA',
+  'WV',
+  'WI',
+  'WY',
+  'DC',
 ]
 
-const ACCOUNT_TYPES: { type: AccountType; icon: string; title: string; desc: string; free?: boolean }[] = [
-  { type: 'contractor', icon: '🏗️', title: 'Contractor / Tradesperson', desc: 'Electricians, plumbers, HVAC, carpenters, and all skilled trades.', free: true },
-  { type: 'project_owner', icon: '📋', title: 'Project Owner', desc: 'Developers, investors, and commercial clients posting RFQs.' },
-  { type: 'agent', icon: '🏠', title: 'Real Estate Agent', desc: 'Agents connecting trades with their clients and projects.' },
-  { type: 'homeowner', icon: '🔑', title: 'Homeowner', desc: 'Homeowners looking for trusted trade professionals.' },
+const ACCOUNT_TYPES: {
+  type: AccountType
+  icon: string
+  title: string
+  desc: string
+  free?: boolean
+}[] = [
+  {
+    type: 'contractor',
+    icon: '🏗️',
+    title: 'Contractor / Tradesperson',
+    desc: 'Electricians, plumbers, HVAC, carpenters, and all skilled trades.',
+    free: true,
+  },
+  {
+    type: 'project_owner',
+    icon: '📋',
+    title: 'Project Owner',
+    desc: 'Developers, investors, and commercial clients posting RFQs.',
+  },
+  {
+    type: 'agent',
+    icon: '🏠',
+    title: 'Real Estate Agent',
+    desc: 'Agents connecting trades with their clients and projects.',
+  },
+  {
+    type: 'homeowner',
+    icon: '🔑',
+    title: 'Homeowner',
+    desc: 'Homeowners looking for trusted trade professionals.',
+  },
 ]
 
 type Step = 'account-type' | 'details'
 
 function generateHandle(name: string): string {
-  const base = name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20) || 'user'
+  const base =
+    name
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '')
+      .slice(0, 20) || 'user'
   const suffix = Math.floor(1000 + Math.random() * 9000)
   return `${base}${suffix}`
 }
@@ -113,12 +207,38 @@ export default function Onboarding() {
         <div className="auth-logo">
           <div className="auth-logo-icon">
             <svg viewBox="0 0 17 17" fill="none" width={16} height={16}>
-              <rect x="2" y="1.5" width="9" height="13" rx="1.5" fill="rgba(255,255,255,0.12)" stroke="white" strokeWidth="1.2" />
-              <rect x="5" y="1.5" width="9" height="13" rx="1.5" fill="rgba(255,255,255,0.25)" stroke="white" strokeWidth="1.2" />
-              <path d="M7 6h4M7 9h3M7 12h2" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
+              <rect
+                x="2"
+                y="1.5"
+                width="9"
+                height="13"
+                rx="1.5"
+                fill="rgba(255,255,255,0.12)"
+                stroke="white"
+                strokeWidth="1.2"
+              />
+              <rect
+                x="5"
+                y="1.5"
+                width="9"
+                height="13"
+                rx="1.5"
+                fill="rgba(255,255,255,0.25)"
+                stroke="white"
+                strokeWidth="1.2"
+              />
+              <path
+                d="M7 6h4M7 9h3M7 12h2"
+                stroke="white"
+                strokeWidth="1.2"
+                strokeLinecap="round"
+              />
             </svg>
           </div>
-          <div className="auth-logo-word"><span className="trayd">Trayd</span><span className="book">Book</span></div>
+          <div className="auth-logo-word">
+            <span className="trayd">Trayd</span>
+            <span className="book">Book</span>
+          </div>
         </div>
 
         {step === 'account-type' ? (
@@ -160,7 +280,10 @@ export default function Onboarding() {
             <h1 className="auth-title">One last step</h1>
             <p className="auth-subtitle">Confirm your details to finish setting up.</p>
 
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <form
+              onSubmit={handleSubmit}
+              style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+            >
               <div className="form-group">
                 <label className="form-label">Your Name</label>
                 <input
@@ -175,8 +298,16 @@ export default function Onboarding() {
               {accountType === 'contractor' && (
                 <div className="form-group">
                   <label className="form-label">Primary Trade</label>
-                  <select className="form-select" value={trade} onChange={e => setTrade(e.target.value)}>
-                    {TRADES.map(t => <option key={t} value={t}>{t}</option>)}
+                  <select
+                    className="form-select"
+                    value={trade}
+                    onChange={e => setTrade(e.target.value)}
+                  >
+                    {TRADES.map(t => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
                   </select>
                 </div>
               )}
@@ -193,9 +324,17 @@ export default function Onboarding() {
                 </div>
                 <div className="form-group">
                   <label className="form-label">State</label>
-                  <select className="form-select" value={state} onChange={e => setState(e.target.value)}>
+                  <select
+                    className="form-select"
+                    value={state}
+                    onChange={e => setState(e.target.value)}
+                  >
                     <option value="">—</option>
-                    {US_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                    {US_STATES.map(s => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>

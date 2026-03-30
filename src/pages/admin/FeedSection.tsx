@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react'
 import { Trash2 } from 'lucide-react'
-import { SectionProps, SectionCard, LoadingRow, formatDate, tableHeaderStyle, tableCellStyle } from './shared'
+import {
+  SectionProps,
+  SectionCard,
+  LoadingRow,
+  formatDate,
+  tableHeaderStyle,
+  tableCellStyle,
+} from './shared'
 
 interface PostRow {
   id: string
@@ -31,8 +38,14 @@ export default function FeedSection({ authHeaders }: SectionProps) {
   const [actionMsg, setActionMsg] = useState('')
   const [actionErr, setActionErr] = useState('')
 
-  function showMsg(msg: string) { setActionMsg(msg); setTimeout(() => setActionMsg(''), 2500) }
-  function showErr(err: string) { setActionErr(err); setTimeout(() => setActionErr(''), 4000) }
+  function showMsg(msg: string) {
+    setActionMsg(msg)
+    setTimeout(() => setActionMsg(''), 2500)
+  }
+  function showErr(err: string) {
+    setActionErr(err)
+    setTimeout(() => setActionErr(''), 4000)
+  }
 
   useEffect(() => {
     async function loadPosts() {
@@ -41,7 +54,9 @@ export default function FeedSection({ authHeaders }: SectionProps) {
         const res = await fetch('/api/admin/posts', { headers: authHeaders() })
         if (!res.ok) throw new Error((await res.json()).error ?? 'Failed')
         setPosts((await res.json()).posts ?? [])
-      } finally { setLoadingPosts(false) }
+      } finally {
+        setLoadingPosts(false)
+      }
     }
     async function loadFlagged() {
       setLoadingFlagged(true)
@@ -49,7 +64,9 @@ export default function FeedSection({ authHeaders }: SectionProps) {
         const res = await fetch('/api/admin/flagged-posts', { headers: authHeaders() })
         if (!res.ok) throw new Error((await res.json()).error ?? 'Failed')
         setFlaggedPosts((await res.json()).posts ?? [])
-      } finally { setLoadingFlagged(false) }
+      } finally {
+        setLoadingFlagged(false)
+      }
     }
     async function loadComments() {
       setLoadingComments(true)
@@ -57,7 +74,9 @@ export default function FeedSection({ authHeaders }: SectionProps) {
         const res = await fetch('/api/admin/comments', { headers: authHeaders() })
         if (!res.ok) throw new Error((await res.json()).error ?? 'Failed')
         setComments((await res.json()).comments ?? [])
-      } finally { setLoadingComments(false) }
+      } finally {
+        setLoadingComments(false)
+      }
     }
     void loadPosts()
     void loadFlagged()
@@ -66,7 +85,10 @@ export default function FeedSection({ authHeaders }: SectionProps) {
 
   async function deletePost(postId: string) {
     if (!confirm('Delete this post? This cannot be undone.')) return
-    const res = await fetch(`/api/admin/post/${postId}`, { method: 'DELETE', headers: authHeaders() })
+    const res = await fetch(`/api/admin/post/${postId}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    })
     if (res.ok) {
       setPosts(prev => prev.filter(p => p.id !== postId))
       setFlaggedPosts(prev => prev.filter(p => p.id !== postId))
@@ -84,7 +106,7 @@ export default function FeedSection({ authHeaders }: SectionProps) {
       body: JSON.stringify({ flagged }),
     })
     if (res.ok) {
-      setPosts(prev => prev.map(p => p.id === postId ? { ...p, is_flagged: flagged } : p))
+      setPosts(prev => prev.map(p => (p.id === postId ? { ...p, is_flagged: flagged } : p)))
       if (!flagged) {
         setFlaggedPosts(prev => prev.filter(p => p.id !== postId))
       } else {
@@ -100,7 +122,10 @@ export default function FeedSection({ authHeaders }: SectionProps) {
 
   async function deleteComment(commentId: string) {
     if (!confirm('Delete this comment? This cannot be undone.')) return
-    const res = await fetch(`/api/admin/comment/${commentId}`, { method: 'DELETE', headers: authHeaders() })
+    const res = await fetch(`/api/admin/comment/${commentId}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    })
     if (res.ok) {
       setComments(prev => prev.filter(c => c.id !== commentId))
       showMsg('Comment deleted.')
@@ -113,17 +138,41 @@ export default function FeedSection({ authHeaders }: SectionProps) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {actionMsg && (
-        <div style={{ padding: '10px 14px', background: 'rgba(5,150,105,0.08)', border: '1px solid rgba(5,150,105,0.25)', borderRadius: 8, fontSize: 13, color: '#059669' }}>{actionMsg}</div>
+        <div
+          style={{
+            padding: '10px 14px',
+            background: 'rgba(5,150,105,0.08)',
+            border: '1px solid rgba(5,150,105,0.25)',
+            borderRadius: 8,
+            fontSize: 13,
+            color: '#059669',
+          }}
+        >
+          {actionMsg}
+        </div>
       )}
       {actionErr && (
-        <div style={{ padding: '10px 14px', background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.2)', borderRadius: 8, fontSize: 13, color: '#DC2626' }}>{actionErr}</div>
+        <div
+          style={{
+            padding: '10px 14px',
+            background: 'rgba(220,38,38,0.08)',
+            border: '1px solid rgba(220,38,38,0.2)',
+            borderRadius: 8,
+            fontSize: 13,
+            color: '#DC2626',
+          }}
+        >
+          {actionErr}
+        </div>
       )}
 
       <SectionCard title={`Flagged Content Queue (${loadingFlagged ? '…' : flaggedPosts.length})`}>
         {loadingFlagged ? (
           <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Loading…</p>
         ) : flaggedPosts.length === 0 ? (
-          <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: 0 }}>No flagged content. Flag posts from the list below to surface them here for review.</p>
+          <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: 0 }}>
+            No flagged content. Flag posts from the list below to surface them here for review.
+          </p>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -139,21 +188,71 @@ export default function FeedSection({ authHeaders }: SectionProps) {
                 {flaggedPosts.map(p => (
                   <tr key={p.id} style={{ background: 'rgba(245,158,11,0.04)' }}>
                     <td style={tableCellStyle}>
-                      <div style={{ fontWeight: 600, fontSize: 13 }}>{p.author?.display_name ?? '–'}</div>
-                      <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>@{p.author?.handle ?? '–'}</div>
+                      <div style={{ fontWeight: 600, fontSize: 13 }}>
+                        {p.author?.display_name ?? '–'}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
+                        @{p.author?.handle ?? '–'}
+                      </div>
                     </td>
                     <td style={tableCellStyle}>
-                      <span style={{ fontSize: 11, background: 'var(--color-border)', padding: '2px 6px', borderRadius: 4, color: 'var(--color-text-muted)' }}>{p.post_type}</span>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          background: 'var(--color-border)',
+                          padding: '2px 6px',
+                          borderRadius: 4,
+                          color: 'var(--color-text-muted)',
+                        }}
+                      >
+                        {p.post_type}
+                      </span>
                     </td>
                     <td style={{ ...tableCellStyle, maxWidth: 350 }}>
-                      <span style={{ fontSize: 12, color: 'var(--color-text-muted)', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.body}</span>
+                      <span
+                        style={{
+                          fontSize: 12,
+                          color: 'var(--color-text-muted)',
+                          display: 'block',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {p.body}
+                      </span>
                     </td>
                     <td style={tableCellStyle}>
                       <div style={{ display: 'flex', gap: 6 }}>
-                        <button onClick={() => void flagPost(p.id, false)} style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid rgba(245,158,11,0.4)', background: 'rgba(245,158,11,0.1)', cursor: 'pointer', color: '#B45309', fontSize: 11 }}>
+                        <button
+                          onClick={() => void flagPost(p.id, false)}
+                          style={{
+                            padding: '4px 8px',
+                            borderRadius: 6,
+                            border: '1px solid rgba(245,158,11,0.4)',
+                            background: 'rgba(245,158,11,0.1)',
+                            cursor: 'pointer',
+                            color: '#B45309',
+                            fontSize: 11,
+                          }}
+                        >
                           Unflag
                         </button>
-                        <button onClick={() => void deletePost(p.id)} style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid rgba(220,38,38,0.3)', background: 'rgba(220,38,38,0.06)', cursor: 'pointer', color: '#DC2626', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <button
+                          onClick={() => void deletePost(p.id)}
+                          style={{
+                            padding: '4px 8px',
+                            borderRadius: 6,
+                            border: '1px solid rgba(220,38,38,0.3)',
+                            background: 'rgba(220,38,38,0.06)',
+                            cursor: 'pointer',
+                            color: '#DC2626',
+                            fontSize: 11,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
+                          }}
+                        >
                           <Trash2 size={11} /> Delete
                         </button>
                       </div>
@@ -183,39 +282,108 @@ export default function FeedSection({ authHeaders }: SectionProps) {
               {loadingPosts ? (
                 Array.from({ length: 5 }).map((_, i) => <LoadingRow key={i} cols={6} />)
               ) : posts.length === 0 ? (
-                <tr><td colSpan={6} style={{ ...tableCellStyle, textAlign: 'center', color: 'var(--color-text-muted)', padding: 32 }}>No posts.</td></tr>
-              ) : posts.map(p => (
-                <tr key={p.id} style={{ background: p.is_flagged ? 'rgba(245,158,11,0.04)' : 'transparent' }}>
-                  <td style={tableCellStyle}>
-                    <div style={{ fontWeight: 600, fontSize: 13 }}>{p.author?.display_name ?? '–'}</div>
-                    <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>@{p.author?.handle ?? '–'}</div>
-                  </td>
-                  <td style={tableCellStyle}>
-                    <span style={{ fontSize: 11, background: 'var(--color-border)', padding: '2px 6px', borderRadius: 4, color: 'var(--color-text-muted)' }}>{p.post_type}</span>
-                  </td>
-                  <td style={{ ...tableCellStyle, maxWidth: 300 }}>
-                    <span style={{ fontSize: 12, color: 'var(--color-text-muted)', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.body}</span>
-                  </td>
-                  <td style={tableCellStyle}>{p.like_count}</td>
-                  <td style={{ ...tableCellStyle, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>{formatDate(p.created_at)}</td>
-                  <td style={tableCellStyle}>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <button
-                        onClick={() => void flagPost(p.id, !p.is_flagged)}
-                        style={{ padding: '4px 8px', borderRadius: 6, border: `1px solid ${p.is_flagged ? 'rgba(245,158,11,0.4)' : 'var(--color-border)'}`, background: p.is_flagged ? 'rgba(245,158,11,0.1)' : 'none', cursor: 'pointer', color: p.is_flagged ? '#B45309' : 'var(--color-text-muted)', fontSize: 11 }}
-                      >
-                        {p.is_flagged ? 'Unflag' : 'Flag'}
-                      </button>
-                      <button
-                        onClick={() => void deletePost(p.id)}
-                        style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid rgba(220,38,38,0.3)', background: 'rgba(220,38,38,0.06)', cursor: 'pointer', color: '#DC2626', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}
-                      >
-                        <Trash2 size={11} /> Delete
-                      </button>
-                    </div>
+                <tr>
+                  <td
+                    colSpan={6}
+                    style={{
+                      ...tableCellStyle,
+                      textAlign: 'center',
+                      color: 'var(--color-text-muted)',
+                      padding: 32,
+                    }}
+                  >
+                    No posts.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                posts.map(p => (
+                  <tr
+                    key={p.id}
+                    style={{ background: p.is_flagged ? 'rgba(245,158,11,0.04)' : 'transparent' }}
+                  >
+                    <td style={tableCellStyle}>
+                      <div style={{ fontWeight: 600, fontSize: 13 }}>
+                        {p.author?.display_name ?? '–'}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
+                        @{p.author?.handle ?? '–'}
+                      </div>
+                    </td>
+                    <td style={tableCellStyle}>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          background: 'var(--color-border)',
+                          padding: '2px 6px',
+                          borderRadius: 4,
+                          color: 'var(--color-text-muted)',
+                        }}
+                      >
+                        {p.post_type}
+                      </span>
+                    </td>
+                    <td style={{ ...tableCellStyle, maxWidth: 300 }}>
+                      <span
+                        style={{
+                          fontSize: 12,
+                          color: 'var(--color-text-muted)',
+                          display: 'block',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {p.body}
+                      </span>
+                    </td>
+                    <td style={tableCellStyle}>{p.like_count}</td>
+                    <td
+                      style={{
+                        ...tableCellStyle,
+                        color: 'var(--color-text-muted)',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {formatDate(p.created_at)}
+                    </td>
+                    <td style={tableCellStyle}>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button
+                          onClick={() => void flagPost(p.id, !p.is_flagged)}
+                          style={{
+                            padding: '4px 8px',
+                            borderRadius: 6,
+                            border: `1px solid ${p.is_flagged ? 'rgba(245,158,11,0.4)' : 'var(--color-border)'}`,
+                            background: p.is_flagged ? 'rgba(245,158,11,0.1)' : 'none',
+                            cursor: 'pointer',
+                            color: p.is_flagged ? '#B45309' : 'var(--color-text-muted)',
+                            fontSize: 11,
+                          }}
+                        >
+                          {p.is_flagged ? 'Unflag' : 'Flag'}
+                        </button>
+                        <button
+                          onClick={() => void deletePost(p.id)}
+                          style={{
+                            padding: '4px 8px',
+                            borderRadius: 6,
+                            border: '1px solid rgba(220,38,38,0.3)',
+                            background: 'rgba(220,38,38,0.06)',
+                            cursor: 'pointer',
+                            color: '#DC2626',
+                            fontSize: 11,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
+                          }}
+                        >
+                          <Trash2 size={11} /> Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -236,27 +404,75 @@ export default function FeedSection({ authHeaders }: SectionProps) {
               {loadingComments ? (
                 Array.from({ length: 5 }).map((_, i) => <LoadingRow key={i} cols={4} />)
               ) : comments.length === 0 ? (
-                <tr><td colSpan={4} style={{ ...tableCellStyle, textAlign: 'center', color: 'var(--color-text-muted)', padding: 32 }}>No comments.</td></tr>
-              ) : comments.map(c => (
-                <tr key={c.id}>
-                  <td style={tableCellStyle}>
-                    <div style={{ fontWeight: 600, fontSize: 13 }}>{c.author?.display_name ?? '–'}</div>
-                    <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>@{c.author?.handle ?? '–'}</div>
-                  </td>
-                  <td style={{ ...tableCellStyle, maxWidth: 350 }}>
-                    <span style={{ fontSize: 12, color: 'var(--color-text-muted)', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.body}</span>
-                  </td>
-                  <td style={{ ...tableCellStyle, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>{formatDate(c.created_at)}</td>
-                  <td style={tableCellStyle}>
-                    <button
-                      onClick={() => void deleteComment(c.id)}
-                      style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid rgba(220,38,38,0.3)', background: 'rgba(220,38,38,0.06)', cursor: 'pointer', color: '#DC2626', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}
-                    >
-                      <Trash2 size={11} /> Delete
-                    </button>
+                <tr>
+                  <td
+                    colSpan={4}
+                    style={{
+                      ...tableCellStyle,
+                      textAlign: 'center',
+                      color: 'var(--color-text-muted)',
+                      padding: 32,
+                    }}
+                  >
+                    No comments.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                comments.map(c => (
+                  <tr key={c.id}>
+                    <td style={tableCellStyle}>
+                      <div style={{ fontWeight: 600, fontSize: 13 }}>
+                        {c.author?.display_name ?? '–'}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
+                        @{c.author?.handle ?? '–'}
+                      </div>
+                    </td>
+                    <td style={{ ...tableCellStyle, maxWidth: 350 }}>
+                      <span
+                        style={{
+                          fontSize: 12,
+                          color: 'var(--color-text-muted)',
+                          display: 'block',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {c.body}
+                      </span>
+                    </td>
+                    <td
+                      style={{
+                        ...tableCellStyle,
+                        color: 'var(--color-text-muted)',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {formatDate(c.created_at)}
+                    </td>
+                    <td style={tableCellStyle}>
+                      <button
+                        onClick={() => void deleteComment(c.id)}
+                        style={{
+                          padding: '4px 8px',
+                          borderRadius: 6,
+                          border: '1px solid rgba(220,38,38,0.3)',
+                          background: 'rgba(220,38,38,0.06)',
+                          cursor: 'pointer',
+                          color: '#DC2626',
+                          fontSize: 11,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4,
+                        }}
+                      >
+                        <Trash2 size={11} /> Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

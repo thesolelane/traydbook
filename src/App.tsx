@@ -47,36 +47,54 @@ export default function App() {
       <AuthProvider>
         <Routes>
           {/* Public routes (redirect to /feed if logged in) */}
-          <Route path="/" element={
-            <ProtectedRoute publicOnly>
-              <Landing />
-            </ProtectedRoute>
-          } />
-          <Route path="/login" element={
-            <ProtectedRoute publicOnly>
-              <Login />
-            </ProtectedRoute>
-          } />
-          <Route path="/signup" element={
-            <ProtectedRoute publicOnly>
-              <Signup />
-            </ProtectedRoute>
-          } />
-          <Route path="/signup/trade-select" element={
-            <ProtectedRoute publicOnly>
-              <SignupTradeSelect />
-            </ProtectedRoute>
-          } />
-          <Route path="/signup/contractor" element={
-            <ProtectedRoute publicOnly>
-              <SignupContractor />
-            </ProtectedRoute>
-          } />
-          <Route path="/signup/owner" element={
-            <ProtectedRoute publicOnly>
-              <SignupOwner />
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute publicOnly>
+                <Landing />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/login"
+            element={
+              <ProtectedRoute publicOnly>
+                <Login />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/signup"
+            element={
+              <ProtectedRoute publicOnly>
+                <Signup />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/signup/trade-select"
+            element={
+              <ProtectedRoute publicOnly>
+                <SignupTradeSelect />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/signup/contractor"
+            element={
+              <ProtectedRoute publicOnly>
+                <SignupContractor />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/signup/owner"
+            element={
+              <ProtectedRoute publicOnly>
+                <SignupOwner />
+              </ProtectedRoute>
+            }
+          />
 
           {/* OAuth callback — handles redirect from social login providers */}
           <Route path="/auth/callback" element={<OAuthCallback />} />
@@ -88,127 +106,221 @@ export default function App() {
           <Route path="/reset-password" element={<ResetPassword />} />
 
           {/* Protected routes */}
-          <Route path="/feed" element={
-            <ProtectedRoute>
-              <AppLayout><Feed /></AppLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/jobs" element={
-            <ProtectedRoute>
-              <AppLayout><Jobs /></AppLayout>
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/feed"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <Feed />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/jobs"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <Jobs />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
           {/* IMPORTANT: /jobs/post before /jobs/:id */}
-          <Route path="/jobs/post" element={
-            <ProtectedRoute>
-              <AppLayout><PostJob /></AppLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/jobs/:id" element={
-            <ProtectedRoute>
-              <AppLayout><JobDetail /></AppLayout>
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/jobs/post"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <PostJob />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/jobs/:id"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <JobDetail />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
 
           {/* Explore (replaces Network) */}
-          <Route path="/explore" element={
-            <ProtectedRoute>
-              <AppLayout><Explore /></AppLayout>
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/explore"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <Explore />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
           {/* Keep /network as redirect for any existing links */}
           <Route path="/network" element={<Navigate to="/explore" replace />} />
 
           {/* Bids — IMPORTANT: specific paths before dynamic :id */}
-          <Route path="/bids" element={
-            <ProtectedRoute>
-              <AppLayout><Bids /></AppLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/bids/post" element={
-            <ProtectedRoute>
-              <AppLayout><PostRFQ /></AppLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/bids/new" element={
-            <ProtectedRoute>
-              <AppLayout><PostRFQ /></AppLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/bids/:id" element={
-            <ProtectedRoute>
-              <AppLayout><BidDetail /></AppLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/bids/:id/submit" element={
-            <ProtectedRoute>
-              <AppLayout><BidSubmit /></AppLayout>
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/bids"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <Bids />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/bids/post"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <PostRFQ />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/bids/new"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <PostRFQ />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/bids/:id"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <BidDetail />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/bids/:id/submit"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <BidSubmit />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
 
-          <Route path="/profile" element={
-            <ProtectedRoute>
-              <AppLayout><Profile /></AppLayout>
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <Profile />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
           {/* /profile/edit MUST be before /profile/:handle to avoid conflict */}
-          <Route path="/profile/edit" element={
-            <ProtectedRoute>
-              <AppLayout><EditProfile /></AppLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/profile/:handle" element={
-            <ProtectedRoute>
-              <AppLayout><Profile /></AppLayout>
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/profile/edit"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <EditProfile />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile/:handle"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <Profile />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
 
           {/* Messages — IMPORTANT: /messages/:threadId before /messages */}
-          <Route path="/messages/:threadId" element={
-            <ProtectedRoute>
-              <AppLayout><MessageThread /></AppLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/messages" element={
-            <ProtectedRoute>
-              <AppLayout><Messages /></AppLayout>
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/messages/:threadId"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <MessageThread />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/messages"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <Messages />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
 
           {/* Notifications */}
-          <Route path="/notifications" element={
-            <ProtectedRoute>
-              <AppLayout><Notifications /></AppLayout>
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <Notifications />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
 
-          <Route path="/settings" element={
-            <ProtectedRoute>
-              <AppLayout><Settings /></AppLayout>
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <Settings />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
 
           {/* /credits and /settings/credits redirect to Billing tab in Settings */}
           <Route path="/credits" element={<Navigate to="/settings?tab=billing" replace />} />
-          <Route path="/settings/credits" element={<Navigate to="/settings?tab=billing" replace />} />
+          <Route
+            path="/settings/credits"
+            element={<Navigate to="/settings?tab=billing" replace />}
+          />
 
           {/* Wallet setup — contractor only, after account creation */}
-          <Route path="/wallet-setup" element={
-            <ProtectedRoute>
-              <WalletSetup />
-            </ProtectedRoute>
-          } />
+          <Route
+            path="/wallet-setup"
+            element={
+              <ProtectedRoute>
+                <WalletSetup />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Delegate join — public, linked from invite email */}
           <Route path="/join/:token" element={<JoinDelegate />} />
           <Route path="/staff-invite/:token" element={<StaffInvite />} />
 
           {/* Admin dashboard — admin and admin_2 only */}
-          <Route path="/admin" element={
-            <AdminRoute>
-              <Admin />
-            </AdminRoute>
-          } />
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <Admin />
+              </AdminRoute>
+            }
+          />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

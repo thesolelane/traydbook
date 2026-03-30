@@ -42,7 +42,13 @@ export interface FeedComment {
   author_avatar: string | null
 }
 
-export type FilterType = 'all' | 'project_update' | 'bid_post' | 'job_post' | 'trade_tip' | 'safety_alert'
+export type FilterType =
+  | 'all'
+  | 'project_update'
+  | 'bid_post'
+  | 'job_post'
+  | 'trade_tip'
+  | 'safety_alert'
 
 export interface FilterOption {
   key: FilterType

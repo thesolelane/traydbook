@@ -30,7 +30,10 @@ export default function ReferModal({ onClose, onPosted }: ReferModalProps) {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (query.length < 2) { setResults([]); return }
+    if (query.length < 2) {
+      setResults([])
+      return
+    }
     const timer = setTimeout(() => void doSearch(), 300)
     return () => clearTimeout(timer)
   }, [query])
@@ -39,28 +42,38 @@ export default function ReferModal({ onClose, onPosted }: ReferModalProps) {
     setSearching(true)
     const { data } = await supabase
       .from('users')
-      .select('id, display_name, handle, avatar_url, account_type, location_city, location_state, contractor_profiles!user_id (primary_trade)')
+      .select(
+        'id, display_name, handle, avatar_url, account_type, location_city, location_state, contractor_profiles!user_id (primary_trade)'
+      )
       .eq('account_type', 'contractor')
       .ilike('display_name', `%${query}%`)
       .neq('id', profile?.id ?? '')
       .limit(6)
 
     if (data) {
-      setResults(data.map((u: {
-        id: string; display_name: string; handle: string; avatar_url: string | null;
-        location_city: string | null; location_state: string | null;
-        contractor_profiles: unknown;
-      }) => {
-        const cp = (u.contractor_profiles as { primary_trade: string | null } | null)
-        return {
-          id: u.id,
-          display_name: u.display_name,
-          handle: u.handle,
-          avatar_url: u.avatar_url,
-          primary_trade: cp?.primary_trade ?? null,
-          location: [u.location_city, u.location_state].filter(Boolean).join(', ') || null,
-        }
-      }))
+      setResults(
+        data.map(
+          (u: {
+            id: string
+            display_name: string
+            handle: string
+            avatar_url: string | null
+            location_city: string | null
+            location_state: string | null
+            contractor_profiles: unknown
+          }) => {
+            const cp = u.contractor_profiles as { primary_trade: string | null } | null
+            return {
+              id: u.id,
+              display_name: u.display_name,
+              handle: u.handle,
+              avatar_url: u.avatar_url,
+              primary_trade: cp?.primary_trade ?? null,
+              location: [u.location_city, u.location_state].filter(Boolean).join(', ') || null,
+            }
+          }
+        )
+      )
     }
     setSearching(false)
   }
@@ -80,14 +93,19 @@ export default function ReferModal({ onClose, onPosted }: ReferModalProps) {
         author_id: profile.id,
         post_type: 'referral' as PostType,
         body,
-        hashtags: ['Referral', ...(selected.primary_trade ? [selected.primary_trade.replace(/\s+/g, '')] : [])],
+        hashtags: [
+          'Referral',
+          ...(selected.primary_trade ? [selected.primary_trade.replace(/\s+/g, '')] : []),
+        ],
         tagged_user_id: selected.id,
       })
-      .select(`
+      .select(
+        `
         id, post_type, body, media_urls, hashtags, like_count, comment_count, share_count,
         is_urgent, is_boosted, created_at, author_id, tagged_user_id,
         users!author_id (display_name, handle, avatar_url, account_type)
-      `)
+      `
+      )
       .single()
 
     if (err || !data) {
@@ -96,7 +114,12 @@ export default function ReferModal({ onClose, onPosted }: ReferModalProps) {
       return
     }
 
-    const u = (data.users as unknown) as { display_name: string; handle: string; avatar_url: string | null; account_type: string } | null
+    const u = data.users as unknown as {
+      display_name: string
+      handle: string
+      avatar_url: string | null
+      account_type: string
+    } | null
     const feedPost: FeedPost = {
       id: data.id as string,
       post_type: 'referral',
@@ -124,18 +147,45 @@ export default function ReferModal({ onClose, onPosted }: ReferModalProps) {
   }
 
   return (
-    <div style={{
-      background: 'var(--color-surface)',
-      border: '1px solid var(--color-border)',
-      borderRadius: 'var(--radius-lg)',
-      width: '100%', maxWidth: 480,
-      boxShadow: 'var(--shadow-lg)',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid var(--color-border)' }}>
-        <h2 style={{ fontFamily: 'var(--font-condensed)', fontSize: 18, fontWeight: 800, letterSpacing: '-0.3px' }}>
+    <div
+      style={{
+        background: 'var(--color-surface)',
+        border: '1px solid var(--color-border)',
+        borderRadius: 'var(--radius-lg)',
+        width: '100%',
+        maxWidth: 480,
+        boxShadow: 'var(--shadow-lg)',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 20px',
+          borderBottom: '1px solid var(--color-border)',
+        }}
+      >
+        <h2
+          style={{
+            fontFamily: 'var(--font-condensed)',
+            fontSize: 18,
+            fontWeight: 800,
+            letterSpacing: '-0.3px',
+          }}
+        >
           Refer a Contractor
         </h2>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', padding: 4 }}>
+        <button
+          onClick={onClose}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'var(--color-text-muted)',
+            cursor: 'pointer',
+            padding: 4,
+          }}
+        >
           <X size={18} />
         </button>
       </div>
@@ -147,7 +197,17 @@ export default function ReferModal({ onClose, onPosted }: ReferModalProps) {
               Search for a contractor in your network to refer.
             </p>
             <div style={{ position: 'relative', marginBottom: 14 }}>
-              <Search size={13} color="var(--color-text-light)" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+              <Search
+                size={13}
+                color="var(--color-text-light)"
+                style={{
+                  position: 'absolute',
+                  left: 10,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  pointerEvents: 'none',
+                }}
+              />
               <input
                 autoFocus
                 type="text"
@@ -155,15 +215,29 @@ export default function ReferModal({ onClose, onPosted }: ReferModalProps) {
                 value={query}
                 onChange={e => setQuery(e.target.value)}
                 style={{
-                  width: '100%', border: '1.5px solid var(--color-border)',
-                  borderRadius: 'var(--radius-md)', padding: '8px 12px 8px 30px',
-                  fontSize: 13, outline: 'none',
-                  background: 'var(--color-bg)', color: 'var(--color-text)',
-                  fontFamily: 'var(--font-sans)', boxSizing: 'border-box',
+                  width: '100%',
+                  border: '1.5px solid var(--color-border)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '8px 12px 8px 30px',
+                  fontSize: 13,
+                  outline: 'none',
+                  background: 'var(--color-bg)',
+                  color: 'var(--color-text)',
+                  fontFamily: 'var(--font-sans)',
+                  boxSizing: 'border-box',
                 }}
               />
               {searching && (
-                <Loader size={13} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
+                <Loader
+                  size={13}
+                  style={{
+                    position: 'absolute',
+                    right: 10,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: 'var(--color-text-muted)',
+                  }}
+                />
               )}
             </div>
 
@@ -174,13 +248,19 @@ export default function ReferModal({ onClose, onPosted }: ReferModalProps) {
                     key={r.id}
                     onClick={() => setSelected(r)}
                     style={{
-                      display: 'flex', gap: 10, alignItems: 'center',
-                      padding: '10px 12px', borderRadius: 'var(--radius-md)',
-                      background: 'var(--color-bg)', border: '1px solid var(--color-border)',
-                      cursor: 'pointer', textAlign: 'left', transition: 'border-color 0.15s',
+                      display: 'flex',
+                      gap: 10,
+                      alignItems: 'center',
+                      padding: '10px 12px',
+                      borderRadius: 'var(--radius-md)',
+                      background: 'var(--color-bg)',
+                      border: '1px solid var(--color-border)',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'border-color 0.15s',
                     }}
-                    onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--color-brand)'}
-                    onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--color-border)'}
+                    onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--color-brand)')}
+                    onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--color-border)')}
                   >
                     <AuthorAvatar name={r.display_name} avatar={r.avatar_url} size={36} />
                     <div style={{ flex: 1 }}>
@@ -196,20 +276,48 @@ export default function ReferModal({ onClose, onPosted }: ReferModalProps) {
             )}
 
             {query.length >= 2 && results.length === 0 && !searching && (
-              <p style={{ fontSize: 13, color: 'var(--color-text-muted)', textAlign: 'center', padding: '20px 0' }}>
+              <p
+                style={{
+                  fontSize: 13,
+                  color: 'var(--color-text-muted)',
+                  textAlign: 'center',
+                  padding: '20px 0',
+                }}
+              >
                 No contractors found matching "{query}"
               </p>
             )}
           </>
         ) : (
           <>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '10px 12px', background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', marginBottom: 16, border: '1px solid var(--color-brand)' }}>
+            <div
+              style={{
+                display: 'flex',
+                gap: 10,
+                alignItems: 'center',
+                padding: '10px 12px',
+                background: 'var(--color-bg)',
+                borderRadius: 'var(--radius-md)',
+                marginBottom: 16,
+                border: '1px solid var(--color-brand)',
+              }}
+            >
               <AuthorAvatar name={selected.display_name} avatar={selected.avatar_url} size={36} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 700, fontSize: 13 }}>{selected.display_name}</div>
-                <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{[selected.primary_trade, selected.location].filter(Boolean).join(' · ')}</div>
+                <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
+                  {[selected.primary_trade, selected.location].filter(Boolean).join(' · ')}
+                </div>
               </div>
-              <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer' }}>
+              <button
+                onClick={() => setSelected(null)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--color-text-muted)',
+                  cursor: 'pointer',
+                }}
+              >
                 <X size={14} />
               </button>
             </div>
@@ -220,25 +328,42 @@ export default function ReferModal({ onClose, onPosted }: ReferModalProps) {
               onChange={e => setNote(e.target.value)}
               rows={3}
               style={{
-                width: '100%', border: '1.5px solid var(--color-border)',
-                borderRadius: 'var(--radius-md)', padding: '10px 12px',
-                fontSize: 13, resize: 'none', outline: 'none', lineHeight: 1.6,
-                background: 'var(--color-bg)', color: 'var(--color-text)',
-                fontFamily: 'var(--font-sans)', boxSizing: 'border-box',
+                width: '100%',
+                border: '1.5px solid var(--color-border)',
+                borderRadius: 'var(--radius-md)',
+                padding: '10px 12px',
+                fontSize: 13,
+                resize: 'none',
+                outline: 'none',
+                lineHeight: 1.6,
+                background: 'var(--color-bg)',
+                color: 'var(--color-text)',
+                fontFamily: 'var(--font-sans)',
+                boxSizing: 'border-box',
               }}
             />
 
             {error && <p style={{ fontSize: 13, color: '#e05252', marginTop: 8 }}>{error}</p>}
 
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 14 }}>
-              <button onClick={() => setSelected(null)} className="btn btn-secondary" style={{ padding: '8px 16px', fontSize: 13 }}>
+              <button
+                onClick={() => setSelected(null)}
+                className="btn btn-secondary"
+                style={{ padding: '8px 16px', fontSize: 13 }}
+              >
                 Back
               </button>
               <button
                 onClick={() => void handleSubmit()}
                 disabled={submitting}
                 className="btn btn-primary"
-                style={{ padding: '8px 20px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}
+                style={{
+                  padding: '8px 20px',
+                  fontSize: 13,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
               >
                 {submitting ? <Loader size={13} /> : <Send size={13} />}
                 {submitting ? 'Posting...' : 'Post Referral'}

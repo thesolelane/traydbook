@@ -13,7 +13,11 @@ interface AdminInvite {
 }
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return new Date(iso).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
 }
 
 export default function StaffPanel() {
@@ -26,7 +30,9 @@ export default function StaffPanel() {
   const [role, setRole] = useState<string>(STAFF_ROLES[1].value)
   const [sending, setSending] = useState(false)
   const [sendErr, setSendErr] = useState('')
-  const [result, setResult] = useState<{ joinUrl: string; email: string; role: string } | null>(null)
+  const [result, setResult] = useState<{ joinUrl: string; email: string; role: string } | null>(
+    null
+  )
   const [copied, setCopied] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
@@ -45,11 +51,16 @@ export default function StaffPanel() {
     }
   }
 
-  useEffect(() => { void loadInvites() }, [])
+  useEffect(() => {
+    void loadInvites()
+  }, [])
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault()
-    if (!email.trim()) { setSendErr('Email is required.'); return }
+    if (!email.trim()) {
+      setSendErr('Email is required.')
+      return
+    }
     setSending(true)
     setSendErr('')
     try {
@@ -111,28 +122,60 @@ export default function StaffPanel() {
   return (
     <div>
       <div style={{ marginBottom: 24 }}>
-        <h3 style={{ fontFamily: 'var(--font-condensed)', fontWeight: 800, fontSize: 20, margin: '0 0 4px' }}>
+        <h3
+          style={{
+            fontFamily: 'var(--font-condensed)',
+            fontWeight: 800,
+            fontSize: 20,
+            margin: '0 0 4px',
+          }}
+        >
           Staff & Role Management
         </h3>
         <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: 0 }}>
-          Send invite links to staff. Recipients sign up and their role is pre-assigned automatically.
+          Send invite links to staff. Recipients sign up and their role is pre-assigned
+          automatically.
         </p>
       </div>
 
       {/* Role hierarchy info */}
-      <div style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 10, padding: 16, marginBottom: 24 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-muted)', marginBottom: 12 }}>
+      <div
+        style={{
+          background: 'var(--color-bg)',
+          border: '1px solid var(--color-border)',
+          borderRadius: 10,
+          padding: 16,
+          marginBottom: 24,
+        }}
+      >
+        <div
+          style={{
+            fontSize: 12,
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+            color: 'var(--color-text-muted)',
+            marginBottom: 12,
+          }}
+        >
           Role Hierarchy
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {ALL_INVITE_ROLES.map(r => (
             <div key={r.value} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-              <span style={{
-                minWidth: 90, fontSize: 11, fontWeight: 700, padding: '2px 8px',
-                borderRadius: 20, background: `${ROLE_COLORS[r.value]}20`,
-                color: ROLE_COLORS[r.value] ?? 'var(--color-text-muted)',
-                textAlign: 'center', flexShrink: 0,
-              }}>
+              <span
+                style={{
+                  minWidth: 90,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  padding: '2px 8px',
+                  borderRadius: 20,
+                  background: `${ROLE_COLORS[r.value]}20`,
+                  color: ROLE_COLORS[r.value] ?? 'var(--color-text-muted)',
+                  textAlign: 'center',
+                  flexShrink: 0,
+                }}
+              >
                 {'label' in r ? r.label : getRoleLabel(r.value)}
               </span>
               {'description' in r && (
@@ -147,7 +190,15 @@ export default function StaffPanel() {
 
       {/* Send invite form */}
       {result ? (
-        <div style={{ background: 'rgba(5,150,105,0.08)', border: '1px solid rgba(5,150,105,0.3)', borderRadius: 10, padding: 18, marginBottom: 24 }}>
+        <div
+          style={{
+            background: 'rgba(5,150,105,0.08)',
+            border: '1px solid rgba(5,150,105,0.3)',
+            borderRadius: 10,
+            padding: 18,
+            marginBottom: 24,
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
             <CheckCircle size={16} color="#059669" />
             <span style={{ fontWeight: 700, fontSize: 14, color: '#059669' }}>
@@ -162,9 +213,14 @@ export default function StaffPanel() {
               readOnly
               value={result.joinUrl}
               style={{
-                flex: 1, padding: '8px 12px', borderRadius: 8, fontSize: 12,
-                border: '1px solid var(--color-border)', background: 'var(--color-bg)',
-                color: 'var(--color-text)', fontFamily: 'monospace',
+                flex: 1,
+                padding: '8px 12px',
+                borderRadius: 8,
+                fontSize: 12,
+                border: '1px solid var(--color-border)',
+                background: 'var(--color-bg)',
+                color: 'var(--color-text)',
+                fontFamily: 'monospace',
               }}
             />
             <button
@@ -178,14 +234,40 @@ export default function StaffPanel() {
           </div>
           <button
             onClick={() => setResult(null)}
-            style={{ marginTop: 12, fontSize: 12, color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+            style={{
+              marginTop: 12,
+              fontSize: 12,
+              color: 'var(--color-text-muted)',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 0,
+            }}
           >
             Send another invite
           </button>
         </div>
       ) : (
-        <form onSubmit={e => void handleSend(e)} style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 10, padding: 18, marginBottom: 24 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <form
+          onSubmit={e => void handleSend(e)}
+          style={{
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 10,
+            padding: 18,
+            marginBottom: 24,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 13,
+              fontWeight: 700,
+              marginBottom: 14,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}
+          >
             <UserPlus size={15} color="var(--color-brand)" /> Send New Invite
           </div>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -196,8 +278,13 @@ export default function StaffPanel() {
               onChange={e => setEmail(e.target.value)}
               required
               style={{
-                flex: 2, minWidth: 200, padding: '9px 12px', borderRadius: 8, fontSize: 13,
-                border: '1.5px solid var(--color-border)', background: 'var(--color-bg)',
+                flex: 2,
+                minWidth: 200,
+                padding: '9px 12px',
+                borderRadius: 8,
+                fontSize: 13,
+                border: '1.5px solid var(--color-border)',
+                background: 'var(--color-bg)',
                 color: 'var(--color-text)',
               }}
             />
@@ -205,20 +292,31 @@ export default function StaffPanel() {
               value={role}
               onChange={e => setRole(e.target.value)}
               style={{
-                flex: 1, minWidth: 150, padding: '9px 12px', borderRadius: 8, fontSize: 13,
-                border: '1.5px solid var(--color-border)', background: 'var(--color-bg)',
+                flex: 1,
+                minWidth: 150,
+                padding: '9px 12px',
+                borderRadius: 8,
+                fontSize: 13,
+                border: '1.5px solid var(--color-border)',
+                background: 'var(--color-bg)',
                 color: 'var(--color-text)',
               }}
             >
               <optgroup label="Staff Roles">
                 {STAFF_ROLES.map(r => (
-                  <option key={r.value} value={r.value}>{r.label}</option>
+                  <option key={r.value} value={r.value}>
+                    {r.label}
+                  </option>
                 ))}
               </optgroup>
               <optgroup label="Platform Users">
-                {ALL_INVITE_ROLES.filter(r => !STAFF_ROLES.find(s => s.value === r.value)).map(r => (
-                  <option key={r.value} value={r.value}>{getRoleLabel(r.value)}</option>
-                ))}
+                {ALL_INVITE_ROLES.filter(r => !STAFF_ROLES.find(s => s.value === r.value)).map(
+                  r => (
+                    <option key={r.value} value={r.value}>
+                      {getRoleLabel(r.value)}
+                    </option>
+                  )
+                )}
               </optgroup>
             </select>
             <button
@@ -231,9 +329,7 @@ export default function StaffPanel() {
               {sending ? 'Sending…' : 'Send Invite'}
             </button>
           </div>
-          {sendErr && (
-            <p style={{ marginTop: 8, fontSize: 12, color: '#DC2626' }}>{sendErr}</p>
-          )}
+          {sendErr && <p style={{ marginTop: 8, fontSize: 12, color: '#DC2626' }}>{sendErr}</p>}
         </form>
       )}
 
@@ -244,16 +340,46 @@ export default function StaffPanel() {
         <>
           {pending.length > 0 && (
             <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-muted)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  color: 'var(--color-text-muted)',
+                  marginBottom: 10,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
                 <Clock size={12} /> Pending ({pending.length})
               </div>
               {pending.map(inv => (
-                <div key={inv.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--color-surface)', borderRadius: 8, marginBottom: 6, border: '1px solid var(--color-border)' }}>
-                  <span style={{
-                    fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, flexShrink: 0,
-                    background: `${ROLE_COLORS[inv.role] ?? '#6B7280'}20`,
-                    color: ROLE_COLORS[inv.role] ?? 'var(--color-text-muted)',
-                  }}>
+                <div
+                  key={inv.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '10px 14px',
+                    background: 'var(--color-surface)',
+                    borderRadius: 8,
+                    marginBottom: 6,
+                    border: '1px solid var(--color-border)',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      padding: '2px 8px',
+                      borderRadius: 20,
+                      flexShrink: 0,
+                      background: `${ROLE_COLORS[inv.role] ?? '#6B7280'}20`,
+                      color: ROLE_COLORS[inv.role] ?? 'var(--color-text-muted)',
+                    }}
+                  >
                     {getRoleLabel(inv.role)}
                   </span>
                   <span style={{ fontSize: 13, flex: 1 }}>{inv.email}</span>
@@ -263,7 +389,13 @@ export default function StaffPanel() {
                   <button
                     onClick={() => void handleDelete(inv.id)}
                     disabled={deletingId === inv.id}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', padding: 4 }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: 'var(--color-text-muted)',
+                      padding: 4,
+                    }}
                     title="Revoke invite"
                   >
                     <Trash2 size={13} />
@@ -275,20 +407,53 @@ export default function StaffPanel() {
 
           {used.length > 0 && (
             <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-muted)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  color: 'var(--color-text-muted)',
+                  marginBottom: 10,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
                 <CheckCircle size={12} color="#059669" /> Accepted ({used.length})
               </div>
               {used.map(inv => (
-                <div key={inv.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--color-bg)', borderRadius: 8, marginBottom: 6, border: '1px solid var(--color-border)', opacity: 0.7 }}>
-                  <span style={{
-                    fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, flexShrink: 0,
-                    background: `${ROLE_COLORS[inv.role] ?? '#6B7280'}20`,
-                    color: ROLE_COLORS[inv.role] ?? 'var(--color-text-muted)',
-                  }}>
+                <div
+                  key={inv.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '10px 14px',
+                    background: 'var(--color-bg)',
+                    borderRadius: 8,
+                    marginBottom: 6,
+                    border: '1px solid var(--color-border)',
+                    opacity: 0.7,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      padding: '2px 8px',
+                      borderRadius: 20,
+                      flexShrink: 0,
+                      background: `${ROLE_COLORS[inv.role] ?? '#6B7280'}20`,
+                      color: ROLE_COLORS[inv.role] ?? 'var(--color-text-muted)',
+                    }}
+                  >
                     {getRoleLabel(inv.role)}
                   </span>
                   <span style={{ fontSize: 13, flex: 1 }}>{inv.email}</span>
-                  <span style={{ fontSize: 11, color: '#059669' }}>Joined {formatDate(inv.used_at!)}</span>
+                  <span style={{ fontSize: 11, color: '#059669' }}>
+                    Joined {formatDate(inv.used_at!)}
+                  </span>
                 </div>
               ))}
             </div>
@@ -296,12 +461,44 @@ export default function StaffPanel() {
 
           {expired.length > 0 && (
             <div>
-              <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-muted)', marginBottom: 10 }}>
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  color: 'var(--color-text-muted)',
+                  marginBottom: 10,
+                }}
+              >
                 Expired ({expired.length})
               </div>
               {expired.map(inv => (
-                <div key={inv.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--color-bg)', borderRadius: 8, marginBottom: 6, border: '1px solid var(--color-border)', opacity: 0.5 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, flexShrink: 0, background: 'var(--color-border)', color: 'var(--color-text-muted)' }}>
+                <div
+                  key={inv.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '10px 14px',
+                    background: 'var(--color-bg)',
+                    borderRadius: 8,
+                    marginBottom: 6,
+                    border: '1px solid var(--color-border)',
+                    opacity: 0.5,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      padding: '2px 8px',
+                      borderRadius: 20,
+                      flexShrink: 0,
+                      background: 'var(--color-border)',
+                      color: 'var(--color-text-muted)',
+                    }}
+                  >
                     {getRoleLabel(inv.role)}
                   </span>
                   <span style={{ fontSize: 13, flex: 1 }}>{inv.email}</span>
@@ -309,7 +506,13 @@ export default function StaffPanel() {
                   <button
                     onClick={() => void handleDelete(inv.id)}
                     disabled={deletingId === inv.id}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', padding: 4 }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: 'var(--color-text-muted)',
+                      padding: 4,
+                    }}
                   >
                     <Trash2 size={13} />
                   </button>
@@ -319,7 +522,14 @@ export default function StaffPanel() {
           )}
 
           {pending.length === 0 && used.length === 0 && expired.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--color-text-muted)', fontSize: 13 }}>
+            <div
+              style={{
+                textAlign: 'center',
+                padding: '32px 0',
+                color: 'var(--color-text-muted)',
+                fontSize: 13,
+              }}
+            >
               <Shield size={28} style={{ marginBottom: 8, opacity: 0.4 }} />
               <p>No invites sent yet. Use the form above to invite staff members.</p>
             </div>

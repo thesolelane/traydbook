@@ -9,7 +9,8 @@ export default function Login() {
   const { signIn } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || '/feed'
+  const from =
+    (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || '/feed'
 
   const [mode, setMode] = useState<'login' | 'forgot'>('login')
   const [email, setEmail] = useState('')
@@ -35,7 +36,10 @@ export default function Login() {
     e.preventDefault()
     setError('')
     setSuccess('')
-    if (!email) { setError('Please enter your email address.'); return }
+    if (!email) {
+      setError('Please enter your email address.')
+      return
+    }
     setLoading(true)
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
@@ -55,12 +59,38 @@ export default function Login() {
           <Link to="/" className="auth-logo">
             <div className="auth-logo-icon">
               <svg viewBox="0 0 17 17" fill="none" width={16} height={16}>
-                <rect x="2" y="1.5" width="9" height="13" rx="1.5" fill="rgba(255,255,255,0.12)" stroke="white" strokeWidth="1.2" />
-                <rect x="5" y="1.5" width="9" height="13" rx="1.5" fill="rgba(255,255,255,0.25)" stroke="white" strokeWidth="1.2" />
-                <path d="M7 6h4M7 9h3M7 12h2" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
+                <rect
+                  x="2"
+                  y="1.5"
+                  width="9"
+                  height="13"
+                  rx="1.5"
+                  fill="rgba(255,255,255,0.12)"
+                  stroke="white"
+                  strokeWidth="1.2"
+                />
+                <rect
+                  x="5"
+                  y="1.5"
+                  width="9"
+                  height="13"
+                  rx="1.5"
+                  fill="rgba(255,255,255,0.25)"
+                  stroke="white"
+                  strokeWidth="1.2"
+                />
+                <path
+                  d="M7 6h4M7 9h3M7 12h2"
+                  stroke="white"
+                  strokeWidth="1.2"
+                  strokeLinecap="round"
+                />
               </svg>
             </div>
-            <div className="auth-logo-word"><span className="trayd">Trayd</span><span className="book">Book</span></div>
+            <div className="auth-logo-word">
+              <span className="trayd">Trayd</span>
+              <span className="book">Book</span>
+            </div>
           </Link>
 
           <h1 className="auth-title">Reset password</h1>
@@ -91,8 +121,20 @@ export default function Login() {
           <p className="auth-footer-text">
             <button
               type="button"
-              onClick={() => { setMode('login'); setError(''); setSuccess('') }}
-              style={{ background: 'none', border: 'none', color: 'var(--color-brand)', cursor: 'pointer', padding: 0, font: 'inherit', fontSize: 13 }}
+              onClick={() => {
+                setMode('login')
+                setError('')
+                setSuccess('')
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--color-brand)',
+                cursor: 'pointer',
+                padding: 0,
+                font: 'inherit',
+                fontSize: 13,
+              }}
             >
               Back to sign in
             </button>
@@ -108,12 +150,38 @@ export default function Login() {
         <Link to="/" className="auth-logo">
           <div className="auth-logo-icon">
             <svg viewBox="0 0 17 17" fill="none" width={16} height={16}>
-              <rect x="2" y="1.5" width="9" height="13" rx="1.5" fill="rgba(255,255,255,0.12)" stroke="white" strokeWidth="1.2" />
-              <rect x="5" y="1.5" width="9" height="13" rx="1.5" fill="rgba(255,255,255,0.25)" stroke="white" strokeWidth="1.2" />
-              <path d="M7 6h4M7 9h3M7 12h2" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
+              <rect
+                x="2"
+                y="1.5"
+                width="9"
+                height="13"
+                rx="1.5"
+                fill="rgba(255,255,255,0.12)"
+                stroke="white"
+                strokeWidth="1.2"
+              />
+              <rect
+                x="5"
+                y="1.5"
+                width="9"
+                height="13"
+                rx="1.5"
+                fill="rgba(255,255,255,0.25)"
+                stroke="white"
+                strokeWidth="1.2"
+              />
+              <path
+                d="M7 6h4M7 9h3M7 12h2"
+                stroke="white"
+                strokeWidth="1.2"
+                strokeLinecap="round"
+              />
             </svg>
           </div>
-          <div className="auth-logo-word"><span className="trayd">Trayd</span><span className="book">Book</span></div>
+          <div className="auth-logo-word">
+            <span className="trayd">Trayd</span>
+            <span className="book">Book</span>
+          </div>
         </Link>
 
         <h1 className="auth-title">Welcome back</h1>
@@ -136,12 +204,32 @@ export default function Login() {
           </div>
 
           <div className="form-group">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
-              <label htmlFor="password" style={{ marginBottom: 0 }}>Password</label>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'baseline',
+                marginBottom: 6,
+              }}
+            >
+              <label htmlFor="password" style={{ marginBottom: 0 }}>
+                Password
+              </label>
               <button
                 type="button"
-                onClick={() => { setMode('forgot'); setError('') }}
-                style={{ background: 'none', border: 'none', color: 'var(--color-brand)', cursor: 'pointer', padding: 0, font: 'inherit', fontSize: 12 }}
+                onClick={() => {
+                  setMode('forgot')
+                  setError('')
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--color-brand)',
+                  cursor: 'pointer',
+                  padding: 0,
+                  font: 'inherit',
+                  fontSize: 12,
+                }}
               >
                 Forgot password?
               </button>
@@ -165,8 +253,7 @@ export default function Login() {
         <SocialAuthButtons label="Or sign in with" />
 
         <p className="auth-footer-text">
-          Don't have an account?{' '}
-          <Link to="/signup">Create one free</Link>
+          Don't have an account? <Link to="/signup">Create one free</Link>
         </p>
       </div>
     </div>
