@@ -65,6 +65,7 @@ export default function WalletSetup() {
           }
         }
       } catch {
+        // wallet check failed — proceed to setup
       }
       setStatusChecked(true)
     }
