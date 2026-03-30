@@ -8,21 +8,7 @@ import PostCard, { AuthorAvatar } from '../components/PostCard'
 import FeedFilterBar from '../components/FeedFilterBar'
 import ComposeModal from '../components/ComposeModal'
 import { FeedPost, FilterType, SidebarUser, POST_TYPE_BADGE } from '../types/feed'
-import { posts as mockPosts, users as mockUsers } from '../data/mockData'
 import '../styles/feed.css'
-
-function mockToFeedPost(p: typeof mockPosts[0]): FeedPost {
-  return {
-    id: p.id, post_type: p.post_type, body: p.content,
-    media_urls: p.images ?? [], hashtags: p.tags,
-    like_count: p.likes, comment_count: p.comments, share_count: p.shares,
-    is_urgent: p.is_urgent ?? false, is_boosted: p.is_boosted ?? false,
-    created_at: new Date(Date.now() - Math.random() * 86400000 * 5).toISOString(),
-    author_id: p.author.id, author_name: p.author.name, author_handle: p.author.id,
-    author_avatar: null, author_account_type: 'contractor',
-    author_trade: p.author.trade, author_verified: p.author.verified,
-  }
-}
 
 function compositeScore(post: FeedPost, connIds: Set<string>): number {
   const hoursOld = (Date.now() - new Date(post.created_at).getTime()) / 3600000
@@ -161,12 +147,15 @@ export default function Feed() {
     const { data, error } = await query
 
     const hasFetchError = !!error || !data
-    let rawMapped: FeedPost[]
     if (hasFetchError) {
-      // Only fall back to mocks on actual network/auth error — not on a legitimate empty result
-      const filtered = filter === 'all' ? mockPosts : mockPosts.filter(p => p.post_type === filter)
-      rawMapped = filtered.map(mockToFeedPost)
-    } else {
+      setPosts(reset ? [] : p => p)
+      setHasMore(false)
+      setLoading(false)
+      setLoadingMore(false)
+      return
+    }
+    let rawMapped: FeedPost[]
+    {
       rawMapped = data.map((row: Record<string, unknown>) => {
         const u = (row.users as unknown) as { display_name: string; handle: string; avatar_url: string | null; account_type: string } | null
         const cp = (row.contractor_profiles as unknown) as { primary_trade: string | null } | null
@@ -206,7 +195,7 @@ export default function Feed() {
       setPosts(prev => sortByScore([...prev, ...scored], connIds))
       pageRef.current = currentPage + 1
     }
-    setHasMore(!hasFetchError && data!.length === PAGE_SIZE)
+    setHasMore(data!.length === PAGE_SIZE)
     setLoading(false)
     setLoadingMore(false)
   }
@@ -325,11 +314,7 @@ export default function Feed() {
     }
 
     if (rows.length === 0) {
-      setSidebarUsers(mockUsers.slice(0, 4).map(u => ({
-        id: u.id, display_name: u.name, handle: u.id,
-        avatar_url: null, account_type: 'contractor',
-        primary_trade: u.trade, location: u.location,
-      })))
+      setSidebarUsers([])
       return
     }
 
@@ -397,7 +382,7 @@ export default function Feed() {
       .order('created_at', { ascending: false })
       .limit(60)
 
-    const source = data && data.length > 0 ? data : mockPosts.map(p => ({ hashtags: p.tags }))
+    const source = data ?? []
     const tagMap = new Map<string, number>()
     source.forEach((row: { hashtags: string[] }) => {
       ;(row.hashtags ?? []).forEach(t => tagMap.set(t, (tagMap.get(t) ?? 0) + 1))

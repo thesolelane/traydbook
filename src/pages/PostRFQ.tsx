@@ -7,7 +7,7 @@ import {
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { isStaff } from '../lib/roles'
-import { tradeOptions } from '../data/mockData'
+import { TRADE_OPTIONS } from '../data/trades'
 
 const PROJECT_TYPES = [
   'New Construction', 'Renovation / Remodel', 'Addition', 'Tenant Improvement',
@@ -179,7 +179,7 @@ export default function PostRFQ() {
               <div>
                 <FieldLabel required>Trade Needed</FieldLabel>
                 <select value={tradeNeeded} onChange={e => setTradeNeeded(e.target.value)} style={inputStyle()}>
-                  {tradeOptions.filter(t => t !== 'All Trades').map(t => <option key={t} value={t}>{t}</option>)}
+                  {TRADE_OPTIONS.filter(t => t !== 'All Trades').map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
               </div>
               <div>

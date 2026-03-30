@@ -44,8 +44,9 @@ The professional network for the construction trades. Contractors, tradespeople,
 - `src/context/AuthContext.tsx` — Auth state & helpers
 - `src/components/ProtectedRoute.tsx` — Route guard
 - `src/components/Navbar.tsx` — Main navigation (auth-aware, live unread dots for messages + notifications)
+- `src/data/trades.ts` — canonical `TRADE_OPTIONS` and `JOB_TYPE_OPTIONS` constants (used across Bids, EditProfile, PostRFQ)
 - `src/types/feed.ts` — FeedPost, POST_TYPE_BADGE, FilterOption, SidebarUser types
-- `src/pages/Feed.tsx` — Main feed (Supabase data + filter + compose + sidebars)
+- `src/pages/Feed.tsx` — Main feed (Supabase data + filter + compose + sidebars; no mock fallbacks)
 - `src/components/PostCard.tsx` — Post card with type badge, inline comments, likes
 - `src/components/FeedFilterBar.tsx` — Filter pill bar (URL-synced)
 - `src/components/ComposeModal.tsx` — Compose modal with 4 post type flows

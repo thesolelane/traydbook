@@ -8,7 +8,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { ContractorProfile, SocialLinks } from '../types/profile'
 import { sanitizeSocialLinks } from '../lib/urlUtils'
-import { tradeOptions } from '../data/mockData'
+import { TRADE_OPTIONS } from '../data/trades'
 
 const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024
 
@@ -311,7 +311,7 @@ export default function EditProfile() {
                 <div>
                   <label style={{ fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 5, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-muted)' }}>Primary Trade *</label>
                   <select value={primaryTrade} onChange={e => setPrimaryTrade(e.target.value)} style={{ width: '100%', border: '1.5px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '8px 12px', fontSize: 13, background: 'var(--color-bg)', color: 'var(--color-text)', boxSizing: 'border-box' }}>
-                    {tradeOptions.filter(t => t !== 'All Trades').map(t => <option key={t} value={t}>{t}</option>)}
+                    {TRADE_OPTIONS.filter(t => t !== 'All Trades').map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
                 <div>
@@ -323,7 +323,7 @@ export default function EditProfile() {
               <div>
                 <label style={{ fontSize: 12, fontWeight: 700, display: 'block', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-muted)' }}>Secondary Trades</label>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {tradeOptions.filter(t => t !== 'All Trades' && t !== primaryTrade).map(t => (
+                  {TRADE_OPTIONS.filter(t => t !== 'All Trades' && t !== primaryTrade).map(t => (
                     <button
                       key={t}
                       onClick={() => toggleSecondaryTrade(t)}

@@ -8,7 +8,7 @@ import {
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { RFQ, MyBid } from '../types/bids'
-import { tradeOptions } from '../data/mockData'
+import { TRADE_OPTIONS } from '../data/trades'
 
 type BidTab = 'open' | 'mybids' | 'awarded' | 'archived'
 
@@ -464,7 +464,7 @@ export default function Bids() {
                 onChange={e => setTradeFilter(e.target.value)}
                 style={{ appearance: 'none', padding: '8px 32px 8px 12px', fontSize: 13, border: '1.5px solid var(--color-border)', borderRadius: 'var(--radius-md)', background: 'var(--color-bg)', color: 'var(--color-text)', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
               >
-                {tradeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+                {TRADE_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
               <ChevronDown size={13} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--color-text-muted)' }} />
             </div>
