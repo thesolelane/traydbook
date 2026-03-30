@@ -34,8 +34,23 @@ app.listen(PORT, () => {
   console.log(
     `[server] Running on http://localhost:${PORT} (${process.env.NODE_ENV ?? 'development'})`
   )
+  ensurePostMediaBucket()
   startNotificationListener()
 })
+
+async function ensurePostMediaBucket() {
+  if (!SUPABASE_SERVICE_ROLE_KEY) return
+  const { error } = await supabaseAdmin.storage.createBucket('post-media', {
+    public: true,
+    fileSizeLimit: 10485760, // 10 MB per file
+    allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
+  })
+  if (error && !error.message.includes('already exists')) {
+    console.error('[storage] Failed to ensure post-media bucket:', error.message)
+  } else {
+    console.log('[storage] post-media bucket ready')
+  }
+}
 
 function startNotificationListener() {
   if (!SUPABASE_SERVICE_ROLE_KEY) {

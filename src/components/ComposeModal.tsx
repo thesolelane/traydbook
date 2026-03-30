@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { X, Image, Briefcase, FileText, Users, Send, Loader } from 'lucide-react'
+import { X, Image, Briefcase, FileText, Users, Send, Loader, Camera, XCircle } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { FeedPost, PostType } from '../types/feed'
@@ -51,6 +51,9 @@ const POST_TYPES: {
   },
 ]
 
+const MAX_PHOTOS = 4
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
+
 export default function ComposeModal({ onClose, onPosted }: ComposeModalProps) {
   const { profile, delegateSession, logDelegateAction, canDelegate } = useAuth()
   const navigate = useNavigate()
@@ -60,9 +63,13 @@ export default function ComposeModal({ onClose, onPosted }: ComposeModalProps) {
   const [hashtags, setHashtags] = useState('')
   const [urgent, setUrgent] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
+  const [images, setImages] = useState<File[]>([])
+  const [previews, setPreviews] = useState<string[]>([])
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const overlayRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (view === 'update') textareaRef.current?.focus()
@@ -75,6 +82,12 @@ export default function ComposeModal({ onClose, onPosted }: ComposeModalProps) {
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose])
+
+  useEffect(() => {
+    return () => {
+      previews.forEach(url => URL.revokeObjectURL(url))
+    }
+  }, [previews])
 
   function handleTypeClick(type: PostType | 'refer') {
     if (type === 'job_post') {
@@ -97,10 +110,67 @@ export default function ComposeModal({ onClose, onPosted }: ComposeModalProps) {
     setView('update')
   }
 
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? [])
+    if (!files.length) return
+
+    const remaining = MAX_PHOTOS - images.length
+    const valid = files.slice(0, remaining).filter(f => {
+      if (!f.type.startsWith('image/')) return false
+      if (f.size > MAX_FILE_SIZE) {
+        setError(`${f.name} is too large (max 10 MB)`)
+        return false
+      }
+      return true
+    })
+
+    if (!valid.length) return
+    setError('')
+    const newPreviews = valid.map(f => URL.createObjectURL(f))
+    setImages(prev => [...prev, ...valid])
+    setPreviews(prev => [...prev, ...newPreviews])
+    e.target.value = ''
+  }
+
+  function removeImage(index: number) {
+    URL.revokeObjectURL(previews[index])
+    setImages(prev => prev.filter((_, i) => i !== index))
+    setPreviews(prev => prev.filter((_, i) => i !== index))
+  }
+
+  async function uploadImages(userId: string): Promise<string[]> {
+    const urls: string[] = []
+    for (const file of images) {
+      const ext = file.name.split('.').pop() ?? 'jpg'
+      const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+      const { error: uploadErr } = await supabase.storage
+        .from('post-media')
+        .upload(path, file, { contentType: file.type })
+      if (uploadErr) throw new Error(`Upload failed: ${uploadErr.message}`)
+      const { data } = supabase.storage.from('post-media').getPublicUrl(path)
+      urls.push(data.publicUrl)
+    }
+    return urls
+  }
+
   async function handleSubmit() {
     if (!body.trim() || !profile) return
     setSubmitting(true)
     setError('')
+
+    let mediaUrls: string[] = []
+    if (images.length > 0) {
+      setUploading(true)
+      try {
+        mediaUrls = await uploadImages(profile.id)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Photo upload failed.')
+        setSubmitting(false)
+        setUploading(false)
+        return
+      }
+      setUploading(false)
+    }
 
     const tags = hashtags.split(/[\s,#]+/).filter(Boolean)
 
@@ -112,6 +182,7 @@ export default function ComposeModal({ onClose, onPosted }: ComposeModalProps) {
         body: body.trim(),
         hashtags: tags,
         is_urgent: urgent,
+        media_urls: mediaUrls,
       })
       .select(
         `
@@ -311,7 +382,7 @@ export default function ComposeModal({ onClose, onPosted }: ComposeModalProps) {
                 placeholder="Share what's happening on your project, a tip, or a safety update..."
                 value={body}
                 onChange={e => setBody(e.target.value)}
-                rows={5}
+                rows={4}
                 style={{
                   width: '100%',
                   border: '1.5px solid var(--color-border)',
@@ -327,6 +398,49 @@ export default function ComposeModal({ onClose, onPosted }: ComposeModalProps) {
                   boxSizing: 'border-box',
                 }}
               />
+
+              {previews.length > 0 && (
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: previews.length === 1 ? '1fr' : '1fr 1fr',
+                    gap: 6,
+                    marginTop: 10,
+                    borderRadius: 'var(--radius-md)',
+                    overflow: 'hidden',
+                  }}
+                >
+                  {previews.map((src, i) => (
+                    <div key={i} style={{ position: 'relative', aspectRatio: '4/3' }}>
+                      <img
+                        src={src}
+                        alt={`Preview ${i + 1}`}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                      />
+                      <button
+                        onClick={() => removeImage(i)}
+                        style={{
+                          position: 'absolute',
+                          top: 6,
+                          right: 6,
+                          background: 'rgba(0,0,0,0.65)',
+                          border: 'none',
+                          borderRadius: '50%',
+                          width: 24,
+                          height: 24,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          padding: 0,
+                        }}
+                      >
+                        <XCircle size={16} color="#fff" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <input
                 type="text"
@@ -372,29 +486,88 @@ export default function ComposeModal({ onClose, onPosted }: ComposeModalProps) {
 
               {error && <p style={{ fontSize: 13, color: '#e05252', marginTop: 10 }}>{error}</p>}
 
-              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
-                <button
-                  onClick={() => setView('main')}
-                  className="btn btn-secondary"
-                  style={{ padding: '8px 18px', fontSize: 13 }}
-                >
-                  Back
-                </button>
-                <button
-                  onClick={() => void handleSubmit()}
-                  disabled={!body.trim() || submitting}
-                  className="btn btn-primary"
-                  style={{
-                    padding: '8px 20px',
-                    fontSize: 13,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                  }}
-                >
-                  {submitting ? <Loader size={13} className="spin" /> : <Send size={13} />}
-                  {submitting ? 'Posting...' : 'Post'}
-                </button>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginTop: 16,
+                }}
+              >
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    multiple
+                    style={{ display: 'none' }}
+                    onChange={handleFileChange}
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={images.length >= MAX_PHOTOS}
+                    title={images.length >= MAX_PHOTOS ? 'Max 4 photos' : 'Add photos'}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      background: 'none',
+                      border: '1.5px solid var(--color-border)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: '6px 12px',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color:
+                        images.length >= MAX_PHOTOS
+                          ? 'var(--color-text-muted)'
+                          : 'var(--color-text)',
+                      cursor: images.length >= MAX_PHOTOS ? 'not-allowed' : 'pointer',
+                      opacity: images.length >= MAX_PHOTOS ? 0.5 : 1,
+                    }}
+                  >
+                    <Camera size={14} />
+                    {images.length > 0 ? `${images.length}/${MAX_PHOTOS}` : 'Add Photos'}
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button
+                    onClick={() => setView('main')}
+                    className="btn btn-secondary"
+                    style={{ padding: '8px 18px', fontSize: 13 }}
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={() => void handleSubmit()}
+                    disabled={!body.trim() || submitting}
+                    className="btn btn-primary"
+                    style={{
+                      padding: '8px 20px',
+                      fontSize: 13,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
+                  >
+                    {uploading ? (
+                      <>
+                        <Loader size={13} className="spin" />
+                        Uploading...
+                      </>
+                    ) : submitting ? (
+                      <>
+                        <Loader size={13} className="spin" />
+                        Posting...
+                      </>
+                    ) : (
+                      <>
+                        <Send size={13} />
+                        Post
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           )}

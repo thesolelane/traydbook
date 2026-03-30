@@ -87,6 +87,73 @@ function AuthorAvatar({
 
 export { AuthorAvatar }
 
+function MediaGrid({ urls }: { urls: string[] }) {
+  const count = Math.min(urls.length, 4)
+  const shown = urls.slice(0, 4)
+
+  const containerStyle: React.CSSProperties = {
+    marginTop: 12,
+    borderRadius: 'var(--radius-md)',
+    overflow: 'hidden',
+    display: 'grid',
+    gap: 3,
+  }
+
+  const imgStyle: React.CSSProperties = {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    display: 'block',
+  }
+
+  if (count === 1) {
+    return (
+      <div style={{ ...containerStyle, gridTemplateColumns: '1fr' }}>
+        <div style={{ height: 360 }}>
+          <img src={shown[0]} alt="Post photo" style={imgStyle} />
+        </div>
+      </div>
+    )
+  }
+
+  if (count === 2) {
+    return (
+      <div style={{ ...containerStyle, gridTemplateColumns: '1fr 1fr', height: 260 }}>
+        {shown.map((url, i) => (
+          <img key={i} src={url} alt={`Photo ${i + 1}`} style={imgStyle} />
+        ))}
+      </div>
+    )
+  }
+
+  if (count === 3) {
+    return (
+      <div style={{ ...containerStyle, gridTemplateColumns: '2fr 1fr', height: 300 }}>
+        <img src={shown[0]} alt="Photo 1" style={imgStyle} />
+        <div style={{ display: 'grid', gridTemplateRows: '1fr 1fr', gap: 3, height: '100%' }}>
+          <img src={shown[1]} alt="Photo 2" style={imgStyle} />
+          <img src={shown[2]} alt="Photo 3" style={imgStyle} />
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div
+      style={{
+        ...containerStyle,
+        gridTemplateColumns: '1fr 1fr',
+        gridTemplateRows: '1fr 1fr',
+        height: 300,
+      }}
+    >
+      {shown.map((url, i) => (
+        <img key={i} src={url} alt={`Photo ${i + 1}`} style={imgStyle} />
+      ))}
+    </div>
+  )
+}
+
 export default function PostCard({ post, likedPosts, onLikeToggle }: PostCardProps) {
   const { profile } = useAuth()
   const liked = likedPosts.has(post.id)
@@ -241,13 +308,7 @@ export default function PostCard({ post, likedPosts, onLikeToggle }: PostCardPro
       </div>
 
       {post.media_urls.length > 0 && (
-        <div style={{ marginTop: 12, borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
-          <img
-            src={post.media_urls[0]}
-            alt="Post media"
-            style={{ width: '100%', maxHeight: 340, objectFit: 'cover', display: 'block' }}
-          />
-        </div>
+        <MediaGrid urls={post.media_urls} />
       )}
 
       {post.hashtags.length > 0 && (
