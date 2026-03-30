@@ -191,7 +191,30 @@ Contractor accounts automatically get a Solana wallet after signup/onboarding.
 - **Migration**: `supabase/migrations/015_solana_wallet.sql` — adds `solana_pubkey TEXT UNIQUE NULL` to `users` table
 - **New packages**: `@solana/web3.js`, `qrcode.react`, `buffer` (browser polyfill)
 - **Vite config**: `buffer` polyfill + `global: globalThis` define for @solana/web3.js browser compatibility
-- **Key files**: `src/pages/WalletSetup.tsx`, `server/index.js` (wallet endpoints), `src/pages/Settings.tsx` (wallet tab)
+- **Key files**: `src/pages/WalletSetup.tsx`, `server/routes/wallet.js` (wallet endpoints), `src/pages/Settings.tsx` (wallet tab)
+
+## Server File Structure
+Server code is split into focused modules (was previously one 1300-line `server/index.js`):
+- `server/index.js` — thin entry (~78 lines): mounts routers, starts notification listener
+- `server/lib/clients.js` — Supabase admin/anon, Stripe, Telnyx, BUNDLES, SMS_PLANS, env vars
+- `server/lib/auth.js` — `requireAuth`, `requireSuperAdmin`, `requireAdminLevel` middleware
+- `server/routes/stripe.js` — Stripe webhook + `/api/create-checkout-session` + `/api/session-status`
+- `server/routes/team.js` — `/api/team/*` (invite, revoke, list)
+- `server/routes/admin.js` — `/api/admin/*` (stats, users, posts, comments, wallets, credits, purchases)
+- `server/routes/sms.js` — `/api/sms/*` + exported `sendSmsAlert()` for notification listener
+- `server/routes/wallet.js` — `/api/wallet/*` (save-pubkey, status, remove, send-reward)
+
+## Admin Panel File Structure
+Admin page is split into section components (was previously one 1113-line `src/pages/Admin.tsx`):
+- `src/pages/Admin.tsx` — thin shell (~70 lines): sidebar nav, section routing, auth headers
+- `src/pages/admin/shared.tsx` — SectionCard, StatCard, AdminInput, LoadingRow, formatDate, formatDollars, table styles
+- `src/pages/admin/OverviewSection.tsx` — platform analytics (stats grid)
+- `src/pages/admin/UsersSection.tsx` — paginated user list, role change, suspend/reinstate
+- `src/pages/admin/WalletsSection.tsx` — credit balances, manual credit adjustment
+- `src/pages/admin/FeedSection.tsx` — recent posts/comments, flag queue, delete actions
+- `src/pages/admin/ControlsSection.tsx` — staff invites, feature flags, platform announcements
+- `src/pages/admin/PaymentsSection.tsx` — Stripe purchases, revenue totals
+- `src/pages/admin/DomainsSection.tsx` — domain status cards, environment labels
 
 ## Task Status
 - ✅ Task #1: Auth, Database & Routing Foundation — DONE
