@@ -52,6 +52,11 @@ export default function ProtectedRoute({ children, publicOnly = false }: Protect
   }
 
   if (!publicOnly && !session) {
+    // In development builds, skip the redirect so pages are previewable without a session.
+    // import.meta.env.DEV is automatically false in production (vite build).
+    if (import.meta.env.DEV) {
+      return <>{children}</>
+    }
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
