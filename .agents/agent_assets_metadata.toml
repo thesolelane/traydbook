@@ -24,3 +24,9 @@ id = "klr-_16jHimRdkHVOz8q3"
 uri = "file://docs/traydbook-marketplace-comparison.pdf"
 type = "pdf"
 title = "TraydBook vs Thumbtack, Angi, HomeAdvisor, Houzz, Bark (PDF)"
+
+[[outputs]]
+id = "AXJr9_wioEA8eFHtTrQ4l"
+uri = "file://traydbook-server-config.tar.gz"
+type = "unspecified"
+title = "TraydBook Server Config"
