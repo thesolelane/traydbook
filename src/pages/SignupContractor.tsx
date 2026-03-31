@@ -1,4 +1,5 @@
 import { useState, useRef, FormEvent } from 'react'
+import { Eye, EyeOff } from 'lucide-react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -122,6 +123,8 @@ export default function SignupContractor() {
   const [userId, setUserId] = useState<string | null>(null)
   const [emailConfirmSent, setEmailConfirmSent] = useState(false)
 
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
   const [step1, setStep1] = useState<Step1>({ email: '', password: '', confirmPassword: '' })
   const [step2, setStep2] = useState<Step2>({
     displayName: '',
@@ -347,26 +350,36 @@ export default function SignupContractor() {
                   </div>
                   <div className="form-group">
                     <label>Password</label>
-                    <input
-                      type="password"
-                      value={step1.password}
-                      onChange={e => setStep1(p => ({ ...p, password: e.target.value }))}
-                      placeholder="Min. 8 characters"
-                      required
-                      minLength={8}
-                      autoComplete="new-password"
-                    />
+                    <div className="password-wrap">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={step1.password}
+                        onChange={e => setStep1(p => ({ ...p, password: e.target.value }))}
+                        placeholder="Min. 8 characters"
+                        required
+                        minLength={8}
+                        autoComplete="new-password"
+                      />
+                      <button type="button" className="pw-toggle" onClick={() => setShowPassword(p => !p)}>
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
                   </div>
                   <div className="form-group">
                     <label>Confirm Password</label>
-                    <input
-                      type="password"
-                      value={step1.confirmPassword}
-                      onChange={e => setStep1(p => ({ ...p, confirmPassword: e.target.value }))}
-                      placeholder="Repeat password"
-                      required
-                      autoComplete="new-password"
-                    />
+                    <div className="password-wrap">
+                      <input
+                        type={showConfirm ? 'text' : 'password'}
+                        value={step1.confirmPassword}
+                        onChange={e => setStep1(p => ({ ...p, confirmPassword: e.target.value }))}
+                        placeholder="Repeat password"
+                        required
+                        autoComplete="new-password"
+                      />
+                      <button type="button" className="pw-toggle" onClick={() => setShowConfirm(p => !p)}>
+                        {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
                   </div>
                   <button type="submit" className="btn-primary btn-full" disabled={loading}>
                     {loading ? 'Creating account...' : 'Continue'}

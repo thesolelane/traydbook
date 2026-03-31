@@ -1,4 +1,5 @@
 import { useState, useEffect, FormEvent } from 'react'
+import { Eye, EyeOff } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
@@ -10,6 +11,8 @@ export default function ResetPassword() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [validSession, setValidSession] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
 
   useEffect(() => {
     // Supabase injects the recovery token into the URL hash; getSession picks it up
@@ -113,27 +116,37 @@ export default function ResetPassword() {
             {error && <div className="auth-error">{error}</div>}
             <div className="form-group">
               <label htmlFor="new-password">New password</label>
-              <input
-                id="new-password"
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="At least 8 characters"
-                required
-                minLength={8}
-                autoFocus
-              />
+              <div className="password-wrap">
+                <input
+                  id="new-password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="At least 8 characters"
+                  required
+                  minLength={8}
+                  autoFocus
+                />
+                <button type="button" className="pw-toggle" onClick={() => setShowPassword(p => !p)}>
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
             <div className="form-group">
               <label htmlFor="confirm-password">Confirm password</label>
-              <input
-                id="confirm-password"
-                type="password"
-                value={confirmPassword}
-                onChange={e => setConfirmPassword(e.target.value)}
-                placeholder="Repeat new password"
-                required
-              />
+              <div className="password-wrap">
+                <input
+                  id="confirm-password"
+                  type={showConfirm ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  placeholder="Repeat new password"
+                  required
+                />
+                <button type="button" className="pw-toggle" onClick={() => setShowConfirm(p => !p)}>
+                  {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
             <button type="submit" className="btn-primary btn-full" disabled={loading}>
               {loading ? 'Saving…' : 'Set Password'}

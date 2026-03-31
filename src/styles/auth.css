@@ -263,6 +263,30 @@
   gap: 10px;
 }
 
+.password-wrap {
+  position: relative;
+}
+.password-wrap input {
+  padding-right: 40px;
+}
+.password-wrap .pw-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  line-height: 1;
+}
+.password-wrap .pw-toggle:hover {
+  color: var(--color-text);
+}
+
 .step-nav {
   display: flex;
   gap: 10px;
