@@ -1,6 +1,58 @@
 import { Router } from 'express'
 import { supabaseAdmin } from '../lib/clients.js'
 import { requireAuth, requireSuperAdmin, requireAdminLevel, ALL_INVITE_ROLES } from '../lib/auth.js'
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const ENV_FILE = path.join(__dirname, '../../.env')
+
+// Known TraydBook env var keys (defines the fixed rows in the secrets panel)
+const KNOWN_KEYS = [
+  'VITE_SUPABASE_URL',
+  'VITE_SUPABASE_ANON_KEY',
+  'SUPABASE_SERVICE_ROLE_KEY',
+  'STRIPE_SECRET_KEY',
+  'STRIPE_WEBHOOK_SECRET',
+  'APP_ORIGIN',
+  'TELNYX_API_KEY',
+  'TELNYX_PHONE_NUMBER',
+  'SMS_STARTER_PRICE_ID',
+  'SMS_UNLIMITED_PRICE_ID',
+  'PORT',
+  'NODE_ENV',
+]
+
+function parseEnvFile() {
+  const map = new Map()
+  if (!fs.existsSync(ENV_FILE)) return map
+  const lines = fs.readFileSync(ENV_FILE, 'utf8').split('\n')
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith('#')) continue
+    const eq = trimmed.indexOf('=')
+    if (eq === -1) continue
+    const key = trimmed.slice(0, eq).trim()
+    const val = trimmed.slice(eq + 1).trim()
+    map.set(key, val)
+  }
+  return map
+}
+
+function writeEnvFile(map) {
+  const lines = []
+  for (const [key, val] of map.entries()) {
+    lines.push(`${key}=${val}`)
+  }
+  fs.writeFileSync(ENV_FILE, lines.join('\n') + '\n', 'utf8')
+}
+
+function maskValue(val) {
+  if (!val) return ''
+  if (val.length <= 6) return '••••••'
+  return val.slice(0, 3) + '•'.repeat(Math.min(val.length - 6, 20)) + val.slice(-3)
+}
 
 const router = Router()
 
@@ -394,6 +446,57 @@ router.get('/api/admin/wallets', requireAuth, requireAdminLevel, async (req, res
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
+})
+
+// ── Secrets Management ────────────────────────────────────────────────────────
+
+router.get('/api/admin/secrets', requireAuth, requireSuperAdmin, (req, res) => {
+  const fileMap = parseEnvFile()
+  const secrets = KNOWN_KEYS.map(name => {
+    const fileVal = fileMap.get(name)
+    const liveVal = process.env[name]
+    const val = fileVal ?? liveVal ?? ''
+    return {
+      name,
+      set: Boolean(val),
+      masked: maskValue(val),
+      source: fileVal ? 'file' : liveVal ? 'env' : 'unset',
+    }
+  })
+  // Also include any extra keys in the .env file not in KNOWN_KEYS
+  for (const [key, val] of fileMap.entries()) {
+    if (!KNOWN_KEYS.includes(key)) {
+      secrets.push({ name: key, set: Boolean(val), masked: maskValue(val), source: 'file' })
+    }
+  }
+  res.json({ secrets })
+})
+
+router.put('/api/admin/secrets', requireAuth, requireSuperAdmin, (req, res) => {
+  const { name, value } = req.body ?? {}
+  if (!name || typeof name !== 'string') return res.status(400).json({ error: 'name is required' })
+  if (typeof value !== 'string') return res.status(400).json({ error: 'value is required' })
+  if (!/^[A-Z0-9_]+$/.test(name)) return res.status(400).json({ error: 'Invalid key name' })
+
+  const map = parseEnvFile()
+  map.set(name, value)
+  writeEnvFile(map)
+  process.env[name] = value
+  console.log(`[secrets] Set ${name} (by ${req.user.id})`)
+  res.json({ ok: true })
+})
+
+router.delete('/api/admin/secrets/:name', requireAuth, requireSuperAdmin, (req, res) => {
+  const { name } = req.params
+  if (!/^[A-Z0-9_]+$/.test(name)) return res.status(400).json({ error: 'Invalid key name' })
+
+  const map = parseEnvFile()
+  const existed = map.has(name)
+  map.delete(name)
+  writeEnvFile(map)
+  delete process.env[name]
+  console.log(`[secrets] Deleted ${name} (by ${req.user.id})`)
+  res.json({ ok: true, existed })
 })
 
 export default router

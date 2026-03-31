@@ -8,6 +8,7 @@ import {
   CreditCard,
   Globe,
   Shield,
+  KeyRound,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { isSuperAdmin } from '../lib/roles'
@@ -18,8 +19,9 @@ import FeedSection from './admin/FeedSection'
 import ControlsSection from './admin/ControlsSection'
 import PaymentsSection from './admin/PaymentsSection'
 import DomainsSection from './admin/DomainsSection'
+import SecretsSection from './admin/SecretsSection'
 
-type Section = 'overview' | 'users' | 'wallets' | 'feed' | 'controls' | 'payments' | 'domains'
+type Section = 'overview' | 'users' | 'wallets' | 'feed' | 'controls' | 'payments' | 'domains' | 'secrets'
 
 const NAV_ITEMS: { id: Section; label: string; icon: React.ReactNode }[] = [
   { id: 'overview', label: 'Analytics Overview', icon: <BarChart2 size={16} /> },
@@ -29,6 +31,7 @@ const NAV_ITEMS: { id: Section; label: string; icon: React.ReactNode }[] = [
   { id: 'controls', label: 'Platform Controls', icon: <Settings size={16} /> },
   { id: 'payments', label: 'Stripe & Payments', icon: <CreditCard size={16} /> },
   { id: 'domains', label: 'Domain Status', icon: <Globe size={16} /> },
+  { id: 'secrets', label: 'Secrets & Env', icon: <KeyRound size={16} /> },
 ]
 
 export default function Admin() {
@@ -141,6 +144,7 @@ export default function Admin() {
         {section === 'controls' && <ControlsSection />}
         {section === 'payments' && <PaymentsSection authHeaders={authHeaders} />}
         {section === 'domains' && <DomainsSection />}
+        {section === 'secrets' && <SecretsSection authHeaders={authHeaders} />}
       </main>
     </div>
   )
