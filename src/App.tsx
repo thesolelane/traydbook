@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
@@ -32,6 +33,22 @@ import JoinDelegate from './pages/JoinDelegate'
 import StaffInvite from './pages/StaffInvite'
 import WalletSetup from './pages/WalletSetup'
 
+function SubdomainRedirect() {
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  useEffect(() => {
+    const hostname = window.location.hostname
+    const isAdminSubdomain =
+      hostname.startsWith('admin.') || hostname === 'admin.localhost'
+    if (isAdminSubdomain && !location.pathname.startsWith('/admin')) {
+      navigate('/admin', { replace: true })
+    }
+  }, [navigate, location.pathname])
+
+  return null
+}
+
 function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
@@ -45,6 +62,7 @@ export default function App() {
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <AuthProvider>
+        <SubdomainRedirect />
         <Routes>
           {/* Public routes (redirect to /feed if logged in) */}
           <Route
