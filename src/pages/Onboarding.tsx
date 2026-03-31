@@ -5,6 +5,12 @@ import { supabase } from '../lib/supabase'
 import type { AccountType } from '../lib/database.types'
 import '../styles/auth.css'
 
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const { data } = await supabase.auth.getSession()
+  const token = data.session?.access_token
+  return token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' }
+}
+
 const TRADES = [
   'Electrician',
   'Plumber',
@@ -163,29 +169,22 @@ export default function Onboarding() {
     setError('')
 
     try {
-      const handle = generateHandle(trimName)
-
-      const { error: userErr } = await supabase.from('users').insert({
-        id: user.id,
-        display_name: trimName,
-        handle,
-        avatar_url: meta.avatar_url ?? meta.picture ?? null,
-        account_type: accountType,
-        location_city: city.trim() || null,
-        location_state: state || null,
-        credit_balance: 0,
+      const headers = await getAuthHeaders()
+      const res = await fetch('/api/onboarding/complete', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          display_name: trimName,
+          account_type: accountType,
+          location_city: city.trim() || null,
+          location_state: state || null,
+          trade,
+        }),
       })
-      if (userErr) throw new Error(userErr.message)
 
-      if (accountType === 'contractor') {
-        const { error: cpErr } = await supabase.from('contractor_profiles').insert({
-          user_id: user.id,
-          primary_trade: trade,
-          years_experience: 0,
-          service_radius_miles: 50,
-          availability_status: 'available',
-        })
-        if (cpErr) throw new Error(cpErr.message)
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error ?? `Server error ${res.status}`)
       }
 
       await refreshProfile()
