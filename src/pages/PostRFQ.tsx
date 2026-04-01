@@ -136,7 +136,11 @@ export default function PostRFQ() {
     setError('')
 
     try {
-      const { data: newRfqId, error: rfqError } = await supabase.rpc('post_rfq', {
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Request timed out. Please try again.')), 15000)
+      )
+
+      const rpcCall = supabase.rpc('post_rfq', {
         p_title: title.trim(),
         p_trade_needed: tradeNeeded,
         p_project_type: projectType || null,
@@ -154,13 +158,15 @@ export default function PostRFQ() {
         p_share_to_feed: shareToFeed,
       })
 
+      const { data: newRfqId, error: rfqError } = await Promise.race([rpcCall, timeout])
+
       if (rfqError || !newRfqId) {
         console.error('[PostRFQ] rpc error:', rfqError)
         setError(rfqError?.message ?? 'Failed to post RFQ. Please try again.')
         return
       }
 
-      await refreshProfile()
+      void refreshProfile()
       navigate(`/bids/${newRfqId as string}`)
     } catch (err) {
       console.error('[PostRFQ] unexpected error:', err)
