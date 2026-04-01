@@ -2,6 +2,7 @@ import { Router } from 'express'
 import multer from 'multer'
 import { supabaseAdmin } from '../lib/clients.js'
 import { requireAuth } from '../lib/auth.js'
+import { logError } from '../lib/errorLog.js'
 
 const router = Router()
 
@@ -36,6 +37,16 @@ router.post('/post-media', requireAuth, upload.array('files', 4), async (req, re
 
     if (error) {
       console.error('[upload] storage error:', error.message)
+      logError({
+        context: 'upload',
+        message: 'Photo upload failed',
+        detail: error.message,
+        stack: null,
+        userId,
+        route: '/api/upload/post-media',
+        method: 'POST',
+        statusCode: 500,
+      })
       return res.status(500).json({ error: `Upload failed: ${error.message}` })
     }
 

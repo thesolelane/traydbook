@@ -9,6 +9,7 @@ import {
   Globe,
   Shield,
   KeyRound,
+  AlertTriangle,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { isSuperAdmin } from '../lib/roles'
@@ -20,10 +21,11 @@ import ControlsSection from './admin/ControlsSection'
 import PaymentsSection from './admin/PaymentsSection'
 import DomainsSection from './admin/DomainsSection'
 import SecretsSection from './admin/SecretsSection'
+import ErrorLogSection from './admin/ErrorLogSection'
 
-type Section = 'overview' | 'users' | 'wallets' | 'feed' | 'controls' | 'payments' | 'domains' | 'secrets'
+type Section = 'overview' | 'users' | 'wallets' | 'feed' | 'controls' | 'payments' | 'domains' | 'secrets' | 'errors'
 
-const NAV_ITEMS: { id: Section; label: string; icon: React.ReactNode }[] = [
+const NAV_ITEMS: { id: Section; label: string; icon: React.ReactNode; superOnly?: boolean }[] = [
   { id: 'overview', label: 'Analytics Overview', icon: <BarChart2 size={16} /> },
   { id: 'users', label: 'User Management', icon: <Users size={16} /> },
   { id: 'wallets', label: 'Wallet & Credits', icon: <Wallet size={16} /> },
@@ -32,6 +34,7 @@ const NAV_ITEMS: { id: Section; label: string; icon: React.ReactNode }[] = [
   { id: 'payments', label: 'Stripe & Payments', icon: <CreditCard size={16} /> },
   { id: 'domains', label: 'Domain Status', icon: <Globe size={16} /> },
   { id: 'secrets', label: 'Secrets & Env', icon: <KeyRound size={16} /> },
+  { id: 'errors', label: 'Error Log', icon: <AlertTriangle size={16} />, superOnly: true },
 ]
 
 export default function Admin() {
@@ -92,7 +95,7 @@ export default function Admin() {
             {isSuperAdminUser ? 'Super Admin' : 'Admin'}
           </div>
         </div>
-        {NAV_ITEMS.map(item => (
+        {NAV_ITEMS.filter(item => !item.superOnly || isSuperAdminUser).map(item => (
           <button
             key={item.id}
             onClick={() => setSection(item.id)}
@@ -109,7 +112,11 @@ export default function Admin() {
               textAlign: 'left',
               fontSize: 13,
               fontWeight: 600,
-              color: section === item.id ? 'var(--color-brand)' : 'var(--color-text-muted)',
+              color: section === item.id
+                ? 'var(--color-brand)'
+                : item.id === 'errors'
+                  ? '#e05252cc'
+                  : 'var(--color-text-muted)',
               transition: 'all 0.15s',
             }}
           >
@@ -145,6 +152,7 @@ export default function Admin() {
         {section === 'payments' && <PaymentsSection authHeaders={authHeaders} />}
         {section === 'domains' && <DomainsSection />}
         {section === 'secrets' && <SecretsSection authHeaders={authHeaders} />}
+        {section === 'errors' && <ErrorLogSection authHeaders={authHeaders} />}
       </main>
     </div>
   )

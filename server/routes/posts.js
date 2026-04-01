@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { supabaseAdmin } from '../lib/clients.js'
 import { requireAuth } from '../lib/auth.js'
+import { logError } from '../lib/errorLog.js'
 
 const router = Router()
 
@@ -30,6 +31,16 @@ router.post('/', requireAuth, async (req, res) => {
 
   if (error) {
     console.error('[posts] insert error:', error)
+    logError({
+      context: 'post',
+      message: 'Post creation failed',
+      detail: error.message,
+      stack: null,
+      userId,
+      route: '/api/posts',
+      method: 'POST',
+      statusCode: 500,
+    })
     return res.status(500).json({ error: error.message })
   }
 

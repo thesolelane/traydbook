@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { supabaseAdmin } from '../lib/clients.js'
 import { requireAuth, requireSuperAdmin, requireAdminLevel, ALL_INVITE_ROLES } from '../lib/auth.js'
+import { logError, getErrorLog, clearErrorLog } from '../lib/errorLog.js'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -499,4 +500,20 @@ router.delete('/api/admin/secrets/:name', requireAuth, requireSuperAdmin, (req, 
   res.json({ ok: true, existed })
 })
 
+// ─── Error Log ────────────────────────────────────────────────────────────────
+
+router.get('/api/admin/error-log', requireAuth, requireSuperAdmin, (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit ?? '100'), 500)
+  const offset = parseInt(req.query.offset ?? '0')
+  const context = req.query.context?.toString() || undefined
+  res.json(getErrorLog({ limit, offset, context }))
+})
+
+router.delete('/api/admin/error-log', requireAuth, requireSuperAdmin, (req, res) => {
+  clearErrorLog()
+  console.log(`[admin] Error log cleared by ${req.user.id}`)
+  res.json({ ok: true })
+})
+
+export { logError }
 export default router

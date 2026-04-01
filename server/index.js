@@ -9,12 +9,31 @@ import walletRoutes from './routes/wallet.js'
 import onboardingRoutes from './routes/onboarding.js'
 import uploadRoutes from './routes/upload.js'
 import postRoutes from './routes/posts.js'
+import { logError, loadLogFromDisk } from './lib/errorLog.js'
 
 const app = express()
 
 app.use(stripeRoutes)
 
 app.use(express.json())
+
+app.use((req, res, next) => {
+  res.on('finish', () => {
+    if (res.statusCode >= 400) {
+      const context = req.path.split('/')[2] ?? 'server'
+      logError({
+        context,
+        message: `${res.statusCode} ${req.method} ${req.path}`,
+        detail: null,
+        route: req.path,
+        method: req.method,
+        statusCode: res.statusCode,
+        userId: req.user?.id ?? null,
+      })
+    }
+  })
+  next()
+})
 
 app.use(teamRoutes)
 app.use(adminRoutes)
@@ -35,11 +54,42 @@ if (process.env.NODE_ENV === 'production') {
   })
 }
 
+app.use((err, req, res, next) => {
+  const message = err?.message ?? 'Internal server error'
+  const stack = err?.stack ?? null
+  const context = req.path.split('/')[2] ?? 'server'
+  logError({
+    context,
+    message,
+    detail: String(err),
+    stack,
+    route: req.path,
+    method: req.method,
+    statusCode: 500,
+    userId: req.user?.id ?? null,
+  })
+  console.error(`[error] ${req.method} ${req.path} —`, message)
+  if (!res.headersSent) res.status(500).json({ error: message })
+})
+
+process.on('uncaughtException', err => {
+  logError({ context: 'server', message: err.message, stack: err.stack, detail: 'uncaughtException' })
+  console.error('[uncaughtException]', err)
+})
+
+process.on('unhandledRejection', reason => {
+  const msg = reason instanceof Error ? reason.message : String(reason)
+  const stack = reason instanceof Error ? reason.stack : null
+  logError({ context: 'server', message: msg, stack, detail: 'unhandledRejection' })
+  console.error('[unhandledRejection]', reason)
+})
+
 const PORT = process.env.PORT ?? process.env.API_PORT ?? 3001
 app.listen(PORT, () => {
   console.log(
     `[server] Running on http://localhost:${PORT} (${process.env.NODE_ENV ?? 'development'})`
   )
+  loadLogFromDisk()
   ensurePostMediaBucket()
   startNotificationListener()
 })
