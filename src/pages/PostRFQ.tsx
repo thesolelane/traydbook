@@ -135,32 +135,39 @@ export default function PostRFQ() {
     setSubmitting(true)
     setError('')
 
-    const { data: newRfqId, error: rfqError } = await supabase.rpc('post_rfq', {
-      p_title: title.trim(),
-      p_trade_needed: tradeNeeded,
-      p_project_type: projectType || null,
-      p_scope_description: scopeDescription.trim(),
-      p_budget_min: parseMoney(budgetMin),
-      p_budget_max: parseMoney(budgetMax),
-      p_sq_footage: sqFootage ? parseInt(sqFootage) : null,
-      p_start_date: startDate || null,
-      p_duration_weeks: durationWeeks ? parseInt(durationWeeks) : null,
-      p_bid_deadline: bidDeadline ? new Date(bidDeadline).toISOString() : null,
-      p_location_zip: locationZip.trim(),
-      p_location_city: locationCity.trim() || null,
-      p_location_state: locationState.trim() || null,
-      p_requirements: requirements,
-      p_share_to_feed: shareToFeed,
-    })
+    try {
+      const { data: newRfqId, error: rfqError } = await supabase.rpc('post_rfq', {
+        p_title: title.trim(),
+        p_trade_needed: tradeNeeded,
+        p_project_type: projectType || null,
+        p_scope_description: scopeDescription.trim(),
+        p_budget_min: parseMoney(budgetMin),
+        p_budget_max: parseMoney(budgetMax),
+        p_sq_footage: sqFootage ? parseInt(sqFootage) : null,
+        p_start_date: startDate || null,
+        p_duration_weeks: durationWeeks ? parseInt(durationWeeks) : null,
+        p_bid_deadline: bidDeadline ? new Date(bidDeadline).toISOString() : null,
+        p_location_zip: locationZip.trim(),
+        p_location_city: locationCity.trim() || null,
+        p_location_state: locationState.trim() || null,
+        p_requirements: requirements,
+        p_share_to_feed: shareToFeed,
+      })
 
-    if (rfqError || !newRfqId) {
-      setError(rfqError?.message ?? 'Failed to post RFQ. Please try again.')
+      if (rfqError || !newRfqId) {
+        console.error('[PostRFQ] rpc error:', rfqError)
+        setError(rfqError?.message ?? 'Failed to post RFQ. Please try again.')
+        return
+      }
+
+      await refreshProfile()
+      navigate(`/bids/${newRfqId as string}`)
+    } catch (err) {
+      console.error('[PostRFQ] unexpected error:', err)
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.')
+    } finally {
       setSubmitting(false)
-      return
     }
-
-    await refreshProfile()
-    navigate(`/bids/${newRfqId as string}`)
   }
 
   return (

@@ -148,8 +148,7 @@ export default function Feed() {
         `
         id, post_type, body, media_urls, hashtags, like_count, comment_count, share_count,
         is_urgent, is_boosted, created_at, author_id, tagged_user_id, linked_job_id, linked_rfq_id,
-        users!author_id (display_name, handle, avatar_url, account_type),
-        contractor_profiles!author_id (primary_trade)
+        users!author_id (display_name, handle, avatar_url, account_type)
       `
       )
       .order('is_boosted', { ascending: false })
@@ -188,7 +187,6 @@ export default function Feed() {
           avatar_url: string | null
           account_type: string
         } | null
-        const cp = row.contractor_profiles as unknown as { primary_trade: string | null } | null
         return {
           id: row.id as string,
           post_type: row.post_type as FeedPost['post_type'],
@@ -209,7 +207,7 @@ export default function Feed() {
           author_handle: u?.handle ?? '',
           author_avatar: u?.avatar_url ?? null,
           author_account_type: u?.account_type ?? '',
-          author_trade: cp?.primary_trade ?? null,
+          author_trade: null,
           author_verified: false,
         }
       })
