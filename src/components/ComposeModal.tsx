@@ -70,6 +70,7 @@ export default function ComposeModal({ onClose, onPosted }: ComposeModalProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const overlayRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (view === 'update') textareaRef.current?.focus()
@@ -509,6 +510,7 @@ export default function ComposeModal({ onClose, onPosted }: ComposeModalProps) {
               }}
             >
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  {/* File picker — library / existing photos */}
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -517,10 +519,44 @@ export default function ComposeModal({ onClose, onPosted }: ComposeModalProps) {
                     style={{ display: 'none' }}
                     onChange={handleFileChange}
                   />
+                  {/* Camera input — opens device camera directly */}
+                  <input
+                    ref={cameraInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    style={{ display: 'none' }}
+                    onChange={handleFileChange}
+                  />
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={images.length >= MAX_PHOTOS}
-                    title={images.length >= MAX_PHOTOS ? 'Max 4 photos' : 'Add photos'}
+                    title={images.length >= MAX_PHOTOS ? 'Max 4 photos' : 'Upload photos from your device'}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      background: 'none',
+                      border: '1.5px solid var(--color-border)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: '6px 12px',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color:
+                        images.length >= MAX_PHOTOS
+                          ? 'var(--color-text-muted)'
+                          : 'var(--color-text)',
+                      cursor: images.length >= MAX_PHOTOS ? 'not-allowed' : 'pointer',
+                      opacity: images.length >= MAX_PHOTOS ? 0.5 : 1,
+                    }}
+                  >
+                    <Image size={14} />
+                    {images.length > 0 ? `${images.length}/${MAX_PHOTOS} Photos` : 'Upload Photos'}
+                  </button>
+                  <button
+                    onClick={() => cameraInputRef.current?.click()}
+                    disabled={images.length >= MAX_PHOTOS}
+                    title={images.length >= MAX_PHOTOS ? 'Max 4 photos' : 'Take a photo with your camera'}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -540,7 +576,7 @@ export default function ComposeModal({ onClose, onPosted }: ComposeModalProps) {
                     }}
                   >
                     <Camera size={14} />
-                    {images.length > 0 ? `${images.length}/${MAX_PHOTOS}` : 'Add Photos'}
+                    Take Photo
                   </button>
                 </div>
 
