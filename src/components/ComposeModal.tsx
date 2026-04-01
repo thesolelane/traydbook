@@ -220,7 +220,7 @@ export default function ComposeModal({ onClose, onPosted }: ComposeModalProps) {
       like_count: data.like_count as number,
       comment_count: data.comment_count as number,
       share_count: data.share_count as number,
-      is_urgent: data.is_urgent as boolean,
+      is_urgent: (data.is_urgent as boolean) ?? urgent,
       is_boosted: data.is_boosted as boolean,
       created_at: data.created_at as string,
       author_id: data.author_id as string,

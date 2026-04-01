@@ -10,19 +10,20 @@ router.post('/', requireAuth, async (req, res) => {
 
   if (!body?.trim()) return res.status(400).json({ error: 'Body is required' })
 
+  const insertRow = {
+    author_id: userId,
+    post_type: post_type ?? 'update',
+    body: body.trim(),
+    hashtags: hashtags ?? [],
+    media_urls: media_urls ?? [],
+  }
+
   const { data, error } = await supabaseAdmin
     .from('posts')
-    .insert({
-      author_id: userId,
-      post_type: post_type ?? 'update',
-      body: body.trim(),
-      hashtags: hashtags ?? [],
-      is_urgent: is_urgent ?? false,
-      media_urls: media_urls ?? [],
-    })
+    .insert(insertRow)
     .select(`
       id, post_type, body, media_urls, hashtags, like_count, comment_count, share_count,
-      is_urgent, is_boosted, created_at, author_id,
+      is_boosted, created_at, author_id,
       users!author_id (display_name, handle, avatar_url, account_type)
     `)
     .single()
