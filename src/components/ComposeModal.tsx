@@ -261,6 +261,10 @@ export default function ComposeModal({ onClose, onPosted }: ComposeModalProps) {
             width: '100%',
             maxWidth: 520,
             boxShadow: 'var(--shadow-lg)',
+            maxHeight: 'calc(100dvh - 40px)',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
           }}
         >
           <div
@@ -360,7 +364,8 @@ export default function ComposeModal({ onClose, onPosted }: ComposeModalProps) {
               </div>
             </div>
           ) : (
-            <div style={{ padding: 20 }}>
+            <>
+            <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
               {profile && (
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 16 }}>
                   <AuthorAvatar
@@ -485,15 +490,18 @@ export default function ComposeModal({ onClose, onPosted }: ComposeModalProps) {
               )}
 
               {error && <p style={{ fontSize: 13, color: '#e05252', marginTop: 10 }}>{error}</p>}
+            </div>
 
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginTop: 16,
-                }}
-              >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px 20px',
+                borderTop: '1px solid var(--color-border)',
+                flexShrink: 0,
+              }}
+            >
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <input
                     ref={fileInputRef}
@@ -569,7 +577,7 @@ export default function ComposeModal({ onClose, onPosted }: ComposeModalProps) {
                   </button>
                 </div>
               </div>
-            </div>
+            </>
           )}
         </div>
       )}
