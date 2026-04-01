@@ -284,7 +284,7 @@ export default function Onboarding() {
               style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
             >
               <div className="form-group">
-                <label className="form-label">Your Name</label>
+                <label className="form-label">Your Name or Business Name</label>
                 <input
                   className="form-input"
                   value={displayName}
