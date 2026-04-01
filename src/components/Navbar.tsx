@@ -330,7 +330,8 @@ export default function Navbar() {
             {/* Post Work / Post RFQ — hidden on mobile */}
             {profile && isContractor && (
               <Link
-                to="/feed/post"
+                to="/feed"
+                state={{ openCompose: true }}
                 className="nav-post-btn"
                 style={{
                   display: 'flex',
@@ -868,16 +869,18 @@ export default function Navbar() {
                     {
                       label: isContractor ? 'Post Work' : 'Post RFQ',
                       Icon: Plus,
-                      to: isContractor ? '/feed/post' : '/bids/new',
+                      to: isContractor ? '/feed' : '/bids/new',
+                      state: isContractor ? { openCompose: true } : undefined,
                       dot: false,
                     },
                   ]
                 : []),
               { label: 'Settings', Icon: Settings, to: '/settings', dot: false },
-            ].map(({ label, Icon, to, dot }) => (
+            ].map(({ label, Icon, to, dot, state: linkState }) => (
               <Link
                 key={to}
                 to={to}
+                state={linkState}
                 onClick={() => setMoreDrawerOpen(false)}
                 style={{
                   display: 'flex',

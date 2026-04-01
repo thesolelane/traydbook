@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useSearchParams, useNavigate } from 'react-router-dom'
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom'
 import { Plus, TrendingUp, UserPlus, Loader, RefreshCw } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -53,6 +53,7 @@ export default function Feed() {
   const { profile, canDelegate, delegateSession } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const activeFilter = (searchParams.get('type') ?? 'all') as FilterType
   const feedMode = (searchParams.get('mode') ?? 'foryou') as 'foryou' | 'following'
 
@@ -71,6 +72,13 @@ export default function Feed() {
 
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set())
   const [composeOpen, setComposeOpen] = useState(false)
+
+  useEffect(() => {
+    if ((location.state as { openCompose?: boolean } | null)?.openCompose) {
+      setComposeOpen(true)
+      window.history.replaceState({}, '')
+    }
+  }, [location.state])
 
   const connIdsRef = useRef<Set<string>>(new Set())
   const [connectedAuthorIds, setConnectedAuthorIds] = useState<Set<string>>(new Set())
