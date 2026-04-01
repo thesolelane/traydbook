@@ -138,19 +138,22 @@ export default function ComposeModal({ onClose, onPosted }: ComposeModalProps) {
     setPreviews(prev => prev.filter((_, i) => i !== index))
   }
 
-  async function uploadImages(userId: string): Promise<string[]> {
-    const urls: string[] = []
-    for (const file of images) {
-      const ext = file.name.split('.').pop() ?? 'jpg'
-      const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-      const { error: uploadErr } = await supabase.storage
-        .from('post-media')
-        .upload(path, file, { contentType: file.type })
-      if (uploadErr) throw new Error(`Upload failed: ${uploadErr.message}`)
-      const { data } = supabase.storage.from('post-media').getPublicUrl(path)
-      urls.push(data.publicUrl)
+  async function uploadImages(_userId: string): Promise<string[]> {
+    const { data: { session } } = await supabase.auth.getSession()
+    const token = session?.access_token
+    const form = new FormData()
+    for (const file of images) form.append('files', file)
+    const res = await fetch('/api/upload/post-media', {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Upload failed' }))
+      throw new Error(err.error ?? 'Upload failed')
     }
-    return urls
+    const { urls } = await res.json()
+    return urls as string[]
   }
 
   async function handleSubmit() {
