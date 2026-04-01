@@ -167,6 +167,7 @@ export default function ComposeModal({ onClose, onPosted }: ComposeModalProps) {
       try {
         mediaUrls = await uploadImages(profile.id)
       } catch (err) {
+        console.error('[compose] upload error:', err)
         setError(err instanceof Error ? err.message : 'Photo upload failed.')
         setSubmitting(false)
         setUploading(false)
@@ -177,30 +178,32 @@ export default function ComposeModal({ onClose, onPosted }: ComposeModalProps) {
 
     const tags = hashtags.split(/[\s,#]+/).filter(Boolean)
 
-    const { data, error: err } = await supabase
-      .from('posts')
-      .insert({
-        author_id: profile.id,
+    const { data: { session } } = await supabase.auth.getSession()
+    const token = session?.access_token
+    const postRes = await fetch('/api/posts', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({
         post_type: selectedType,
         body: body.trim(),
         hashtags: tags,
         is_urgent: urgent,
         media_urls: mediaUrls,
-      })
-      .select(
-        `
-        id, post_type, body, media_urls, hashtags, like_count, comment_count, share_count,
-        is_urgent, is_boosted, created_at, author_id,
-        users!author_id (display_name, handle, avatar_url, account_type)
-      `
-      )
-      .single()
+      }),
+    })
 
-    if (err || !data) {
-      setError('Failed to post. Please try again.')
+    if (!postRes.ok) {
+      const errJson = await postRes.json().catch(() => ({ error: 'Failed to post' }))
+      console.error('[compose] post error:', errJson)
+      setError(errJson.error ?? 'Failed to post. Please try again.')
       setSubmitting(false)
       return
     }
+
+    const { post: data } = await postRes.json()
 
     const u = data.users as unknown as {
       display_name: string

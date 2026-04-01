@@ -8,6 +8,7 @@ import smsRoutes, { sendSmsAlert } from './routes/sms.js'
 import walletRoutes from './routes/wallet.js'
 import onboardingRoutes from './routes/onboarding.js'
 import uploadRoutes from './routes/upload.js'
+import postRoutes from './routes/posts.js'
 
 const app = express()
 
@@ -21,6 +22,7 @@ app.use(smsRoutes)
 app.use(walletRoutes)
 app.use(onboardingRoutes)
 app.use('/api/upload', uploadRoutes)
+app.use('/api/posts', postRoutes)
 
 if (process.env.NODE_ENV === 'production') {
   const path = await import('path')
