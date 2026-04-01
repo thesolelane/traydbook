@@ -191,7 +191,7 @@ Contractor accounts automatically get a Solana wallet after signup/onboarding.
 - **Migration**: `supabase/migrations/015_solana_wallet.sql` — adds `solana_pubkey TEXT UNIQUE NULL` to `users` table
 - **New packages**: `@solana/web3.js`, `qrcode.react`, `buffer` (browser polyfill)
 - **Vite config**: `buffer` polyfill + `global: globalThis` define for @solana/web3.js browser compatibility
-- **Key files**: `src/pages/WalletSetup.tsx`, `server/routes/wallet.js` (wallet endpoints), `src/pages/Settings.tsx` (wallet tab)
+- **Key files**: `src/pages/WalletSetup.tsx`, `server/routes/wallet.js` (wallet endpoints), `src/pages/settings/WalletTab.tsx`
 
 ## Server File Structure
 Server code is split into focused modules (was previously one 1300-line `server/index.js`):
@@ -203,6 +203,18 @@ Server code is split into focused modules (was previously one 1300-line `server/
 - `server/routes/admin.js` — `/api/admin/*` (stats, users, posts, comments, wallets, credits, purchases)
 - `server/routes/sms.js` — `/api/sms/*` + exported `sendSmsAlert()` for notification listener
 - `server/routes/wallet.js` — `/api/wallet/*` (save-pubkey, status, remove, send-reward)
+
+## Settings Page File Structure
+Settings page is split into tab components (was previously one 3046-line `src/pages/Settings.tsx`):
+- `src/pages/Settings.tsx` — thin shell (~240 lines): sidebar nav, tab routing, visibility rules per account type
+- `src/pages/settings/shared.tsx` — shared helpers: `SavedBanner`, `ErrorBanner`, `TabHeading`, `SectionHeading`, `Section`, `inputStyle`, `btnPrimary`, `btnGhost`, `apiFetch`
+- `src/pages/settings/AccountTab.tsx` — email change, password change, profile summary, credit balance link
+- `src/pages/settings/NotificationsTab.tsx` — 13 notification toggles, SMS alerts subscription (contractors only)
+- `src/pages/settings/PrivacyTab.tsx` — explore visibility toggle (contractors only)
+- `src/pages/settings/BillingTab.tsx` — credit balance, buy bundles (Stripe), credit ledger (non-contractors only)
+- `src/pages/settings/VerificationTab.tsx` — badge display, credential submission flow (contractors only)
+- `src/pages/settings/WalletTab.tsx` — Solana wallet: pubkey display, QR code, copy, remove, setup prompt (contractors only)
+- `src/pages/settings/DangerTab.tsx` — account deletion with CONFIRM gate
 
 ## Admin Panel File Structure
 Admin page is split into section components (was previously one 1113-line `src/pages/Admin.tsx`):
