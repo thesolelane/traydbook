@@ -37,6 +37,7 @@ router.post('/api/onboarding/complete', requireAuth, async (req, res) => {
 
   const { error: userErr } = await supabaseAdmin.from('users').insert({
     id: userId,
+    email: req.user.email,
     display_name: display_name.trim(),
     handle,
     account_type,

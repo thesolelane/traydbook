@@ -229,6 +229,7 @@ export default function SignupContractor() {
 
       const { error: profileError } = await supabase.from('users').insert({
         id: uid,
+        email: step1.email,
         display_name: step2.displayName,
         handle,
         avatar_url: uploadedAvatarUrl || null,
