@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TraydBook — Coming Soon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #141416;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Barlow', sans-serif;
+    padding: 48px 24px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 48px;
+  }
+
+  .logo-icon {
+    width: 48px;
+    height: 48px;
+    background: #E85D04;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .wordmark {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+
+  .wordmark .trayd { color: #F0ECE6; }
+  .wordmark .book  { color: #E85D04; }
+
+  .headline {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: clamp(32px, 6vw, 52px);
+    font-weight: 700;
+    color: #F0ECE6;
+    text-align: center;
+    line-height: 1.1;
+    margin-bottom: 20px;
+    max-width: 620px;
+  }
+
+  .headline em {
+    color: #E85D04;
+    font-style: normal;
+  }
+
+  .subheading {
+    font-size: 17px;
+    color: #9D9990;
+    text-align: center;
+    max-width: 460px;
+    line-height: 1.65;
+    margin-bottom: 44px;
+  }
+
+  .form {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    max-width: 420px;
+    margin-bottom: 16px;
+  }
+
+  .form input {
+    flex: 1;
+    background: #22252A;
+    border: 1px solid #2E3033;
+    border-radius: 6px;
+    padding: 11px 14px;
+    color: #F0ECE6;
+    font-family: 'Barlow', sans-serif;
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .form input::placeholder { color: #5A5750; }
+  .form input:focus { border-color: #E85D04; }
+
+  .form button {
+    background: #E85D04;
+    color: #F0ECE6;
+    border: none;
+    border-radius: 6px;
+    padding: 11px 22px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s;
+  }
+
+  .form button:hover { background: #C44D00; }
+
+  .confirm {
+    font-size: 14px;
+    color: #E85D04;
+    text-align: center;
+    min-height: 20px;
+    margin-bottom: 12px;
+  }
+
+  .tags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 500px;
+    margin-top: 20px;
+  }
+
+  .tag {
+    background: #22252A;
+    border: 1px solid #2E3033;
+    border-radius: 4px;
+    padding: 5px 11px;
+    font-size: 12px;
+    color: #9D9990;
+    font-family: 'Barlow Condensed', sans-serif;
+    letter-spacing: 0.5px;
+  }
+
+  .divider {
+    width: 40px;
+    height: 2px;
+    background: #E85D04;
+    margin: 40px auto;
+    border-radius: 2px;
+  }
+
+  .footer {
+    font-size: 12px;
+    color: #5A5750;
+    text-align: center;
+    margin-top: 48px;
+  }
+
+  @media (max-width: 480px) {
+    .form { flex-direction: column; }
+    .form button { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="logo">
+  <div class="logo-icon">
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+      <rect x="4" y="5"  width="18" height="4" rx="1.5" fill="white" opacity="0.95"/>
+      <rect x="4" y="11" width="18" height="4" rx="1.5" fill="white" opacity="0.7"/>
+      <rect x="4" y="17" width="18" height="4" rx="1.5" fill="white" opacity="0.45"/>
+    </svg>
+  </div>
+  <div class="wordmark">
+    <span class="trayd">Trayd</span><span class="book">Book</span>
+  </div>
+</div>
+
+<h1 class="headline">
+  The professional network<br>for the <em>construction trades</em>
+</h1>
+
+<p class="subheading">
+  Post work, find jobs, submit bids, and build your verified reputation.
+  Built for contractors, tradespeople, and design professionals.
+</p>
+
+<div class="form">
+  <input type="email" id="email" placeholder="Enter your email address" />
+  <button onclick="submit()">Notify me</button>
+</div>
+
+<div class="confirm" id="confirm"></div>
+
+<div class="tags">
+  <span class="tag">Contractors</span>
+  <span class="tag">Tradespeople</span>
+  <span class="tag">Design Professionals</span>
+  <span class="tag">Bid Board</span>
+  <span class="tag">Job Board</span>
+  <span class="tag">Verified Badges</span>
+  <span class="tag">Project Owners</span>
+</div>
+
+<div class="divider"></div>
+
+<p class="footer">&copy; 2026 TraydBook. All rights reserved.</p>
+
+<script>
+function submit() {
+  const input = document.getElementById('email');
+  const confirm = document.getElementById('confirm');
+  const email = input.value.trim();
+  if (!email || !email.includes('@')) {
+    confirm.style.color = '#f85149';
+    confirm.textContent = 'Please enter a valid email address.';
+    return;
+  }
+  confirm.style.color = '#E85D04';
+  confirm.textContent = "You're on the list — we'll be in touch!";
+  input.value = '';
+}
+</script>
+
+</body>
+</html>
