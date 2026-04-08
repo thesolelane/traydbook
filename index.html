@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TraydBook — Coming Soon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#141416;font-family:'Barlow',sans-serif;color:#F0ECE6;min-height:100vh}
+.tb-nav{display:flex;align-items:center;justify-content:space-between;padding:20px 40px;border-bottom:1px solid #2E3033}
+.tb-logo{display:flex;align-items:center;gap:12px}
+.tb-logo img{width:40px;height:40px;border-radius:50%;object-fit:cover}
+.tb-wm{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;letter-spacing:-0.5px}
+.tb-wm .t{color:#F0ECE6}.tb-wm .b{color:#E85D04}
+.tb-navr{font-size:11px;color:#5A5750;font-family:'Barlow Condensed',sans-serif;letter-spacing:1px;text-transform:uppercase}
+.tb-hero{padding:64px 40px 48px;max-width:800px;margin:0 auto;text-align:center}
+.tb-badge{display:inline-flex;align-items:center;gap:8px;background:#1a1200;border:1px solid #E85D04;border-radius:4px;padding:5px 14px;font-size:11px;color:#E85D04;font-family:'Barlow Condensed',sans-serif;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:32px}
+.dot{width:6px;height:6px;background:#E85D04;border-radius:50%;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.tb-h1{font-family:'Barlow Condensed',sans-serif;font-size:clamp(36px,6vw,62px);font-weight:700;line-height:1.05;color:#F0ECE6;margin-bottom:18px}
+.tb-h1 em{color:#E85D04;font-style:normal}
+.tb-sub{font-size:16px;color:#9D9990;line-height:1.65;margin-bottom:18px;max-width:540px;margin-left:auto;margin-right:auto}
+.tb-offer{display:inline-block;background:#1a1200;border:1px solid #2E3033;border-radius:6px;padding:9px 18px;font-size:13px;color:#9D9990;margin-bottom:44px}
+.tb-offer strong{color:#E85D04}
+.tb-card{background:#1c1f24;border:1px solid #2E3033;border-radius:12px;padding:32px;max-width:520px;margin:0 auto}
+.tb-card-head{font-family:'Barlow Condensed',sans-serif;font-size:19px;font-weight:700;color:#F0ECE6;margin-bottom:4px;text-align:left}
+.tb-card-sub{font-size:13px;color:#5A5750;margin-bottom:22px;text-align:left}
+.lbl{font-size:11px;color:#5A5750;font-family:'Barlow Condensed',sans-serif;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;text-align:left}
+.tb-sel{width:100%;background:#141416;border:1px solid #2E3033;border-radius:6px;padding:11px 14px;color:#F0ECE6;font-family:'Barlow',sans-serif;font-size:14px;outline:none;margin-bottom:16px;cursor:pointer;appearance:none}
+.tb-sel:focus{border-color:#E85D04}
+.tb-sel option{background:#22252A;color:#F0ECE6}
+.tb-row{display:flex;gap:8px;margin-bottom:10px}
+.tb-inp{flex:1;background:#141416;border:1px solid #2E3033;border-radius:6px;padding:11px 14px;color:#F0ECE6;font-family:'Barlow',sans-serif;font-size:14px;outline:none;transition:border-color 0.15s}
+.tb-inp::placeholder{color:#3a3d42}
+.tb-inp:focus{border-color:#E85D04}
+.tb-btn{background:#E85D04;color:#F0ECE6;border:none;border-radius:6px;padding:11px 22px;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:0.5px;cursor:pointer;white-space:nowrap;transition:background 0.15s}
+.tb-btn:hover{background:#C44D00}
+.tb-btn:disabled{background:#5A5750;cursor:not-allowed}
+.tb-hint{font-size:11px;color:#3a3d42;text-align:left}
+.tb-msg{font-size:13px;text-align:center;margin-top:14px;min-height:18px;font-family:'Barlow Condensed',sans-serif;letter-spacing:0.3px}
+.tb-div{border:none;border-top:1px solid #2E3033}
+.tb-stats{display:flex}
+.tb-stat{flex:1;padding:24px 12px;text-align:center;border-right:1px solid #2E3033}
+.tb-stat:last-child{border-right:none}
+.snum{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:700;color:#E85D04}
+.slbl{font-size:11px;color:#5A5750;margin-top:3px}
+.tb-foot{padding:18px 40px;border-top:1px solid #2E3033;display:flex;align-items:center;justify-content:center;gap:16px;font-size:11px;color:#3a3d42}
+.foot-logo{display:flex;align-items:center;gap:8px}
+.foot-logo img{width:24px;height:24px;border-radius:50%;object-fit:cover;opacity:0.6}
+.foot-wm{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700}
+.foot-wm .t{color:#5A5750}.foot-wm .b{color:#E85D04;opacity:0.6}
+@media(max-width:500px){
+  .tb-row{flex-direction:column}
+  .tb-nav,.tb-hero{padding-left:20px;padding-right:20px}
+  .tb-stats{flex-wrap:wrap}
+  .tb-stat{min-width:50%}
+}
+</style>
+</head>
+<body>
+<nav class="tb-nav">
+  <div class="tb-logo">
+    <img src="logo.png" alt="TraydBook logo">
+    <div class="tb-wm"><span class="t">Trayd</span><span class="b">Book</span></div>
+  </div>
+  <div class="tb-navr">Early access</div>
+</nav>
+
+<div class="tb-hero">
+  <div class="tb-badge"><span class="dot"></span>First 100 spots — limited</div>
+  <h1 class="tb-h1">The professional network<br>built for the <em>construction trades</em></h1>
+  <p class="tb-sub">Post work, find jobs, submit bids, and build your verified reputation — all in one place built specifically for contractors, tradespeople, and the people who hire them.</p>
+  <div class="tb-offer"><strong>First 100 waitlisters get 50 free credits</strong> &nbsp;·&nbsp; Trade professionals are always free</div>
+
+  <div class="tb-card">
+    <div class="tb-card-head">Join the waitlist</div>
+    <div class="tb-card-sub">Select your role and add your email to reserve your spot.</div>
+
+    <div class="lbl">I am a / I plan to use TraydBook as</div>
+    <select class="tb-sel" id="role">
+      <option value="" disabled selected>Select your role...</option>
+      <optgroup label="Trade Professionals — always free">
+        <option value="gc" data-label="General Contractor">General Contractor</option>
+        <option value="elec" data-label="Electrician">Electrician</option>
+        <option value="plumb" data-label="Plumber">Plumber</option>
+        <option value="hvac" data-label="HVAC Technician">HVAC Technician</option>
+        <option value="carp" data-label="Carpenter">Carpenter</option>
+        <option value="mason" data-label="Mason / Bricklayer">Mason / Bricklayer</option>
+        <option value="roof" data-label="Roofer">Roofer</option>
+        <option value="paint" data-label="Painter">Painter</option>
+        <option value="floor" data-label="Flooring Installer">Flooring Installer</option>
+        <option value="land" data-label="Landscaper">Landscaper</option>
+        <option value="conc" data-label="Concrete / Foundation">Concrete / Foundation</option>
+        <option value="iron" data-label="Ironworker / Steel">Ironworker / Steel</option>
+        <option value="glaz" data-label="Glazier / Windows">Glazier / Windows</option>
+        <option value="ins" data-label="Insulation Installer">Insulation Installer</option>
+        <option value="dry" data-label="Drywall / Plastering">Drywall / Plastering</option>
+        <option value="tile" data-label="Tile Setter">Tile Setter</option>
+        <option value="weld" data-label="Welder / Fabricator">Welder / Fabricator</option>
+        <option value="excav" data-label="Excavation / Grading">Excavation / Grading</option>
+        <option value="design" data-label="Design Professional">Design Professional (Architect / Designer)</option>
+        <option value="other_trade" data-label="Other Trade">Other Trade / Specialty</option>
+      </optgroup>
+      <optgroup label="Property & Investment">
+        <option value="pm" data-label="Property Manager">Property Manager</option>
+        <option value="inv" data-label="Investor / House Flipper">Investor / House Flipper</option>
+        <option value="rea" data-label="Real Estate Broker / Agent">Real Estate Broker / Agent</option>
+      </optgroup>
+      <optgroup label="Homeowners & Owners">
+        <option value="ho" data-label="Homeowner">Homeowner</option>
+        <option value="po" data-label="Project Owner / Developer">Project Owner / Developer</option>
+      </optgroup>
+    </select>
+
+    <div class="lbl">Your email address</div>
+    <div class="tb-row">
+      <input class="tb-inp" type="email" id="email" placeholder="you@example.com">
+      <button class="tb-btn" id="btn" onclick="go()">Join waitlist</button>
+    </div>
+    <div class="tb-hint">No spam. Unsubscribe anytime. Trade pros are free forever.</div>
+    <div class="tb-msg" id="msg"></div>
+  </div>
+</div>
+
+<hr class="tb-div">
+<div class="tb-stats">
+  <div class="tb-stat"><div class="snum">Free</div><div class="slbl">Trade pros, always</div></div>
+  <div class="tb-stat"><div class="snum">50</div><div class="slbl">Free credits, first 100</div></div>
+  <div class="tb-stat"><div class="snum">Verified</div><div class="slbl">Pro badge system</div></div>
+  <div class="tb-stat"><div class="snum">Bids</div><div class="slbl">Direct RFQ & job board</div></div>
+</div>
+
+<div class="tb-foot">
+  <div class="foot-logo">
+    <img src="logo.png" alt="TraydBook">
+    <div class="foot-wm"><span class="t">Trayd</span><span class="b">Book</span></div>
+  </div>
+  <span>&copy; 2026 TraydBook &nbsp;·&nbsp; Built for the trades</span>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://tpwrpezsvclzblktgjli.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwd3JwZXpzdmNsemJsa3RnamxpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMDY4NTgsImV4cCI6MjA4OTc4Mjg1OH0.CNRQoD99mU9wdEHImEoqWAYz4Wci8CIyrEnJp00Tj-k';
+const TRADES = ['gc','elec','plumb','hvac','carp','mason','roof','paint','floor','land','conc','iron','glaz','ins','dry','tile','weld','excav','design','other_trade'];
+
+async function go() {
+  const roleEl = document.getElementById('role');
+  const emailEl = document.getElementById('email');
+  const msg = document.getElementById('msg');
+  const btn = document.getElementById('btn');
+
+  const role = roleEl.value;
+  const email = emailEl.value.trim();
+  const selectedOption = roleEl.options[roleEl.selectedIndex];
+  const roleLabel = selectedOption ? selectedOption.getAttribute('data-label') : role;
+  const isTrade = TRADES.includes(role);
+
+  if (!role) { msg.style.color='#f85149'; msg.textContent='Please select your role first.'; return; }
+  if (!email || !email.includes('@')) { msg.style.color='#f85149'; msg.textContent='Please enter a valid email address.'; return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Joining...';
+  msg.style.color = '#9D9990';
+  msg.textContent = 'Saving your spot...';
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/waitlist`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ email, role, role_label: roleLabel, is_trade: isTrade })
+    });
+
+    if (res.status === 201) {
+      msg.style.color = '#3fb950';
+      msg.textContent = isTrade
+        ? "You're on the list! Trade pros get free access — we'll be in touch before launch."
+        : "You're on the list! First 100 sign-ups get 50 free credits — we'll be in touch!";
+      emailEl.value = '';
+      roleEl.selectedIndex = 0;
+    } else if (res.status === 409) {
+      msg.style.color = '#E85D04';
+      msg.textContent = "You're already on the list!";
+    } else {
+      throw new Error('Unexpected response');
+    }
+  } catch(e) {
+    msg.style.color = '#f85149';
+    msg.textContent = 'Something went wrong. Please try again.';
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Join waitlist';
+}
+</script>
+</body>
+</html>
