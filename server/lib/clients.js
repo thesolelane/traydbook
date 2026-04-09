@@ -2,11 +2,24 @@ import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
 import Telnyx from 'telnyx'
 
+const isBeta = process.env.SUPABASE_ENV === 'beta'
+
 export const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY ?? ''
 export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET ?? ''
-export const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? ''
-export const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
-export const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY ?? ''
+
+export const SUPABASE_URL = isBeta
+  ? (process.env.BETA_SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? '')
+  : (process.env.VITE_SUPABASE_URL ?? '')
+
+export const SUPABASE_SERVICE_ROLE_KEY = isBeta
+  ? (process.env.BETA_SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY ?? '')
+  : (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '')
+
+export const SUPABASE_ANON_KEY = isBeta
+  ? (process.env.BETA_SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY ?? '')
+  : (process.env.VITE_SUPABASE_ANON_KEY ?? '')
+
+if (isBeta) console.log('[server] ⚡ Running against BETA Supabase project')
 export const TELNYX_API_KEY = process.env.TELNYX_API_KEY ?? ''
 export const TELNYX_PHONE_NUMBER = process.env.TELNYX_PHONE_NUMBER ?? ''
 export const SMS_STARTER_PRICE_ID = process.env.SMS_STARTER_PRICE_ID ?? ''

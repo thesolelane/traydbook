@@ -1,10 +1,22 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+const isBeta = process.env.SUPABASE_ENV === 'beta'
+
+const supabaseUrl = isBeta
+  ? (process.env.BETA_SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? '')
+  : (process.env.VITE_SUPABASE_URL ?? '')
+
+const supabaseAnonKey = isBeta
+  ? (process.env.BETA_SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY ?? '')
+  : (process.env.VITE_SUPABASE_ANON_KEY ?? '')
+
 export default defineConfig({
   plugins: [react()],
   define: {
     global: 'globalThis',
+    'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(supabaseUrl),
+    'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(supabaseAnonKey),
   },
   resolve: {
     alias: {
