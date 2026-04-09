@@ -71,7 +71,15 @@ export default function App() {
   }
 
   if (!session || !verified) {
-    return <Login onLogin={() => { void supabase.auth.getSession().then(({ data }) => { if (data.session) void verifyAdminAccess(data.session) }) }} />
+    return (
+      <Login
+        onLogin={() => {
+          void supabase.auth.getSession().then(({ data }) => {
+            if (data.session) void verifyAdminAccess(data.session)
+          })
+        }}
+      />
+    )
   }
 
   return <AdminPanel session={session} />

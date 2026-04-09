@@ -9,7 +9,7 @@ export default [
   { ignores: ['dist', 'node_modules', 'server'] },
   js.configs.recommended,
   {
-    files: ['src/**/*.{ts,tsx}'],
+    files: ['src/**/*.{ts,tsx}', 'admin-app/src/**/*.{ts,tsx}'],
     languageOptions: {
       parser: tsParser,
       parserOptions: {

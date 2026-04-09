@@ -23,6 +23,7 @@ export default defineConfig({
     global: 'globalThis',
     'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(supabaseUrl),
     'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(supabaseAnonKey),
+    'import.meta.env.VITE_SUPABASE_ENV': JSON.stringify(isBeta ? 'beta' : 'production'),
   },
   resolve: {
     alias: [

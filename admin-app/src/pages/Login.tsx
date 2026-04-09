@@ -75,7 +75,15 @@ export default function Login({ onLogin }: Props) {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
             <label
-              style={{ display: 'block', fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 6, fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' }}
+              style={{
+                display: 'block',
+                fontSize: 12,
+                color: 'var(--color-text-muted)',
+                marginBottom: 6,
+                fontWeight: 600,
+                letterSpacing: '0.5px',
+                textTransform: 'uppercase',
+              }}
             >
               Email
             </label>
@@ -100,7 +108,15 @@ export default function Login({ onLogin }: Props) {
 
           <div>
             <label
-              style={{ display: 'block', fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 6, fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' }}
+              style={{
+                display: 'block',
+                fontSize: 12,
+                color: 'var(--color-text-muted)',
+                marginBottom: 6,
+                fontWeight: 600,
+                letterSpacing: '0.5px',
+                textTransform: 'uppercase',
+              }}
             >
               Password
             </label>

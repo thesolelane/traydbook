@@ -76,7 +76,12 @@ app.use((err, req, res, next) => {
 })
 
 process.on('uncaughtException', err => {
-  logError({ context: 'server', message: err.message, stack: err.stack, detail: 'uncaughtException' })
+  logError({
+    context: 'server',
+    message: err.message,
+    stack: err.stack,
+    detail: 'uncaughtException',
+  })
   console.error('[uncaughtException]', err)
 })
 

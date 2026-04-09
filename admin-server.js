@@ -22,7 +22,7 @@ const ALLOWED_IPS = rawIps
 function ipRestriction(req, res, next) {
   if (ALLOWED_IPS.length === 0) return next()
   const forwarded = req.headers['x-forwarded-for']
-  const clientIp = (forwarded ? forwarded.split(',')[0] : req.socket.remoteAddress ?? '').trim()
+  const clientIp = (forwarded ? forwarded.split(',')[0] : (req.socket.remoteAddress ?? '')).trim()
   const isLoopback =
     clientIp === '::1' || clientIp === '127.0.0.1' || clientIp === '::ffff:127.0.0.1'
   if (isLoopback || ALLOWED_IPS.includes(clientIp)) return next()
@@ -58,7 +58,9 @@ app.use(express.json())
 app.use(adminRoutes)
 
 // ── Health check ──────────────────────────────────────────────────────────────
-app.get('/api/admin-health', (_req, res) => res.json({ ok: true, env: process.env.SUPABASE_ENV ?? 'production' }))
+app.get('/api/admin-health', (_req, res) =>
+  res.json({ ok: true, env: process.env.SUPABASE_ENV ?? 'production' })
+)
 
 // ── Serve built admin app in production ───────────────────────────────────────
 const ADMIN_DIST = path.join(__dirname, 'admin-dist')
