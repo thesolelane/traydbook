@@ -127,7 +127,11 @@ export default function ResetPassword() {
                   minLength={8}
                   autoFocus
                 />
-                <button type="button" className="pw-toggle" onClick={() => setShowPassword(p => !p)}>
+                <button
+                  type="button"
+                  className="pw-toggle"
+                  onClick={() => setShowPassword(p => !p)}
+                >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>

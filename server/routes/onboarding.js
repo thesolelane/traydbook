@@ -7,7 +7,11 @@ const router = Router()
 const VALID_ACCOUNT_TYPES = ['contractor', 'project_owner', 'agent', 'homeowner']
 
 function slugify(name) {
-  const base = name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20) || 'user'
+  const base =
+    name
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '')
+      .slice(0, 20) || 'user'
   const suffix = Math.floor(1000 + Math.random() * 9000)
   return `${base}${suffix}`
 }

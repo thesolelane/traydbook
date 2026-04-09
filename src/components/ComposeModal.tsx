@@ -140,7 +140,9 @@ export default function ComposeModal({ onClose, onPosted }: ComposeModalProps) {
   }
 
   async function uploadImages(_userId: string): Promise<string[]> {
-    const { data: { session } } = await supabase.auth.getSession()
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
     const token = session?.access_token
     const form = new FormData()
     for (const file of images) form.append('files', file)
@@ -179,7 +181,9 @@ export default function ComposeModal({ onClose, onPosted }: ComposeModalProps) {
 
     const tags = hashtags.split(/[\s,#]+/).filter(Boolean)
 
-    const { data: { session } } = await supabase.auth.getSession()
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
     const token = session?.access_token
     const postRes = await fetch('/api/posts', {
       method: 'POST',
@@ -372,143 +376,148 @@ export default function ComposeModal({ onClose, onPosted }: ComposeModalProps) {
             </div>
           ) : (
             <>
-            <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
-              {profile && (
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 16 }}>
-                  <AuthorAvatar
-                    name={profile.display_name ?? 'You'}
-                    avatar={profile.avatar_url ?? null}
-                    size={36}
-                  />
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 13 }}>{profile.display_name}</div>
-                    <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
-                      Posting as {selectedType.replace('_', ' ')}
+              <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
+                {profile && (
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 16 }}>
+                    <AuthorAvatar
+                      name={profile.display_name ?? 'You'}
+                      avatar={profile.avatar_url ?? null}
+                      size={36}
+                    />
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 13 }}>{profile.display_name}</div>
+                      <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
+                        Posting as {selectedType.replace('_', ' ')}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              <textarea
-                ref={textareaRef}
-                placeholder="Share what's happening on your project, a tip, or a safety update..."
-                value={body}
-                onChange={e => setBody(e.target.value)}
-                rows={4}
-                style={{
-                  width: '100%',
-                  border: '1.5px solid var(--color-border)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: '10px 12px',
-                  fontSize: 14,
-                  resize: 'none',
-                  outline: 'none',
-                  lineHeight: 1.6,
-                  background: 'var(--color-bg)',
-                  color: 'var(--color-text)',
-                  fontFamily: 'var(--font-sans)',
-                  boxSizing: 'border-box',
-                }}
-              />
-
-              {previews.length > 0 && (
-                <div
+                <textarea
+                  ref={textareaRef}
+                  placeholder="Share what's happening on your project, a tip, or a safety update..."
+                  value={body}
+                  onChange={e => setBody(e.target.value)}
+                  rows={4}
                   style={{
-                    display: 'grid',
-                    gridTemplateColumns: previews.length === 1 ? '1fr' : '1fr 1fr',
-                    gap: 6,
-                    marginTop: 10,
+                    width: '100%',
+                    border: '1.5px solid var(--color-border)',
                     borderRadius: 'var(--radius-md)',
-                    overflow: 'hidden',
+                    padding: '10px 12px',
+                    fontSize: 14,
+                    resize: 'none',
+                    outline: 'none',
+                    lineHeight: 1.6,
+                    background: 'var(--color-bg)',
+                    color: 'var(--color-text)',
+                    fontFamily: 'var(--font-sans)',
+                    boxSizing: 'border-box',
                   }}
-                >
-                  {previews.map((src, i) => (
-                    <div key={i} style={{ position: 'relative', aspectRatio: '4/3' }}>
-                      <img
-                        src={src}
-                        alt={`Preview ${i + 1}`}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                      />
-                      <button
-                        onClick={() => removeImage(i)}
-                        style={{
-                          position: 'absolute',
-                          top: 6,
-                          right: 6,
-                          background: 'rgba(0,0,0,0.65)',
-                          border: 'none',
-                          borderRadius: '50%',
-                          width: 24,
-                          height: 24,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: 'pointer',
-                          padding: 0,
-                        }}
-                      >
-                        <XCircle size={16} color="#fff" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+                />
 
-              <input
-                type="text"
-                placeholder="Hashtags (e.g. Austin Electrical Safety)"
-                value={hashtags}
-                onChange={e => setHashtags(e.target.value)}
-                style={{
-                  width: '100%',
-                  marginTop: 10,
-                  border: '1.5px solid var(--color-border)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: '8px 12px',
-                  fontSize: 13,
-                  outline: 'none',
-                  background: 'var(--color-bg)',
-                  color: 'var(--color-text)',
-                  fontFamily: 'var(--font-sans)',
-                  boxSizing: 'border-box',
-                }}
-              />
+                {previews.length > 0 && (
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: previews.length === 1 ? '1fr' : '1fr 1fr',
+                      gap: 6,
+                      marginTop: 10,
+                      borderRadius: 'var(--radius-md)',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    {previews.map((src, i) => (
+                      <div key={i} style={{ position: 'relative', aspectRatio: '4/3' }}>
+                        <img
+                          src={src}
+                          alt={`Preview ${i + 1}`}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            display: 'block',
+                          }}
+                        />
+                        <button
+                          onClick={() => removeImage(i)}
+                          style={{
+                            position: 'absolute',
+                            top: 6,
+                            right: 6,
+                            background: 'rgba(0,0,0,0.65)',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: 24,
+                            height: 24,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            padding: 0,
+                          }}
+                        >
+                          <XCircle size={16} color="#fff" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
-              {selectedType === 'job_post' && (
-                <label
+                <input
+                  type="text"
+                  placeholder="Hashtags (e.g. Austin Electrical Safety)"
+                  value={hashtags}
+                  onChange={e => setHashtags(e.target.value)}
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    marginTop: 12,
-                    cursor: 'pointer',
+                    width: '100%',
+                    marginTop: 10,
+                    border: '1.5px solid var(--color-border)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '8px 12px',
+                    fontSize: 13,
+                    outline: 'none',
+                    background: 'var(--color-bg)',
+                    color: 'var(--color-text)',
+                    fontFamily: 'var(--font-sans)',
+                    boxSizing: 'border-box',
                   }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={urgent}
-                    onChange={e => setUrgent(e.target.checked)}
-                    style={{ accentColor: 'var(--color-brand)' }}
-                  />
-                  <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
-                    Mark as Urgent Hire
-                  </span>
-                </label>
-              )}
+                />
 
-              {error && <p style={{ fontSize: 13, color: '#e05252', marginTop: 10 }}>{error}</p>}
-            </div>
+                {selectedType === 'job_post' && (
+                  <label
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      marginTop: 12,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={urgent}
+                      onChange={e => setUrgent(e.target.checked)}
+                      style={{ accentColor: 'var(--color-brand)' }}
+                    />
+                    <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
+                      Mark as Urgent Hire
+                    </span>
+                  </label>
+                )}
 
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '12px 20px',
-                borderTop: '1px solid var(--color-border)',
-                flexShrink: 0,
-              }}
-            >
+                {error && <p style={{ fontSize: 13, color: '#e05252', marginTop: 10 }}>{error}</p>}
+              </div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '12px 20px',
+                  borderTop: '1px solid var(--color-border)',
+                  flexShrink: 0,
+                }}
+              >
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   {/* File picker — library / existing photos */}
                   <input
@@ -531,7 +540,11 @@ export default function ComposeModal({ onClose, onPosted }: ComposeModalProps) {
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={images.length >= MAX_PHOTOS}
-                    title={images.length >= MAX_PHOTOS ? 'Max 4 photos' : 'Upload photos from your device'}
+                    title={
+                      images.length >= MAX_PHOTOS
+                        ? 'Max 4 photos'
+                        : 'Upload photos from your device'
+                    }
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -556,7 +569,9 @@ export default function ComposeModal({ onClose, onPosted }: ComposeModalProps) {
                   <button
                     onClick={() => cameraInputRef.current?.click()}
                     disabled={images.length >= MAX_PHOTOS}
-                    title={images.length >= MAX_PHOTOS ? 'Max 4 photos' : 'Take a photo with your camera'}
+                    title={
+                      images.length >= MAX_PHOTOS ? 'Max 4 photos' : 'Take a photo with your camera'
+                    }
                     style={{
                       display: 'flex',
                       alignItems: 'center',

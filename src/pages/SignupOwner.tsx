@@ -400,7 +400,11 @@ export default function SignupOwner() {
                         minLength={8}
                         autoComplete="new-password"
                       />
-                      <button type="button" className="pw-toggle" onClick={() => setShowPassword(p => !p)}>
+                      <button
+                        type="button"
+                        className="pw-toggle"
+                        onClick={() => setShowPassword(p => !p)}
+                      >
                         {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                     </div>
@@ -416,7 +420,11 @@ export default function SignupOwner() {
                         required
                         autoComplete="new-password"
                       />
-                      <button type="button" className="pw-toggle" onClick={() => setShowConfirm(p => !p)}>
+                      <button
+                        type="button"
+                        className="pw-toggle"
+                        onClick={() => setShowConfirm(p => !p)}
+                      >
                         {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                     </div>

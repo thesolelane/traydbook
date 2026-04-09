@@ -22,11 +22,13 @@ router.post('/', requireAuth, async (req, res) => {
   const { data, error } = await supabaseAdmin
     .from('posts')
     .insert(insertRow)
-    .select(`
+    .select(
+      `
       id, post_type, body, media_urls, hashtags, like_count, comment_count, share_count,
       is_boosted, created_at, author_id,
       users!author_id (display_name, handle, avatar_url, account_type)
-    `)
+    `
+    )
     .single()
 
   if (error) {

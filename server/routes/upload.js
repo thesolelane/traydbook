@@ -28,12 +28,10 @@ router.post('/post-media', requireAuth, upload.array('files', 4), async (req, re
     const ext = file.originalname.split('.').pop() ?? 'jpg'
     const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
 
-    const { error } = await supabaseAdmin.storage
-      .from('post-media')
-      .upload(path, file.buffer, {
-        contentType: file.mimetype,
-        upsert: false,
-      })
+    const { error } = await supabaseAdmin.storage.from('post-media').upload(path, file.buffer, {
+      contentType: file.mimetype,
+      upsert: false,
+    })
 
     if (error) {
       console.error('[upload] storage error:', error.message)

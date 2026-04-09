@@ -170,7 +170,9 @@ export default function PostRFQ() {
       navigate(`/bids/${newRfqId as string}`)
     } catch (err) {
       console.error('[PostRFQ] unexpected error:', err)
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.')
+      setError(
+        err instanceof Error ? err.message : 'An unexpected error occurred. Please try again.'
+      )
     } finally {
       setSubmitting(false)
     }

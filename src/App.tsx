@@ -39,8 +39,7 @@ function SubdomainRedirect() {
 
   useEffect(() => {
     const hostname = window.location.hostname
-    const isAdminSubdomain =
-      hostname.startsWith('admin.') || hostname === 'admin.localhost'
+    const isAdminSubdomain = hostname.startsWith('admin.') || hostname === 'admin.localhost'
     if (isAdminSubdomain && !location.pathname.startsWith('/admin')) {
       navigate('/admin', { replace: true })
     }

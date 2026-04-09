@@ -307,9 +307,7 @@ export default function PostCard({ post, likedPosts, onLikeToggle }: PostCardPro
         </p>
       </div>
 
-      {post.media_urls.length > 0 && (
-        <MediaGrid urls={post.media_urls} />
-      )}
+      {post.media_urls.length > 0 && <MediaGrid urls={post.media_urls} />}
 
       {post.hashtags.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>

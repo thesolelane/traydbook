@@ -178,7 +178,13 @@ export default function SecretsSection({ authHeaders }: SecretsSectionProps) {
         <button
           onClick={() => void loadSecrets()}
           className="btn btn-secondary"
-          style={{ padding: '7px 14px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}
+          style={{
+            padding: '7px 14px',
+            fontSize: 12,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+          }}
         >
           <RefreshCw size={13} />
           Refresh
@@ -186,7 +192,13 @@ export default function SecretsSection({ authHeaders }: SecretsSectionProps) {
         <button
           onClick={() => setAddingNew(v => !v)}
           className="btn btn-primary"
-          style={{ padding: '7px 14px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}
+          style={{
+            padding: '7px 14px',
+            fontSize: 12,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+          }}
         >
           <Plus size={13} />
           Add Secret
@@ -249,7 +261,11 @@ export default function SecretsSection({ authHeaders }: SecretsSectionProps) {
             {saving ? 'Saving...' : 'Save'}
           </button>
           <button
-            onClick={() => { setAddingNew(false); setNewName(''); setNewValue('') }}
+            onClick={() => {
+              setAddingNew(false)
+              setNewName('')
+              setNewValue('')
+            }}
             className="btn btn-secondary"
             style={{ padding: '7px 12px', fontSize: 12 }}
           >
@@ -258,9 +274,7 @@ export default function SecretsSection({ authHeaders }: SecretsSectionProps) {
         </div>
       )}
 
-      {error && (
-        <p style={{ fontSize: 13, color: '#DC2626', marginBottom: 12 }}>{error}</p>
-      )}
+      {error && <p style={{ fontSize: 13, color: '#DC2626', marginBottom: 12 }}>{error}</p>}
 
       {loading ? (
         <p style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>Loading secrets...</p>
@@ -331,7 +345,10 @@ export default function SecretsSection({ authHeaders }: SecretsSectionProps) {
                           onChange={e => setEditValue(e.target.value)}
                           onKeyDown={e => {
                             if (e.key === 'Enter') void handleSave(s.name, editValue)
-                            if (e.key === 'Escape') { setEditing(null); setEditValue('') }
+                            if (e.key === 'Escape') {
+                              setEditing(null)
+                              setEditValue('')
+                            }
                           }}
                           style={{
                             width: '100%',
@@ -415,7 +432,10 @@ export default function SecretsSection({ authHeaders }: SecretsSectionProps) {
                             <Check size={15} />
                           </button>
                           <button
-                            onClick={() => { setEditing(null); setEditValue('') }}
+                            onClick={() => {
+                              setEditing(null)
+                              setEditValue('')
+                            }}
                             style={{
                               background: 'none',
                               border: 'none',
@@ -431,7 +451,10 @@ export default function SecretsSection({ authHeaders }: SecretsSectionProps) {
                       ) : (
                         <div style={{ display: 'flex', gap: 4 }}>
                           <button
-                            onClick={() => { setEditing(s.name); setEditValue('') }}
+                            onClick={() => {
+                              setEditing(s.name)
+                              setEditValue('')
+                            }}
                             style={{
                               background: 'none',
                               border: 'none',

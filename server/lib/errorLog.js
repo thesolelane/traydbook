@@ -60,7 +60,15 @@ export function loadLogFromDisk() {
     ensureLogDir()
     if (!fs.existsSync(LOG_FILE)) return
     const lines = fs.readFileSync(LOG_FILE, 'utf8').trim().split('\n').filter(Boolean)
-    const entries = lines.map(l => { try { return JSON.parse(l) } catch { return null } }).filter(Boolean)
+    const entries = lines
+      .map(l => {
+        try {
+          return JSON.parse(l)
+        } catch {
+          return null
+        }
+      })
+      .filter(Boolean)
     entries.reverse().forEach(e => {
       if (memoryLog.length < MAX_MEMORY) memoryLog.push(e)
     })

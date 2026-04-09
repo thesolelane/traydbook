@@ -23,7 +23,16 @@ import DomainsSection from './admin/DomainsSection'
 import SecretsSection from './admin/SecretsSection'
 import ErrorLogSection from './admin/ErrorLogSection'
 
-type Section = 'overview' | 'users' | 'wallets' | 'feed' | 'controls' | 'payments' | 'domains' | 'secrets' | 'errors'
+type Section =
+  | 'overview'
+  | 'users'
+  | 'wallets'
+  | 'feed'
+  | 'controls'
+  | 'payments'
+  | 'domains'
+  | 'secrets'
+  | 'errors'
 
 const NAV_ITEMS: { id: Section; label: string; icon: React.ReactNode; superOnly?: boolean }[] = [
   { id: 'overview', label: 'Analytics Overview', icon: <BarChart2 size={16} /> },
@@ -112,11 +121,12 @@ export default function Admin() {
               textAlign: 'left',
               fontSize: 13,
               fontWeight: 600,
-              color: section === item.id
-                ? 'var(--color-brand)'
-                : item.id === 'errors'
-                  ? '#e05252cc'
-                  : 'var(--color-text-muted)',
+              color:
+                section === item.id
+                  ? 'var(--color-brand)'
+                  : item.id === 'errors'
+                    ? '#e05252cc'
+                    : 'var(--color-text-muted)',
               transition: 'all 0.15s',
             }}
           >
