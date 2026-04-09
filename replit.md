@@ -136,6 +136,121 @@ Pro Verified contractors can vouch for others via the Vouch button on their prof
 - **Migration**: `supabase/migrations/011_sms_fields.sql`
 - **Server endpoints**: `/api/sms/create-subscription`, `/api/sms/cancel-subscription`, `/api/sms/toggle-alerts`, `/api/sms/send-verification`, `/api/sms/verify`, `/api/sms/status`
 
+## Beta / Staging Environment
+
+A second Supabase project can be used as a staging environment without touching production data. One variable controls which project the app connects to — both frontend and server switch together.
+
+### How to switch
+Set `SUPABASE_ENV` in Replit Secrets:
+- `production` (default, or omit entirely) → uses the main production Supabase project
+- `beta` → uses the beta Supabase project
+
+Then restart the app. The server will log `⚡ Running against BETA Supabase project` when beta is active.
+
+### Required secrets for the beta project
+Add these once (after creating a new Supabase project for beta):
+| Secret | Where to find it |
+|---|---|
+| `BETA_SUPABASE_URL` | Supabase dashboard → Settings → API → Project URL |
+| `BETA_SUPABASE_ANON_KEY` | Same page → `anon public` key |
+| `BETA_SUPABASE_SERVICE_ROLE_KEY` | Same page → `service_role` key |
+
+### Setting up the beta database
+Run `supabase/schema.sql` in the new beta project's SQL editor. That is all — the beta project uses `text` columns throughout (no ENUM types), so none of the production cast-fix migrations are needed.
+
+### How it works in code
+- `vite.config.ts` — reads `SUPABASE_ENV` at startup, injects the correct `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` into the frontend via `define`
+- `server/lib/clients.js` — reads `SUPABASE_ENV` at startup, picks the correct URL and service-role key for all server-side Supabase calls
+
+---
+
+## Docker
+
+Two Dockerfiles, one per deployable app. Both use a 2-stage build (Vite build stage → lean Node 20 Alpine runtime).
+
+### Main app — `Dockerfile`
+Builds `npm run build` → `dist/`, runs `server/index.js` on port 3001.
+
+```bash
+docker build \
+  --build-arg VITE_SUPABASE_URL=https://your-project.supabase.co \
+  --build-arg VITE_SUPABASE_ANON_KEY=your-anon-key \
+  -t traydbook .
+
+docker run -p 3001:3001 \
+  -e SUPABASE_SERVICE_ROLE_KEY=... \
+  -e STRIPE_SECRET_KEY=... \
+  -e STRIPE_WEBHOOK_SECRET=... \
+  traydbook
+```
+
+### Admin panel — `Dockerfile.admin`
+Builds `npm run build:admin` → `admin-dist/`, runs `admin-server.js` on port 4000.
+
+```bash
+docker build -f Dockerfile.admin \
+  --build-arg VITE_SUPABASE_URL=https://your-project.supabase.co \
+  --build-arg VITE_SUPABASE_ANON_KEY=your-anon-key \
+  -t traydbook-admin .
+
+docker run -p 4000:4000 \
+  -e SUPABASE_SERVICE_ROLE_KEY=... \
+  -e STRIPE_SECRET_KEY=... \
+  -e ADMIN_ALLOWED_IPS=12.34.56.78,98.76.54.32 \
+  traydbook-admin
+```
+
+`ADMIN_ALLOWED_IPS` — comma-separated list of IPs allowed through; leave empty to allow all (useful in dev). Any other IP gets a bare `403 Forbidden`.
+
+To point the admin container at the beta Supabase project, add:
+```
+-e SUPABASE_ENV=beta
+-e BETA_SUPABASE_URL=...
+-e BETA_SUPABASE_SERVICE_ROLE_KEY=...
+```
+
+---
+
+## Standalone Admin Panel (`admin.traydbook.com`)
+
+The admin panel is a fully separate deployable app — its own Vite build, its own Express server, its own domain.
+
+### Files
+- `admin-server.js` — standalone Express server (port 4000); IP allowlist middleware; serves `admin-dist/`; reuses `server/routes/admin.js`
+- `admin-app/` — standalone Vite + React app
+  - `admin-app/vite.config.ts` — root=admin-app/, `@main` alias → `src/`, AuthContext alias → admin shim; builds to `admin-dist/`
+  - `admin-app/index.html` — HTML entry point
+  - `admin-app/src/main.tsx` / `App.tsx` — React entry + auth gate
+  - `admin-app/src/index.css` — same CSS variables/dark theme as main app
+  - `admin-app/src/lib/supabase.ts` — Supabase client
+  - `admin-app/src/context/AuthContext.tsx` — thin shim providing `useAuth()` (session only) so existing section components work unchanged
+  - `admin-app/src/pages/Login.tsx` — admin login form; verifies admin role before granting access
+  - `admin-app/src/pages/AdminPanel.tsx` — full panel layout; imports all section components from `src/pages/admin/` via `@main` alias
+
+### Section components (shared with embedded `/admin` route in main app)
+All sections live in `src/pages/admin/` and are imported by both the main app's `Admin.tsx` and the standalone admin panel:
+- `OverviewSection.tsx` — platform analytics stats grid
+- `UsersSection.tsx` — paginated user list, role change, suspend/reinstate
+- `WalletsSection.tsx` — credit balances, manual adjustment
+- `FeedSection.tsx` — recent posts/comments, flag queue, delete
+- `ControlsSection.tsx` — staff invites, feature flags, announcements
+- `PaymentsSection.tsx` — Stripe purchases, revenue totals
+- `DomainsSection.tsx` — domain status cards
+- `SecretsSection.tsx` — env var viewer/editor
+- `ErrorLogSection.tsx` — server error log (super admin only)
+
+### npm scripts
+```
+npm run dev:admin      # Vite on :4001 + admin server on :4000 (dev)
+npm run build:admin    # builds admin-dist/
+npm run start:admin    # production (serves admin-dist/ from admin-server.js)
+```
+
+### Deploying to admin.traydbook.com
+Deploy as a second Replit (or Docker container). Required secrets are the same Supabase/Stripe keys as the main app plus `ADMIN_ALLOWED_IPS`.
+
+---
+
 ## Deployment
 All deployment files live in `deploy/` and must be updated as the app evolves (new env vars, new services, etc.):
 - `deploy/UBUNTU_SETUP.md` — full Ubuntu 22.04 server setup guide (Node, PM2, Nginx, SSL)
@@ -149,22 +264,41 @@ All deployment files live in `deploy/` and must be updated as the app evolves (n
 
 ### Deployment roadmap
 1. **Now**: Replit (development + active builds)
-2. **Beta**: Local Ubuntu or Windows server — run `deploy.sh` or `deploy.ps1` after each push
-3. **Production**: Hetzner (or equivalent non-US VPS) — same scripts, live domain + SSL via Let's Encrypt
+2. **Beta**: Separate Replit or Docker container pointed at beta Supabase project (`SUPABASE_ENV=beta`)
+3. **Production**: `app.traydbook.com` (main app) + `admin.traydbook.com` (admin panel) — separate deployments
 
-### Required env vars on any server
+### Required env vars — main app
 ```
 VITE_SUPABASE_URL
 VITE_SUPABASE_ANON_KEY
 SUPABASE_SERVICE_ROLE_KEY
-STRIPE_SECRET_KEY          ← live key
-STRIPE_WEBHOOK_SECRET      ← from Stripe dashboard for that server's webhook URL
-APP_ORIGIN                 ← https://yourdomain.com (controls Stripe redirect URLs)
-TELNYX_API_KEY             ← Telnyx API key for SMS
-TELNYX_PHONE_NUMBER        ← Telnyx phone number for SMS
-SMS_STARTER_PRICE_ID       ← Stripe price ID for Starter SMS plan
-SMS_UNLIMITED_PRICE_ID     ← Stripe price ID for Unlimited SMS plan
+STRIPE_SECRET_KEY
+STRIPE_WEBHOOK_SECRET
+APP_ORIGIN                 ← https://app.traydbook.com
+TELNYX_API_KEY
+TELNYX_PHONE_NUMBER
+SMS_STARTER_PRICE_ID
+SMS_UNLIMITED_PRICE_ID
 NODE_ENV=production
+```
+
+### Required env vars — admin panel
+```
+VITE_SUPABASE_URL          ← same production Supabase project
+VITE_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY
+STRIPE_SECRET_KEY
+STRIPE_WEBHOOK_SECRET
+ADMIN_ALLOWED_IPS          ← comma-separated IP allowlist (empty = no restriction)
+NODE_ENV=production
+```
+
+### Optional env vars (both apps — beta switching)
+```
+SUPABASE_ENV               ← "beta" or "production" (default production)
+BETA_SUPABASE_URL
+BETA_SUPABASE_ANON_KEY
+BETA_SUPABASE_SERVICE_ROLE_KEY
 ```
 
 ## Team Delegation & Ghost Sub-Accounts (Task #12)
