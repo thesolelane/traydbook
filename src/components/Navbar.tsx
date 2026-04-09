@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   Search,
   Bell,
-  X,
   ChevronDown,
   Coins,
   Plus,

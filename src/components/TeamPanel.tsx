@@ -32,8 +32,6 @@ interface AuditEntry {
 
 const RESPONSIBILITY_TEXT =
   'By adding a team member to your account, you accept full responsibility for all content, messages, bids, and actions they take on your behalf. TraydBook holds the account owner accountable for all activity regardless of who performed it. Only invite people you fully trust.'
-const TERMS_VERSION = '1.0'
-
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', {
     month: 'short',

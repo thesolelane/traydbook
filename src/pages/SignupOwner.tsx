@@ -65,6 +65,9 @@ const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   agent: 'Real Estate Agent',
   homeowner: 'Homeowner',
   admin: 'Admin',
+  admin_2: 'Admin 02',
+  hired_dev: 'Hired Dev',
+  moderator: 'Moderator',
 }
 
 const CREDIT_INFO: Record<string, string> = {

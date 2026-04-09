@@ -176,7 +176,7 @@ export default function StaffPanel() {
                   flexShrink: 0,
                 }}
               >
-                {'label' in r ? r.label : getRoleLabel(r.value)}
+                {r.label}
               </span>
               {'description' in r && (
                 <span style={{ fontSize: 12, color: 'var(--color-text-muted)', lineHeight: 1.5 }}>

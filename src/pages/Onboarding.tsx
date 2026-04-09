@@ -127,16 +127,6 @@ const ACCOUNT_TYPES: {
 
 type Step = 'account-type' | 'details'
 
-function generateHandle(name: string): string {
-  const base =
-    name
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, '')
-      .slice(0, 20) || 'user'
-  const suffix = Math.floor(1000 + Math.random() * 9000)
-  return `${base}${suffix}`
-}
-
 export default function Onboarding() {
   const { user, refreshProfile } = useAuth()
   const navigate = useNavigate()

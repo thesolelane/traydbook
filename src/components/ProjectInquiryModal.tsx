@@ -92,9 +92,6 @@ export default function ProjectInquiryModal({
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
-  const senderName = 'you'
-  const preview = step === 'preview' ? buildMessage(form, creditBalance.toString()) : ''
-
   function set(key: keyof FormState, val: string) {
     setForm(prev => ({ ...prev, [key]: val }))
   }

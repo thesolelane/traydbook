@@ -17,7 +17,6 @@ import {
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { isStaff } from '../lib/roles'
 import JobCard from '../components/JobCard'
 import {
   JobListing,
@@ -124,7 +123,6 @@ export default function Jobs() {
   const { profile } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const isContractor = profile?.account_type === 'contractor'
-  const isAdmin = isStaff(profile?.account_type)
 
   const activeTab = (searchParams.get('tab') ?? 'browse') as JobTab
 
@@ -265,8 +263,8 @@ export default function Jobs() {
       setHasMore(rows.length === PAGE_SIZE)
       if (pageNum === 0) setLoading(false)
       else setLoadingMore(false)
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [debouncedSearch, tradeFilters, typeFilters, payRange, certFilters, sortMode, locationInput]
   )
 

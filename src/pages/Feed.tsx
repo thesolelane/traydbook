@@ -3,7 +3,6 @@ import { useSearchParams, useNavigate, useLocation } from 'react-router-dom'
 import { Plus, TrendingUp, UserPlus, Loader, RefreshCw } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { isStaff } from '../lib/roles'
 import PostCard, { AuthorAvatar } from '../components/PostCard'
 import FeedFilterBar from '../components/FeedFilterBar'
 import ComposeModal from '../components/ComposeModal'
@@ -50,7 +49,7 @@ function SkeletonCard() {
 const PAGE_SIZE = 10
 
 export default function Feed() {
-  const { profile, canDelegate, delegateSession } = useAuth()
+  const { profile, canDelegate } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   const location = useLocation()
@@ -96,7 +95,6 @@ export default function Feed() {
   const profileInfoLoaded = useRef(false)
 
   const isContractor = profile?.account_type === 'contractor'
-  const isAdmin = isStaff(profile?.account_type)
 
   async function fetchConnectionIds(): Promise<Set<string>> {
     if (!profile) return new Set()
@@ -111,23 +109,6 @@ export default function Feed() {
       ids.add(c.requester_id === profile.id ? c.recipient_id : c.requester_id)
     })
     return ids
-  }
-
-  async function enrichWithTrades(rawPosts: FeedPost[]): Promise<FeedPost[]> {
-    if (rawPosts.length === 0) return rawPosts
-    const authorIds = [...new Set(rawPosts.map(p => p.author_id))]
-    const { data } = await supabase
-      .from('contractor_profiles')
-      .select('user_id, primary_trade')
-      .in('user_id', authorIds)
-    if (!data) return rawPosts
-    const tradeMap = new Map(
-      data.map((c: { user_id: string; primary_trade: string | null }) => [
-        c.user_id,
-        c.primary_trade,
-      ])
-    )
-    return rawPosts.map(p => ({ ...p, author_trade: tradeMap.get(p.author_id) ?? null }))
   }
 
   async function doFetchPosts(
@@ -386,7 +367,7 @@ export default function Feed() {
 
   async function loadStats() {
     if (!profile) return
-    const queries: Promise<void>[] = [
+    const queries: PromiseLike<void>[] = [
       supabase
         .from('connections')
         .select('*', { count: 'exact', head: true })
