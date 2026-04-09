@@ -8,7 +8,7 @@ import { logError, loadLogFromDisk } from './server/lib/errorLog.js'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const app = express()
-const PORT = process.env.ADMIN_PORT ?? 4000
+const PORT = process.env.PORT ?? process.env.ADMIN_PORT ?? 4000
 
 // ── IP Allowlist ──────────────────────────────────────────────────────────────
 // Set ADMIN_ALLOWED_IPS as a comma-separated list in your secrets.
@@ -29,6 +29,9 @@ function ipRestriction(req, res, next) {
   console.warn(`[admin] Blocked IP: ${clientIp}`)
   return res.status(403).send('Forbidden')
 }
+
+// Health check — must be BEFORE IP restriction so Coolify can reach it
+app.get('/healthz', (_req, res) => res.json({ ok: true }))
 
 app.use(ipRestriction)
 

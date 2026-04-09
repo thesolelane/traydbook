@@ -51,4 +51,7 @@ ENV TELNYX_PHONE_NUMBER=""
 
 EXPOSE 3001
 
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD wget -qO- http://localhost:${PORT}/healthz || exit 1
+
 CMD ["node", "server/index.js"]

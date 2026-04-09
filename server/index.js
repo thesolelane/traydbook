@@ -15,6 +15,9 @@ const app = express()
 
 app.use(stripeRoutes)
 
+// Health check for Coolify / load balancers
+app.get('/healthz', (_req, res) => res.json({ ok: true }))
+
 app.use(express.json())
 
 app.use((req, res, next) => {
