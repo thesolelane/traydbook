@@ -65,7 +65,7 @@ app.get('/api/admin-health', (_req, res) =>
 // ── Serve built admin app in production ───────────────────────────────────────
 const ADMIN_DIST = path.join(__dirname, 'admin-dist')
 app.use(express.static(ADMIN_DIST))
-app.get('/:path(.*)', (_req, res) => {
+app.use((_req, res) => {
   res.sendFile(path.join(ADMIN_DIST, 'index.html'))
 })
 

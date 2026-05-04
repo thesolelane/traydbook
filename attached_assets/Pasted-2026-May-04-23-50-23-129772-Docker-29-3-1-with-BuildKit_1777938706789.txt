@@ -1,0 +1,247 @@
+2026-May-04 23:50:23.129772
+Docker 29.3.1 with BuildKit and Buildx detected on deployment server (thesolelane-1).
+2026-May-04 23:50:23.139583
+Starting deployment of thesolelane/traydbook:main to thesolelane-1.
+2026-May-04 23:50:23.843335
+Preparing container with helper image: ghcr.io/coollabsio/coolify-helper:1.0.12
+2026-May-04 23:50:25.894382
+----------------------------------------
+2026-May-04 23:50:25.904226
+Importing thesolelane/traydbook:main (commit sha 92c9499fb2428e1ca27ba5c48abdb0b500ae8abc) to /artifacts/e8lxjm7l4mmavrxlggxcb2iq.
+2026-May-04 23:50:28.597570
+Image not found (jvzn4roqrgdqv07vw0qdptas:92c9499fb2428e1ca27ba5c48abdb0b500ae8abc). Building new image.
+2026-May-04 23:50:32.594546
+----------------------------------------
+2026-May-04 23:50:32.607568
+Building docker image started.
+2026-May-04 23:50:32.616509
+To check the current progress, click on Show Debug Logs.
+2026-May-04 23:50:57.637799
+Building docker image completed.
+2026-May-04 23:50:58.448076
+----------------------------------------
+2026-May-04 23:50:58.459221
+Rolling update started.
+2026-May-04 23:50:59.659665
+New container started.
+2026-May-04 23:50:59.686667
+Custom healthcheck found in Dockerfile.
+2026-May-04 23:50:59.696841
+Waiting for healthcheck to pass on the new container.
+2026-May-04 23:50:59.707328
+Waiting for the start period (15 seconds) before starting healthcheck.
+2026-May-04 23:51:15.465711
+Attempt 1 of 3 | Healthcheck status: "unhealthy"
+2026-May-04 23:51:15.476412
+New container is unhealthy.
+2026-May-04 23:51:15.484809
+----------------------------------------
+2026-May-04 23:51:15.492173
+Container logs:
+2026-May-04 23:51:15.897499
+[CMD]: sudo docker logs -n 100 jvzn4roqrgdqv07vw0qdptas-235020878830
+2026-May-04 23:51:15.897499
+at pathToRegexp (/app/node_modules/path-to-regexp/dist/index.js:263:56)
+2026-May-04 23:51:15.897499
+at Object.match (/app/node_modules/path-to-regexp/dist/index.js:225:30)
+2026-May-04 23:51:15.897499
+at matcher (/app/node_modules/router/lib/layer.js:86:23)
+2026-May-04 23:51:15.897499
+at new Layer (/app/node_modules/router/lib/layer.js:93:62)
+2026-May-04 23:51:15.897499
+at Function.route (/app/node_modules/router/index.js:428:17)
+2026-May-04 23:51:15.904915
+at Function.route (/app/node_modules/express/lib/application.js:257:22)
+2026-May-04 23:51:15.904915
+at app.<computed> [as get] (/app/node_modules/express/lib/application.js:478:22)
+2026-May-04 23:51:15.904915
+at file:///app/server/index.js:55:7 {
+2026-May-04 23:51:15.904915
+originalPath: '/:path(.*)'
+2026-May-04 23:51:15.904915
+}
+2026-May-04 23:51:15.904915
+2026-May-04 23:51:15.904915
+Node.js v20.20.2
+2026-May-04 23:51:15.904915
+[server] STRIPE_WEBHOOK_SECRET not set
+2026-May-04 23:51:15.904915
+[server] SMS_STARTER_PRICE_ID not set
+2026-May-04 23:51:15.904915
+[server] SMS_UNLIMITED_PRICE_ID not set
+2026-May-04 23:51:15.904915
+/app/node_modules/path-to-regexp/dist/index.js:85
+2026-May-04 23:51:15.904915
+throw new PathError(`Missing parameter name at index ${index}`, str);
+2026-May-04 23:51:15.904915
+^
+2026-May-04 23:51:15.904915
+2026-May-04 23:51:15.904915
+PathError [TypeError]: Missing parameter name at index 9: /:path(.*); visit https://git.new/pathToRegexpError for info
+2026-May-04 23:51:15.904915
+at name (/app/node_modules/path-to-regexp/dist/index.js:85:19)
+2026-May-04 23:51:15.904915
+at parse (/app/node_modules/path-to-regexp/dist/index.js:101:59)
+2026-May-04 23:51:15.904915
+at pathToRegexp (/app/node_modules/path-to-regexp/dist/index.js:263:56)
+2026-May-04 23:51:15.904915
+at Object.match (/app/node_modules/path-to-regexp/dist/index.js:225:30)
+2026-May-04 23:51:15.904915
+at matcher (/app/node_modules/router/lib/layer.js:86:23)
+2026-May-04 23:51:15.904915
+at new Layer (/app/node_modules/router/lib/layer.js:93:62)
+2026-May-04 23:51:15.904915
+at Function.route (/app/node_modules/router/index.js:428:17)
+2026-May-04 23:51:15.904915
+at Function.route (/app/node_modules/express/lib/application.js:257:22)
+2026-May-04 23:51:15.904915
+at app.<computed> [as get] (/app/node_modules/express/lib/application.js:478:22)
+2026-May-04 23:51:15.904915
+at file:///app/server/index.js:55:7 {
+2026-May-04 23:51:15.904915
+originalPath: '/:path(.*)'
+2026-May-04 23:51:15.904915
+}
+2026-May-04 23:51:15.904915
+2026-May-04 23:51:15.904915
+Node.js v20.20.2
+2026-May-04 23:51:15.904915
+[server] STRIPE_WEBHOOK_SECRET not set
+2026-May-04 23:51:15.904915
+[server] SMS_STARTER_PRICE_ID not set
+2026-May-04 23:51:15.904915
+[server] SMS_UNLIMITED_PRICE_ID not set
+2026-May-04 23:51:15.904915
+/app/node_modules/path-to-regexp/dist/index.js:85
+2026-May-04 23:51:15.904915
+throw new PathError(`Missing parameter name at index ${index}`, str);
+2026-May-04 23:51:15.904915
+^
+2026-May-04 23:51:15.904915
+2026-May-04 23:51:15.904915
+PathError [TypeError]: Missing parameter name at index 9: /:path(.*); visit https://git.new/pathToRegexpError for info
+2026-May-04 23:51:15.904915
+at name (/app/node_modules/path-to-regexp/dist/index.js:85:19)
+2026-May-04 23:51:15.904915
+at parse (/app/node_modules/path-to-regexp/dist/index.js:101:59)
+2026-May-04 23:51:15.904915
+at pathToRegexp (/app/node_modules/path-to-regexp/dist/index.js:263:56)
+2026-May-04 23:51:15.904915
+at Object.match (/app/node_modules/path-to-regexp/dist/index.js:225:30)
+2026-May-04 23:51:15.904915
+at matcher (/app/node_modules/router/lib/layer.js:86:23)
+2026-May-04 23:51:15.904915
+at new Layer (/app/node_modules/router/lib/layer.js:93:62)
+2026-May-04 23:51:15.904915
+at Function.route (/app/node_modules/router/index.js:428:17)
+2026-May-04 23:51:15.904915
+at Function.route (/app/node_modules/express/lib/application.js:257:22)
+2026-May-04 23:51:15.904915
+at app.<computed> [as get] (/app/node_modules/express/lib/application.js:478:22)
+2026-May-04 23:51:15.904915
+at file:///app/server/index.js:55:7 {
+2026-May-04 23:51:15.904915
+originalPath: '/:path(.*)'
+2026-May-04 23:51:15.904915
+}
+2026-May-04 23:51:15.904915
+2026-May-04 23:51:15.904915
+Node.js v20.20.2
+2026-May-04 23:51:15.904915
+[server] STRIPE_WEBHOOK_SECRET not set
+2026-May-04 23:51:15.904915
+[server] SMS_STARTER_PRICE_ID not set
+2026-May-04 23:51:15.904915
+[server] SMS_UNLIMITED_PRICE_ID not set
+2026-May-04 23:51:15.904915
+/app/node_modules/path-to-regexp/dist/index.js:85
+2026-May-04 23:51:15.904915
+throw new PathError(`Missing parameter name at index ${index}`, str);
+2026-May-04 23:51:15.904915
+^
+2026-May-04 23:51:15.904915
+2026-May-04 23:51:15.904915
+PathError [TypeError]: Missing parameter name at index 9: /:path(.*); visit https://git.new/pathToRegexpError for info
+2026-May-04 23:51:15.904915
+at name (/app/node_modules/path-to-regexp/dist/index.js:85:19)
+2026-May-04 23:51:15.904915
+at parse (/app/node_modules/path-to-regexp/dist/index.js:101:59)
+2026-May-04 23:51:15.904915
+at pathToRegexp (/app/node_modules/path-to-regexp/dist/index.js:263:56)
+2026-May-04 23:51:15.904915
+at Object.match (/app/node_modules/path-to-regexp/dist/index.js:225:30)
+2026-May-04 23:51:15.904915
+at matcher (/app/node_modules/router/lib/layer.js:86:23)
+2026-May-04 23:51:15.904915
+at new Layer (/app/node_modules/router/lib/layer.js:93:62)
+2026-May-04 23:51:15.904915
+at Function.route (/app/node_modules/router/index.js:428:17)
+2026-May-04 23:51:15.904915
+at Function.route (/app/node_modules/express/lib/application.js:257:22)
+2026-May-04 23:51:15.904915
+at app.<computed> [as get] (/app/node_modules/express/lib/application.js:478:22)
+2026-May-04 23:51:15.904915
+at file:///app/server/index.js:55:7 {
+2026-May-04 23:51:15.904915
+originalPath: '/:path(.*)'
+2026-May-04 23:51:15.904915
+}
+2026-May-04 23:51:15.904915
+2026-May-04 23:51:15.904915
+Node.js v20.20.2
+2026-May-04 23:51:15.904915
+[server] STRIPE_WEBHOOK_SECRET not set
+2026-May-04 23:51:15.904915
+[server] SMS_STARTER_PRICE_ID not set
+2026-May-04 23:51:15.904915
+[server] SMS_UNLIMITED_PRICE_ID not set
+2026-May-04 23:51:15.904915
+/app/node_modules/path-to-regexp/dist/index.js:85
+2026-May-04 23:51:15.904915
+throw new PathError(`Missing parameter name at index ${index}`, str);
+2026-May-04 23:51:15.904915
+^
+2026-May-04 23:51:15.904915
+2026-May-04 23:51:15.904915
+PathError [TypeError]: Missing parameter name at index 9: /:path(.*); visit https://git.new/pathToRegexpError for info
+2026-May-04 23:51:15.904915
+at name (/app/node_modules/path-to-regexp/dist/index.js:85:19)
+2026-May-04 23:51:15.904915
+at parse (/app/node_modules/path-to-regexp/dist/index.js:101:59)
+2026-May-04 23:51:15.904915
+at pathToRegexp (/app/node_modules/path-to-regexp/dist/index.js:263:56)
+2026-May-04 23:51:15.904915
+at Object.match (/app/node_modules/path-to-regexp/dist/index.js:225:30)
+2026-May-04 23:51:15.904915
+at matcher (/app/node_modules/router/lib/layer.js:86:23)
+2026-May-04 23:51:15.904915
+at new Layer (/app/node_modules/router/lib/layer.js:93:62)
+2026-May-04 23:51:15.904915
+at Function.route (/app/node_modules/router/index.js:428:17)
+2026-May-04 23:51:15.904915
+at Function.route (/app/node_modules/express/lib/application.js:257:22)
+2026-May-04 23:51:15.904915
+at app.<computed> [as get] (/app/node_modules/express/lib/application.js:478:22)
+2026-May-04 23:51:15.904915
+at file:///app/server/index.js:55:7 {
+2026-May-04 23:51:15.904915
+originalPath: '/:path(.*)'
+2026-May-04 23:51:15.904915
+}
+2026-May-04 23:51:15.904915
+2026-May-04 23:51:15.904915
+Node.js v20.20.2
+2026-May-04 23:51:15.911776
+----------------------------------------
+2026-May-04 23:51:15.922472
+Removing old containers.
+2026-May-04 23:51:15.930175
+----------------------------------------
+2026-May-04 23:51:15.937496
+WARNING: Dockerfile or Docker Image based deployment detected. The healthcheck needs a curl or wget command to check the health of the application. Please make sure that it is available in the image or turn off healthcheck on Coolify's UI.
+2026-May-04 23:51:15.945148
+----------------------------------------
+2026-May-04 23:51:15.952379
+New container is not healthy, rolling back to the old container.
+2026-May-04 23:51:16.729693
+Rolling update completed.
