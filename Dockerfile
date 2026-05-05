@@ -42,14 +42,14 @@ COPY --from=builder /app/dist ./dist
 COPY server ./server
 
 # Runtime secrets — supply via `docker run -e` or docker-compose
-ENV PORT=3001
+ENV PORT=3000
 ENV SUPABASE_SERVICE_ROLE_KEY=""
 ENV STRIPE_SECRET_KEY=""
 ENV STRIPE_WEBHOOK_SECRET=""
 ENV TELNYX_API_KEY=""
 ENV TELNYX_PHONE_NUMBER=""
 
-EXPOSE 3001
+EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD wget -qO- http://localhost:${PORT}/healthz || exit 1
