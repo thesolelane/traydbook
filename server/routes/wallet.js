@@ -59,7 +59,7 @@ router.get('/api/wallet/status', requireAuth, async (req, res) => {
     .from('users')
     .select('solana_pubkey, account_type')
     .eq('id', userId)
-    .single()
+    .maybeSingle()
   if (error) return res.status(500).json({ error: error.message })
   if (!userRow) return res.status(404).json({ error: 'User not found' })
   if (userRow.account_type !== 'contractor')
