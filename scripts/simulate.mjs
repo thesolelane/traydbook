@@ -277,7 +277,7 @@ for (const [idx, u] of owners.entries()) {
     u.rfqId = r.b
     ok(`RFQ #${u.i} ${u.name}`, `id: ${r.b.slice(0,8)}...`)
   } else {
-    no(`RFQ #${u.i} ${u.name}`, JSON.stringify(r.b).slice(0,80))
+    no(`RFQ #${u.i} ${u.name}`, JSON.stringify(r.b))
   }
 }
 
