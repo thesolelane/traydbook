@@ -1,0 +1,32 @@
+column_name,data_type,udt_name
+id,uuid,uuid
+poster_id,uuid,uuid
+title,text,text
+trade_needed,text,text
+project_type,text,text
+scope_description,text,text
+budget_min,bigint,int8
+budget_max,bigint,int8
+sq_footage,integer,int4
+start_date,date,date
+duration_weeks,integer,int4
+bid_deadline,timestamp with time zone,timestamptz
+location_city,text,text
+location_state,character,bpchar
+location_zip,character varying,varchar
+location_point,USER-DEFINED,geometry
+requires_bonded,boolean,bool
+requires_licensed,boolean,bool
+osha_required,USER-DEFINED,osha_requirement
+documents_urls,ARRAY,_text
+bid_count,integer,int4
+view_count,integer,int4
+status,USER-DEFINED,rfq_status
+awarded_to,uuid,uuid
+awarded_at,timestamp with time zone,timestamptz
+credits_charged,integer,int4
+is_boosted,boolean,bool
+boosted_until,timestamp with time zone,timestamptz
+created_at,timestamp with time zone,timestamptz
+updated_at,timestamp with time zone,timestamptz
+requirements,ARRAY,_text
