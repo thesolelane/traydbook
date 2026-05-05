@@ -1,0 +1,77 @@
+TraydBook 10-User Simulation
+════════════════════════════════════════════════
+(node:2980423) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✅ Health check — ok:true
+
+── Auth Guards ──
+  ✅ Guard GET /api/wallet/status — 401
+  ✅ Guard POST /api/team/invite — 401
+  ✅ Guard POST /api/onboarding/complete — 401
+
+── Create 10 Users ──
+  ✅ Create #1 Alex Sparks — d28facc8...
+  ✅ Create #2 Jordan Pipes — cddb26fb...
+  ✅ Create #3 Sam Coldair — e9d18da5...
+  ✅ Create #4 Casey Frame — d20d8dd7...
+  ✅ Create #5 Riley Brush — 59c5409a...
+  ✅ Create #6 Morgan Build — 9b9229b7...
+  ✅ Create #7 Taylor Develop — f296ddad...
+  ✅ Create #8 Drew Construct — 44e1cf67...
+  ✅ Create #9 Quinn Projects — aa621af0...
+  ✅ Create #10 Blake Estate — c5a4abc7...
+
+── Sign In All ──
+  ✅ Sign in #1 Alex Sparks
+  ✅ Sign in #2 Jordan Pipes
+  ✅ Sign in #3 Sam Coldair
+  ✅ Sign in #4 Casey Frame
+  ✅ Sign in #5 Riley Brush
+  ✅ Sign in #6 Morgan Build
+  ✅ Sign in #7 Taylor Develop
+  ✅ Sign in #8 Drew Construct
+  ✅ Sign in #9 Quinn Projects
+  ✅ Sign in #10 Blake Estate
+
+── Onboarding ──
+  ✅ Onboard #1 contractor
+  ✅ Onboard #2 contractor
+  ✅ Onboard #3 contractor
+  ✅ Onboard #4 contractor
+  ✅ Onboard #5 contractor
+  ✅ Onboard #6 project_owner
+  ✅ Onboard #7 project_owner
+  ✅ Onboard #8 project_owner
+  ✅ Onboard #9 project_owner
+  ✅ Onboard #10 project_owner
+
+── Wallet Access ──
+  ✅ Wallet #1 contractor — pubkey: none
+  ✅ Wallet #2 contractor — pubkey: none
+  ✅ Wallet #3 contractor — pubkey: none
+  ✅ Wallet #4 contractor — pubkey: none
+  ✅ Wallet #5 contractor — pubkey: none
+  ✅ Wallet #6 owner blocked — 403 correct
+  ✅ Wallet #7 owner blocked — 403 correct
+  ✅ Wallet #8 owner blocked — 403 correct
+  ✅ Wallet #9 owner blocked — 403 correct
+  ✅ Wallet #10 owner blocked — 403 correct
+
+── Cleanup ──
+  ✅ Delete #1 Alex Sparks
+  ✅ Delete #2 Jordan Pipes
+  ✅ Delete #3 Sam Coldair
+  ✅ Delete #4 Casey Frame
+  ✅ Delete #5 Riley Brush
+  ✅ Delete #6 Morgan Build
+  ✅ Delete #7 Taylor Develop
+  ✅ Delete #8 Drew Construct
+  ✅ Delete #9 Quinn Projects
+  ✅ Delete #10 Blake Estate
+
+════════════════════════════════════════════════
+  ✅ Passed: 54
+  ❌ Failed: 0
+  Total:    54
+════════════════════════════════════════════════
+
