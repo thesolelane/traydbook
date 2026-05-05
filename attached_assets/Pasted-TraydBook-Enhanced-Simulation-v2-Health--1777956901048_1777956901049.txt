@@ -1,0 +1,149 @@
+TraydBook Enhanced Simulation v2
+════════════════════════════════════════════════════
+
+── Health ──
+(node:3039845) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✅ Health check — ok:true
+
+── Auth Guards ──
+  ✅ Guard GET /api/wallet/status — 401
+  ✅ Guard POST /api/team/invite — 401
+  ✅ Guard POST /api/onboarding/complete — 401
+  ✅ Guard POST /api/posts — 401
+  ✅ Guard POST /api/upload/post-media — 401
+
+── Create 10 Users ──
+  ✅ Create #1 Alex Sparks — 388dbed9...
+  ✅ Create #2 Jordan Pipes — b1cc6c43...
+  ✅ Create #3 Sam Coldair — 2ff64757...
+  ✅ Create #4 Casey Frame — 9f70a029...
+  ✅ Create #5 Riley Brush — 33e91227...
+  ✅ Create #6 Morgan Build — fe430eef...
+  ✅ Create #7 Taylor Develop — ac971f71...
+  ✅ Create #8 Drew Construct — 7bf9a970...
+  ✅ Create #9 Quinn Projects — 9503a360...
+  ✅ Create #10 Blake Estate — 40c7dd65...
+
+── Sign In All ──
+  ✅ Sign in #1 Alex Sparks
+  ✅ Sign in #2 Jordan Pipes
+  ✅ Sign in #3 Sam Coldair
+  ✅ Sign in #4 Casey Frame
+  ✅ Sign in #5 Riley Brush
+  ✅ Sign in #6 Morgan Build
+  ✅ Sign in #7 Taylor Develop
+  ✅ Sign in #8 Drew Construct
+  ✅ Sign in #9 Quinn Projects
+  ✅ Sign in #10 Blake Estate
+
+── Onboarding ──
+  ✅ Onboard #1 contractor
+  ✅ Onboard #2 contractor
+  ✅ Onboard #3 contractor
+  ✅ Onboard #4 contractor
+  ✅ Onboard #5 contractor
+  ✅ Onboard #6 project_owner
+  ✅ Onboard #7 project_owner
+  ✅ Onboard #8 project_owner
+  ✅ Onboard #9 project_owner
+  ✅ Onboard #10 project_owner
+
+── Image Upload ──
+  ✅ Upload #1 Alex Sparks — got URL
+  ✅ Upload #2 Jordan Pipes — got URL
+  ✅ Upload #3 Sam Coldair — got URL
+  ✅ Upload #4 Casey Frame — got URL
+  ✅ Upload #5 Riley Brush — got URL
+
+── Posts ──
+  ✅ Post #1 Alex Sparks — project_update +image
+  ✅ Post #2 Jordan Pipes — safety_alert +image
+  ✅ Post #3 Sam Coldair — trade_tip +image
+  ✅ Post #4 Casey Frame — project_update +image
+  ✅ Post #5 Riley Brush — safety_alert +image
+  ✅ Post #6 Morgan Build — project_update
+  ✅ Post #7 Taylor Develop — story
+  ✅ Post #8 Drew Construct — project_update
+  ✅ Post #9 Quinn Projects — story
+  ✅ Post #10 Blake Estate — project_update
+
+── Comments ──
+  ❌ Comment: Morgan Build → Alex Sparks — {"code":"PGRST202","details":"Searched for the function publ
+  ❌ Comment: Morgan Build → Jordan Pipes — {"code":"PGRST202","details":"Searched for the function publ
+  ❌ Comment: Morgan Build → Sam Coldair — {"code":"PGRST202","details":"Searched for the function publ
+  ❌ Comment: Taylor Develop → Alex Sparks — {"code":"PGRST202","details":"Searched for the function publ
+  ❌ Comment: Taylor Develop → Jordan Pipes — {"code":"PGRST202","details":"Searched for the function publ
+  ❌ Comment: Taylor Develop → Sam Coldair — {"code":"PGRST202","details":"Searched for the function publ
+  ❌ Comment: Drew Construct → Alex Sparks — {"code":"PGRST202","details":"Searched for the function publ
+  ❌ Comment: Drew Construct → Jordan Pipes — {"code":"PGRST202","details":"Searched for the function publ
+  ❌ Comment: Drew Construct → Sam Coldair — {"code":"PGRST202","details":"Searched for the function publ
+  ❌ Comment: Alex Sparks → Morgan Build — {"code":"PGRST202","details":"Searched for the function publ
+  ❌ Comment: Alex Sparks → Taylor Develop — {"code":"PGRST202","details":"Searched for the function publ
+  ❌ Comment: Jordan Pipes → Morgan Build — {"code":"PGRST202","details":"Searched for the function publ
+  ❌ Comment: Jordan Pipes → Taylor Develop — {"code":"PGRST202","details":"Searched for the function publ
+  ❌ Comment: Sam Coldair → Morgan Build — {"code":"PGRST202","details":"Searched for the function publ
+  ❌ Comment: Sam Coldair → Taylor Develop — {"code":"PGRST202","details":"Searched for the function publ
+
+── Likes ──
+  ✅ Like: Alex Sparks → Jordan Pipes
+  ✅ Like: Jordan Pipes → Sam Coldair
+  ✅ Like: Sam Coldair → Casey Frame
+  ✅ Like: Casey Frame → Riley Brush
+  ✅ Like: Riley Brush → Morgan Build
+  ✅ Like: Morgan Build → Taylor Develop
+  ✅ Like: Taylor Develop → Drew Construct
+  ✅ Like: Drew Construct → Quinn Projects
+  ✅ Like: Quinn Projects → Blake Estate
+  ✅ Like: Blake Estate → Alex Sparks
+
+── Fund Owners (50 credits) ──
+  ✅ Fund Morgan Build — 50 credits
+  ✅ Fund Taylor Develop — 50 credits
+  ✅ Fund Drew Construct — 50 credits
+  ✅ Fund Quinn Projects — 50 credits
+  ✅ Fund Blake Estate — 50 credits
+
+── Post RFQs ──
+  ❌ RFQ #6 Morgan Build — {"code":"22P02","details":null,"hint":null,"message":"invalid input value for en
+  ❌ RFQ #7 Taylor Develop — {"code":"22P02","details":null,"hint":null,"message":"invalid input value for en
+  ❌ RFQ #8 Drew Construct — {"code":"22P02","details":null,"hint":null,"message":"invalid input value for en
+  ❌ RFQ #9 Quinn Projects — {"code":"22P02","details":null,"hint":null,"message":"invalid input value for en
+  ❌ RFQ #10 Blake Estate — {"code":"22P02","details":null,"hint":null,"message":"invalid input value for en
+
+── Submit Bids ──
+  ❌ Bids skipped — no RFQ
+
+── Award Bid ──
+  ❌ Award skipped — missing rfqId or bidId
+
+── Wallet Access ──
+  ✅ Wallet #1 contractor — pubkey: none
+  ✅ Wallet #2 contractor — pubkey: none
+  ✅ Wallet #3 contractor — pubkey: none
+  ✅ Wallet #4 contractor — pubkey: none
+  ✅ Wallet #5 contractor — pubkey: none
+  ✅ Wallet #6 owner blocked — 403 correct
+  ✅ Wallet #7 owner blocked — 403 correct
+  ✅ Wallet #8 owner blocked — 403 correct
+  ✅ Wallet #9 owner blocked — 403 correct
+  ✅ Wallet #10 owner blocked — 403 correct
+
+── Cleanup ──
+  ✅ Delete #1 Alex Sparks
+  ✅ Delete #2 Jordan Pipes
+  ✅ Delete #3 Sam Coldair
+  ✅ Delete #4 Casey Frame
+  ✅ Delete #5 Riley Brush
+  ✅ Delete #6 Morgan Build
+  ✅ Delete #7 Taylor Develop
+  ✅ Delete #8 Drew Construct
+  ✅ Delete #9 Quinn Projects
+  ✅ Delete #10 Blake Estate
+
+════════════════════════════════════════════════════
+  ✅ Passed: 86
+  ❌ Failed: 22
+  Total:    108
+════════════════════════════════════════════════════
+
