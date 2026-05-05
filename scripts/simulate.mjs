@@ -254,7 +254,7 @@ for (const u of owners) {
 
 // 11. Owners post RFQs (costs 10 credits each, deducted by the RPC)
 sep('Post RFQs')
-const TRADES_FOR_RFQ = ['Electrician', 'Plumber', 'HVAC Tech', 'Carpenter', 'Painter']
+const TRADES_FOR_RFQ = ['Electrical', 'Plumbing', 'HVAC', 'Carpentry', 'Painting']
 const bidDeadline    = new Date(TS + 30 * 24 * 60 * 60 * 1000).toISOString()
 
 for (const [idx, u] of owners.entries()) {
