@@ -7,7 +7,6 @@
 GRANT ALL ON public.posts              TO service_role;
 GRANT ALL ON public.comments           TO service_role;
 GRANT ALL ON public.connections        TO service_role;
-GRANT ALL ON public.vouches            TO service_role;
 GRANT ALL ON public.rfqs               TO service_role;
 GRANT ALL ON public.bids               TO service_role;
 GRANT ALL ON public.job_listings       TO service_role;
@@ -18,8 +17,6 @@ GRANT ALL ON public.credentials        TO service_role;
 GRANT ALL ON public.contractor_profiles TO service_role;
 GRANT ALL ON public.purchases          TO service_role;
 GRANT ALL ON public.credit_ledger      TO service_role;
-GRANT ALL ON public.badges             TO service_role;
-GRANT ALL ON public.staff_roles        TO service_role;
 
 -- Notify PostgREST to reload schema cache
 NOTIFY pgrst, 'reload schema';
