@@ -1,16 +1,23 @@
 #!/usr/bin/env node
-// TraydBook Enhanced Simulation — v2
-// Usage (from Coolify host server):
+// TraydBook End-to-End Simulation — v3
+//
+// Manual run (on Coolify host):
 //   NODE_TLS_REJECT_UNAUTHORIZED=0 node /tmp/sim.mjs
+//
+// Env vars override hardcoded defaults — set these when running via webhook:
+//   SIM_SB_URL          Supabase project URL
+//   SIM_SB_ANON_KEY     Supabase anon key
+//   SIM_SB_SERVICE_KEY  Supabase service role key
+//   SIM_APP_URL         App base URL  (default: https://dev.traydbook.com)
 //
 // Covers: health · auth guards · create/signin/onboard 10 users ·
 //         image upload · posts · comments · likes · fund owners ·
 //         RFQs · bids · bid award · wallet access · cleanup
 
-const SB  = 'https://tpwrpezsvclzblktgjli.supabase.co'
-const AK  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwd3JwZXpzdmNsemJsa3RnamxpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMDY4NTgsImV4cCI6MjA4OTc4Mjg1OH0.CNRQoD99mU9wdEHImEoqWAYz4Wci8CIyrEnJp00Tj-k'
-const SK  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwd3JwZXpzdmNsemJsa3RnamxpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDIwNjg1OCwiZXhwIjoyMDg5NzgyODU4fQ.v55WOmV-uxIhEQFoyNYeW5vSFNv2x734FspxJY0qF6A'
-const APP = 'https://dev.traydbook.com'
+const SB  = process.env.SIM_SB_URL         || 'https://tpwrpezsvclzblktgjli.supabase.co'
+const AK  = process.env.SIM_SB_ANON_KEY    || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwd3JwZXpzdmNsemJsa3RnamxpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyMDY4NTgsImV4cCI6MjA4OTc4Mjg1OH0.CNRQoD99mU9wdEHImEoqWAYz4Wci8CIyrEnJp00Tj-k'
+const SK  = process.env.SIM_SB_SERVICE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRwd3JwZXpzdmNsemJsa3RnamxpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDIwNjg1OCwiZXhwIjoyMDg5NzgyODU4fQ.v55WOmV-uxIhEQFoyNYeW5vSFNv2x734FspxJY0qF6A'
+const APP = process.env.SIM_APP_URL        || 'https://dev.traydbook.com'
 const TS  = Date.now()
 const PW  = 'TraydSim2026'
 

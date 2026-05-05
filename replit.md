@@ -393,7 +393,27 @@ The live staging DB (dev.traydbook.com) has several columns as ENUM types that s
 **notifications table**: does NOT have a `title` column in the live DB — only `user_id, type, body, entity_id, entity_type, is_read, created_at`.
 
 ## Simulation
-- Script: `scripts/simulate.mjs`
-- Run on staging server: `NODE_TLS_REJECT_UNAUTHORIZED=0 node /tmp/sim.mjs`
+- Script: `scripts/simulate.mjs` — reads env vars first, falls back to hardcoded staging defaults
+- Manual run on Coolify host: `NODE_TLS_REJECT_UNAUTHORIZED=0 node /tmp/sim.mjs`
 - 112 checks: health, auth guards, create/signin/onboard 10 users, image uploads, posts, comments, likes, fund credits, post RFQs, submit bids, award bid, wallet access, cleanup
 - Migrations to apply in Supabase SQL Editor (in order): 021 → 022 → ... → 029
+
+### Automatic post-deploy webhook (Coolify)
+The app exposes two protected endpoints for Coolify to trigger automatically after every deploy:
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /api/internal/run-sim?secret=TOKEN` | Trigger simulation (returns 202 immediately, runs in background) |
+| `GET  /api/internal/sim-results?secret=TOKEN` | View last 20 run results |
+
+**Coolify setup** (one-time, in Coolify dashboard → your app → Settings):
+1. Find the **Post-deployment Webhook** field
+2. Set it to: `https://dev.traydbook.com/api/internal/run-sim?secret=<SIM_WEBHOOK_SECRET>`
+3. The `SIM_WEBHOOK_SECRET` value is stored in Replit env vars — check the Secrets tab
+
+Results are saved to `.local/sim_results.json` and logged to the server console:
+```
+[sim] ✅ Run abc123 — 112/112 passed — 87.4s
+```
+
+**Why it works on Coolify but not in Replit dev**: the sim script connects to `dev.traydbook.com` — reachable from the Coolify server (it's the app itself) but not from Replit's isolated dev container.

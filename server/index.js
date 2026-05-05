@@ -9,6 +9,7 @@ import walletRoutes from './routes/wallet.js'
 import onboardingRoutes from './routes/onboarding.js'
 import uploadRoutes from './routes/upload.js'
 import postRoutes from './routes/posts.js'
+import simRoutes from './routes/sim.js'
 import { logError, loadLogFromDisk } from './lib/errorLog.js'
 
 const app = express()
@@ -40,6 +41,7 @@ app.use((req, res, next) => {
 
 app.use(teamRoutes)
 app.use(adminRoutes)
+app.use(simRoutes)
 app.use(smsRoutes)
 app.use(walletRoutes)
 app.use(onboardingRoutes)
