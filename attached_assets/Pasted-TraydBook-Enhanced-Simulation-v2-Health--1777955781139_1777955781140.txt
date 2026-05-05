@@ -1,0 +1,114 @@
+TraydBook Enhanced Simulation v2
+════════════════════════════════════════════════════
+
+── Health ──
+(node:3001963) Warning: Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable to '0' makes TLS connections and HTTPS requests insecure by disabling certificate verification.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✅ Health check — ok:true
+
+── Auth Guards ──
+  ✅ Guard GET /api/wallet/status — 401
+  ✅ Guard POST /api/team/invite — 401
+  ✅ Guard POST /api/onboarding/complete — 401
+  ✅ Guard POST /api/posts — 401
+  ✅ Guard POST /api/upload/post-media — 401
+
+── Create 10 Users ──
+  ✅ Create #1 Alex Sparks — 4a782f0d...
+  ✅ Create #2 Jordan Pipes — 6dd59d44...
+  ✅ Create #3 Sam Coldair — 434f763a...
+  ✅ Create #4 Casey Frame — 45724452...
+  ✅ Create #5 Riley Brush — 79c6b405...
+  ✅ Create #6 Morgan Build — e5304b54...
+  ✅ Create #7 Taylor Develop — 39fe7ccb...
+  ✅ Create #8 Drew Construct — 97ba322c...
+  ✅ Create #9 Quinn Projects — 529b1e35...
+  ✅ Create #10 Blake Estate — 5c3b23f6...
+
+── Sign In All ──
+  ✅ Sign in #1 Alex Sparks
+  ✅ Sign in #2 Jordan Pipes
+  ✅ Sign in #3 Sam Coldair
+  ✅ Sign in #4 Casey Frame
+  ✅ Sign in #5 Riley Brush
+  ✅ Sign in #6 Morgan Build
+  ✅ Sign in #7 Taylor Develop
+  ✅ Sign in #8 Drew Construct
+  ✅ Sign in #9 Quinn Projects
+  ✅ Sign in #10 Blake Estate
+
+── Onboarding ──
+  ✅ Onboard #1 contractor
+  ✅ Onboard #2 contractor
+  ✅ Onboard #3 contractor
+  ✅ Onboard #4 contractor
+  ✅ Onboard #5 contractor
+  ✅ Onboard #6 project_owner
+  ✅ Onboard #7 project_owner
+  ✅ Onboard #8 project_owner
+  ✅ Onboard #9 project_owner
+  ✅ Onboard #10 project_owner
+
+── Image Upload ──
+  ✅ Upload #1 Alex Sparks — got URL
+  ✅ Upload #2 Jordan Pipes — got URL
+  ✅ Upload #3 Sam Coldair — got URL
+  ✅ Upload #4 Casey Frame — got URL
+  ✅ Upload #5 Riley Brush — got URL
+
+── Posts ──
+  ❌ Post #1 Alex Sparks — {"error":"permission denied for table posts"}
+  ❌ Post #2 Jordan Pipes — {"error":"permission denied for table posts"}
+  ❌ Post #3 Sam Coldair — {"error":"permission denied for table posts"}
+  ❌ Post #4 Casey Frame — {"error":"permission denied for table posts"}
+  ❌ Post #5 Riley Brush — {"error":"permission denied for table posts"}
+  ❌ Post #6 Morgan Build — {"error":"permission denied for table posts"}
+  ❌ Post #7 Taylor Develop — {"error":"permission denied for table posts"}
+  ❌ Post #8 Drew Construct — {"error":"permission denied for table posts"}
+  ❌ Post #9 Quinn Projects — {"error":"permission denied for table posts"}
+  ❌ Post #10 Blake Estate — {"error":"permission denied for table posts"}
+
+── Comments ──
+
+── Likes ──
+
+── Fund Owners (50 credits) ──
+
+── Post RFQs ──
+
+── Submit Bids ──
+  ❌ Bids skipped — no RFQ
+
+── Award Bid ──
+  ❌ Award skipped — missing rfqId or bidId
+
+── Wallet Access ──
+  ✅ Wallet #1 contractor — pubkey: none
+  ✅ Wallet #2 contractor — pubkey: none
+  ✅ Wallet #3 contractor — pubkey: none
+  ✅ Wallet #4 contractor — pubkey: none
+  ✅ Wallet #5 contractor — pubkey: none
+  ✅ Wallet #6 owner blocked — 403 correct
+  ✅ Wallet #7 owner blocked — 403 correct
+  ✅ Wallet #8 owner blocked — 403 correct
+  ✅ Wallet #9 owner blocked — 403 correct
+  ✅ Wallet #10 owner blocked — 403 correct
+
+── Cleanup ──
+  ✅ Delete #1 Alex Sparks
+  ✅ Delete #2 Jordan Pipes
+  ✅ Delete #3 Sam Coldair
+  ✅ Delete #4 Casey Frame
+  ✅ Delete #5 Riley Brush
+  ✅ Delete #6 Morgan Build
+  ✅ Delete #7 Taylor Develop
+  ✅ Delete #8 Drew Construct
+  ✅ Delete #9 Quinn Projects
+  ✅ Delete #10 Blake Estate
+
+════════════════════════════════════════════════════
+  ✅ Passed: 61
+  ❌ Failed: 12
+  Total:    73
+════════════════════════════════════════════════════
+
