@@ -1,0 +1,42 @@
+So the API is actually working correctly! The "missing" routes aren't missing — they're handled by Supabase.
+Let's verify the full flow works:
+bash
+Copy
+# 1. Health check (Express)
+curl -k https://dev.traydbook.com/healthz
+
+# 2. Wallet (Express - needs auth, should return 401)
+curl -k https://dev.traydbook.com/api/wallet/status
+
+# 3. Check if Supabase auth is reachable from frontend
+curl -k -I https://tpwrpezsvclzblktgjli.supabase.co/auth/v1/signup
+What does curl -k https://dev.traydbook.com/healthz return?
+If it returns {"ok":true}, then Express is fully operational. The frontend will handle auth/bids through Supabase, and wallet/team/admin through Express.
+Now we can run the simulation tests! The platform architecture is:
+Frontend (React) → Supabase for auth/data
+Frontend → Express for wallet, team, admin, SMS, Stripe
+Ready to test the contractor flow?Perfect! So the architecture is correct:
+Auth/Bids → Supabase directly (no Express route needed)
+Wallet/Team/Admin/SMS/Stripe/Upload/Posts → Express API
+The API is working! Let's verify:
+bash
+Copy
+curl -k https://dev.traydbook.com/healthz
+curl -k https://dev.traydbook.com/api/wallet/status
+What do these return?
+If healthz returns {"ok":true} and wallet returns {"error":"Unauthorized"}, then Express is fully operational.
+Now let's run the simulation test. From your Mac:
+bash
+Copy
+cd ~/traydbook-loadtest
+export APP_URL="https://dev.traydbook.com"
+export SUPABASE_URL="https://tpwrpezsvclzblktgjli.supabase.co"
+export SUPABASE_ANON_KEY="your-anon-key"
+
+# Test contractor signup through Supabase
+curl -k -X POST $SUPABASE_URL/auth/v1/signup \
+  -H "apikey: $SUPABASE_ANON_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"sim_test_'$(date +%s)'@traydbook.com","password":"SimTest123!","options":{"data":{"role":"contractor","trade":"electrician","display_name":"Sim Electrician"}}}'
+What does the Supabase signup return? JSON with user data?
+If yes, the full flow works: Supabase auth → React app → Express API. Ready for simulation! 🚀
