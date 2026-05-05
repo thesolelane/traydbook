@@ -204,13 +204,11 @@ const owners      = USERS.filter(u => u.type === 'project_owner' && u.token && u
 
 for (const owner of owners.slice(0,3)) {
   for (const contractor of contractors.slice(0,3)) {
-    const r = await sbInsert('comments', {
-      post_id:   contractor.postId,
-      author_id: owner.id,
-      body:      `[SIM] ${owner.name} → ${contractor.name}: great work!`,
+    const r = await rpc('post_comment', {
+      p_post_id: contractor.postId,
+      p_body:    `[SIM] ${owner.name} → ${contractor.name}: great work!`,
     }, owner.token)
-    const row = Array.isArray(r.b) ? r.b[0] : r.b
-    row?.id
+    typeof r.b === 'string' && r.b.length === 36
       ? ok(`Comment: ${owner.name} → ${contractor.name}`)
       : no(`Comment: ${owner.name} → ${contractor.name}`, JSON.stringify(r.b).slice(0,60))
   }
@@ -218,13 +216,11 @@ for (const owner of owners.slice(0,3)) {
 
 for (const contractor of contractors.slice(0,3)) {
   for (const owner of owners.slice(0,2)) {
-    const r = await sbInsert('comments', {
-      post_id:   owner.postId,
-      author_id: contractor.id,
-      body:      `[SIM] ${contractor.name} → ${owner.name}: interested in this project!`,
+    const r = await rpc('post_comment', {
+      p_post_id: owner.postId,
+      p_body:    `[SIM] ${contractor.name} → ${owner.name}: interested in this project!`,
     }, contractor.token)
-    const row = Array.isArray(r.b) ? r.b[0] : r.b
-    row?.id
+    typeof r.b === 'string' && r.b.length === 36
       ? ok(`Comment: ${contractor.name} → ${owner.name}`)
       : no(`Comment: ${contractor.name} → ${owner.name}`, JSON.stringify(r.b).slice(0,60))
   }
