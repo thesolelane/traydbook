@@ -375,3 +375,25 @@ Admin page is split into section components (was previously one 1113-line `src/p
 - ✅ Task #9: SMS Message Alerts (Telnyx, two-tier subscription) — DONE
 - ✅ Task #12: Team Delegation & Ghost Sub-Accounts — DONE
 - ✅ Task #15: Solana Wallet Integration (Contractor Accounts) — DONE
+- ✅ End-to-End Simulation: 112/112 checks passing — DONE
+
+## Live DB vs schema.sql Differences (discovered during simulation)
+The live staging DB (dev.traydbook.com) has several columns as ENUM types that schema.sql defines as text. Always use the enum values below when writing migrations or RPCs:
+
+| Column | Table | Enum type | Valid values |
+|---|---|---|---|
+| `transaction_type` | `credit_ledger` | `transaction_type` | `purchase, post_rfq, post_job, send_message, request_contact, boost_listing, repost_listing, verification_fee, refund, admin_adjustment` |
+| `type` | `notifications` | `notification_type` | `connection_request, connection_accepted, post_liked, post_commented, bid_received, bid_awarded, bid_not_awarded, job_application, rfq_closing_soon, credential_expiring, referral_received, safety_alert, message_received, credits_added, profile_viewed` |
+| `status` | `rfqs` | `rfq_status` | `open, awarded, closed, cancelled, draft` |
+| `osha_required` | `rfqs` | `osha_requirement` | `none, osha_10, osha_30` |
+| `account_type` | `users` | `account_type` | `contractor, design_professional, project_owner, agent, homeowner, admin` |
+| `status` | `bids` | `bid_status` | `pending, under_review, awarded, not_awarded, withdrawn` |
+| `post_type` | `posts` | `post_type` | `project_update, job_post, bid_post, trade_tip, safety_alert, referral, story` |
+
+**notifications table**: does NOT have a `title` column in the live DB — only `user_id, type, body, entity_id, entity_type, is_read, created_at`.
+
+## Simulation
+- Script: `scripts/simulate.mjs`
+- Run on staging server: `NODE_TLS_REJECT_UNAUTHORIZED=0 node /tmp/sim.mjs`
+- 112 checks: health, auth guards, create/signin/onboard 10 users, image uploads, posts, comments, likes, fund credits, post RFQs, submit bids, award bid, wallet access, cleanup
+- Migrations to apply in Supabase SQL Editor (in order): 021 → 022 → ... → 029
