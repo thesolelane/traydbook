@@ -9,3 +9,6 @@ admin-dist
 attached_assets/
 .local/
 *.log
+
+# Separate project — has its own repo
+sim-runner/
