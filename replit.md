@@ -27,6 +27,13 @@ Stripe products need to be seeded using `scripts/seed-stripe-products.js`.
 - `BETA_SUPABASE_URL` (if `SUPABASE_ENV` is `beta`)
 - `BETA_SUPABASE_ANON_KEY` (if `SUPABASE_ENV` is `beta`)
 - `BETA_SUPABASE_SERVICE_ROLE_KEY` (if `SUPABASE_ENV` is `beta`)
+- `KEY_MASTER_SECRET` (optional — enables admin key rotation)
+- `ADMIN_REQUEST_SECRET` (optional — enables HMAC request signing)
+- `SLACK_WEBHOOK_URL` (optional — security alert Slack notifications)
+- `PAGERDUTY_KEY` (optional — CRITICAL alert paging)
+- `BOB_ENDPOINT` (optional — Ollama endpoint for AI command bar, e.g. `http://bob:11434`)
+- `BOB_MODEL` (optional — Ollama model name, default `llama3`)
+- `ENABLE_KEY_ROTATION` (`true` to activate 10-minute key rotation)
 - `SOLANA_TREASURY_PRIVATE_KEY` (for admin rewards)
 - `SIM_WEBHOOK_SECRET` (for internal simulation webhook)
 
@@ -61,6 +68,8 @@ Stripe products need to be seeded using `scripts/seed-stripe-products.js`.
 - **Pure CSS Styling**: No external CSS framework is used to maintain full control over styling and minimize bundle size.
 - **Environment-Agnostic Supabase Configuration**: A single `SUPABASE_ENV` variable controls whether the app connects to production or beta Supabase projects, simplifying environment switching.
 - **Module-Based Server Structure**: The server logic is refactored into focused modules by concern (e.g., `stripe.js`, `wallet.js`, `team.js`) to improve maintainability and scalability.
+- **Admin Safe Mode**: On startup, `admin-server.js` runs secret validation + Supabase connection check. Any failure activates safe mode — all write routes are quarantined, read-only monitoring still works.
+- **AI Command Bar (BOB-first)**: Admin natural language commands use Ollama (`BOB_ENDPOINT`) if configured, falling back to OpenAI. Neither is required; the endpoint returns a 503 with a hint if neither is set.
 
 ## Product
 

@@ -2,6 +2,8 @@ import { readFileSync } from 'fs'
 import { execSync } from 'child_process'
 
 export async function loadSecrets() {
+  const isBeta = process.env.SUPABASE_ENV === 'beta'
+
   if (process.env.NODE_ENV === 'production') {
     if (process.env.OP_SERVICE_ACCOUNT_TOKEN) {
       try {
@@ -22,22 +24,32 @@ export async function loadSecrets() {
     }
   }
 
-  const required = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY']
-  const missing = required.filter(k => !process.env[k])
+  // Resolve actual URL/key based on project conventions (beta vs production)
+  const supabaseUrl = isBeta
+    ? (process.env.BETA_SUPABASE_URL ?? process.env.VITE_SUPABASE_URL)
+    : process.env.VITE_SUPABASE_URL
+
+  const serviceRoleKey = isBeta
+    ? (process.env.BETA_SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY)
+    : process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  const missing = []
+  if (!supabaseUrl) missing.push('VITE_SUPABASE_URL')
+  if (!serviceRoleKey) missing.push('SUPABASE_SERVICE_ROLE_KEY')
+
   if (missing.length) {
     throw new Error(`Missing required secrets: ${missing.join(', ')}`)
   }
 
-  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
-  if (supabaseUrl && !supabaseUrl.startsWith('https://')) {
-    throw new Error('SUPABASE_URL must be HTTPS')
+  if (!supabaseUrl.startsWith('https://')) {
+    throw new Error('Supabase URL must be HTTPS')
   }
 
   if (!process.env.KEY_MASTER_SECRET) {
     console.warn('[admin] ⚠️  KEY_MASTER_SECRET not set — key rotation disabled')
   }
   if (!process.env.ADMIN_REQUEST_SECRET) {
-    console.warn('[admin] ⚠️  ADMIN_REQUEST_SECRET not set — request signing disabled')
+    console.warn('[admin] ⚠️  ADMIN_REQUEST_SECRET not set — request signing in passthrough mode')
   }
 
   console.log('[admin] 🔐 Secrets loaded')

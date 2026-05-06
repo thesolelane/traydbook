@@ -5,14 +5,25 @@ import { supabaseAdmin } from './server/lib/clients.js'
 import adminRoutes from './server/routes/admin.js'
 import { logError, loadLogFromDisk } from './server/lib/errorLog.js'
 
+import { loadSecrets } from './server/lib/vault.js'
+import { validateConnection } from './server/lib/connection-validator.js'
+import { activateSafeMode, isSafeMode, getSafeModeReason } from './server/lib/safe-mode.js'
+import { keyManager } from './server/lib/key-rotation.js'
+import { modeAwareMiddleware } from './server/lib/mode-middleware.js'
+
+import monitorRoutes from './server/routes/admin-monitor.js'
+import userSecurityRoutes from './server/routes/admin-users-security.js'
+import moderationRoutes from './server/routes/admin-moderation.js'
+import repairRoutes from './server/routes/admin-repair.js'
+import revokeRoutes from './server/routes/admin-revoke.js'
+import aiCommandRoutes from './server/routes/admin-ai-command.js'
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const app = express()
 const PORT = process.env.PORT ?? process.env.ADMIN_PORT ?? 4000
 
 // ── IP Allowlist ──────────────────────────────────────────────────────────────
-// Set ADMIN_ALLOWED_IPS as a comma-separated list in your secrets.
-// Leave it unset (or empty) during local dev to allow all traffic.
 const rawIps = process.env.ADMIN_ALLOWED_IPS ?? ''
 const ALLOWED_IPS = rawIps
   .split(',')
@@ -30,8 +41,14 @@ function ipRestriction(req, res, next) {
   return res.status(403).send('Forbidden')
 }
 
-// Health check — must be BEFORE IP restriction so Coolify can reach it
-app.get('/healthz', (_req, res) => res.json({ ok: true }))
+// Health check — before IP restriction so Coolify can reach it
+app.get('/healthz', (_req, res) =>
+  res.json({
+    ok: true,
+    safe_mode: isSafeMode(),
+    safe_mode_reason: getSafeModeReason() || null,
+  })
+)
 
 app.use(ipRestriction)
 
@@ -54,12 +71,38 @@ app.use((req, res, next) => {
 
 app.use(express.json())
 
-// ── Admin API Routes ──────────────────────────────────────────────────────────
+// ── Mode-Aware Middleware (safe mode enforcement) ──────────────────────────────
+app.use(modeAwareMiddleware)
+
+// ── Existing Admin API Routes ─────────────────────────────────────────────────
 app.use(adminRoutes)
+
+// ── Security: Monitor, Threats, Quarantine, Audit ────────────────────────────
+app.use('/api/admin/monitor', monitorRoutes)
+
+// ── Security: Enhanced User Controls ─────────────────────────────────────────
+app.use('/api/admin/users/security', userSecurityRoutes)
+
+// ── Security: Content Moderation ─────────────────────────────────────────────
+app.use('/api/admin/moderation', moderationRoutes)
+
+// ── Security: SQL Repair + Approvals ─────────────────────────────────────────
+app.use('/api/admin/repair', repairRoutes)
+
+// ── Security: Session Revocation ─────────────────────────────────────────────
+app.use('/api/admin/revoke', revokeRoutes)
+
+// ── Security: AI Command Bar (BOB/OpenAI) ────────────────────────────────────
+app.use('/api/admin/ai', aiCommandRoutes)
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/api/admin-health', (_req, res) =>
-  res.json({ ok: true, env: process.env.SUPABASE_ENV ?? 'production' })
+  res.json({
+    ok: true,
+    env: process.env.SUPABASE_ENV ?? 'production',
+    safe_mode: isSafeMode(),
+    safe_mode_reason: getSafeModeReason() || null,
+  })
 )
 
 // ── Serve built admin app in production ───────────────────────────────────────
@@ -69,12 +112,33 @@ app.use((_req, res) => {
   res.sendFile(path.join(ADMIN_DIST, 'index.html'))
 })
 
-void loadLogFromDisk()
+// ── Startup ───────────────────────────────────────────────────────────────────
+async function main() {
+  await loadLogFromDisk()
 
-app.listen(PORT, () => {
-  const env = process.env.SUPABASE_ENV ?? 'production'
-  const ips = ALLOWED_IPS.length ? ALLOWED_IPS.join(', ') : 'all (no restriction)'
-  console.log(`[admin-server] Listening on :${PORT}`)
-  console.log(`[admin-server] Supabase env: ${env}`)
-  console.log(`[admin-server] Allowed IPs: ${ips}`)
+  try {
+    await loadSecrets()
+    await validateConnection()
+
+    if (process.env.ENABLE_KEY_ROTATION === 'true') {
+      await keyManager.initialize()
+    }
+  } catch (err) {
+    console.warn(`[admin] ⚠️  Startup warning: ${err.message}`)
+    activateSafeMode(app, err.message)
+  }
+
+  app.listen(PORT, () => {
+    const env = process.env.SUPABASE_ENV ?? 'production'
+    const ips = ALLOWED_IPS.length ? ALLOWED_IPS.join(', ') : 'all (no restriction)'
+    console.log(`[admin-server] Listening on :${PORT}`)
+    console.log(`[admin-server] Supabase env: ${env}`)
+    console.log(`[admin-server] Allowed IPs: ${ips}`)
+    console.log(`[admin-server] Mode: ${isSafeMode() ? '🛡️  SAFE (quarantine active)' : '✅ FULL'}`)
+  })
+}
+
+main().catch(err => {
+  console.error('[admin] Fatal startup error:', err)
+  process.exit(1)
 })
