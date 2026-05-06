@@ -71,6 +71,47 @@ const trades = [
   'General Contractors',
 ]
 
+const CREDIT_BUNDLES = [
+  {
+    id: 'starter',
+    name: 'Starter',
+    credits: 25,
+    price: 9,
+    popular: false,
+    tagline: 'Perfect for a single project',
+  },
+  {
+    id: 'builder',
+    name: 'Builder',
+    credits: 75,
+    price: 24,
+    popular: true,
+    tagline: 'Best for active project owners',
+  },
+  {
+    id: 'professional',
+    name: 'Professional',
+    credits: 200,
+    price: 54,
+    popular: false,
+    tagline: 'For investors managing multiple builds',
+  },
+  {
+    id: 'power',
+    name: 'Power',
+    credits: 500,
+    price: 99,
+    popular: false,
+    tagline: 'Agencies and high-volume users',
+  },
+]
+
+const CREDIT_ACTIONS = [
+  { action: 'Post an RFQ', cost: 10 },
+  { action: 'Post a job listing', cost: 8 },
+  { action: 'Message a contractor', cost: 3 },
+]
+
 const WHO_ITS_FOR = [
   {
     icon: '👷',
@@ -327,6 +368,11 @@ export default function Landing() {
     <div className="landing">
       <header className="landing-header">
         <TraydBookNavLogo />
+        <nav className="landing-header-nav">
+          <a href="#pricing" className="btn-ghost">
+            Pricing
+          </a>
+        </nav>
         <div className="landing-header-actions">
           <Link to="/login" className="btn-ghost">
             Sign In
@@ -578,8 +624,8 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── Pricing transparency ── */}
-      <section className="landing-pricing">
+      {/* ── Pricing ── */}
+      <section id="pricing" className="landing-pricing">
         <div className="landing-pricing-inner">
           <h2 className="landing-section-title" style={{ marginBottom: 12 }}>
             Simple, transparent pricing
@@ -587,69 +633,81 @@ export default function Landing() {
           <p className="landing-section-sub" style={{ marginBottom: 48 }}>
             No surprises. No hidden fees. No pay-to-play lead generation.
           </p>
-          <div className="landing-pricing-grid">
-            <div className="landing-pricing-card landing-pricing-card--free">
-              <div className="lpc-badge">Always Free</div>
-              <div className="lpc-icon">👷</div>
-              <h3 className="lpc-title">Contractors & Tradespeople</h3>
-              <p className="lpc-desc">
-                Trade accounts are permanently free. Post your work, submit unlimited bids, message
-                clients, and build your verified profile — zero cost, forever.
-              </p>
-              <ul className="lpc-list">
-                <li>
-                  <span style={{ color: '#e85d04' }}>✓</span> Unlimited bid submissions
-                </li>
-                <li>
-                  <span style={{ color: '#e85d04' }}>✓</span> Full profile + portfolio
-                </li>
-                <li>
-                  <span style={{ color: '#e85d04' }}>✓</span> Direct messaging
-                </li>
-                <li>
-                  <span style={{ color: '#e85d04' }}>✓</span> Verified badge eligibility
-                </li>
-              </ul>
-              <Link
-                to="/signup/trade-select"
-                className="btn-primary"
-                style={{ marginTop: 'auto', alignSelf: 'flex-start' }}
-              >
-                Join Free as a Contractor
-              </Link>
+
+          {/* Contractor free banner */}
+          <div className="landing-pricing-free-banner">
+            <div className="lpfb-left">
+              <span className="lpfb-icon">👷</span>
+              <div>
+                <div className="lpfb-badge">Always Free</div>
+                <h3 className="lpfb-title">Contractors &amp; Tradespeople</h3>
+                <p className="lpfb-desc">
+                  Trade accounts are permanently free. Post work, submit unlimited bids, message
+                  clients, and build your verified profile — zero cost, forever.
+                </p>
+                <div className="lpfb-perks">
+                  <span><span style={{ color: '#e85d04' }}>✓</span> Unlimited bid submissions</span>
+                  <span><span style={{ color: '#e85d04' }}>✓</span> Full profile + portfolio</span>
+                  <span><span style={{ color: '#e85d04' }}>✓</span> Direct messaging</span>
+                  <span><span style={{ color: '#e85d04' }}>✓</span> Verified badge eligibility</span>
+                </div>
+              </div>
             </div>
-            <div className="landing-pricing-card">
-              <div className="lpc-badge lpc-badge--credit">Credit-Based</div>
-              <div className="lpc-icon">🏠</div>
-              <h3 className="lpc-title">Homeowners, Investors & Agents</h3>
-              <p className="lpc-desc">
-                Non-contractor accounts use a simple credit system to post jobs and RFQs. Credits
-                keep the platform quality high and contractor inboxes spam-free.
-              </p>
-              <ul className="lpc-list">
-                <li>
-                  <span style={{ color: '#3b82f6' }}>✓</span> Post jobs & bid requests
-                </li>
-                <li>
-                  <span style={{ color: '#3b82f6' }}>✓</span> Browse verified contractors
-                </li>
-                <li>
-                  <span style={{ color: '#3b82f6' }}>✓</span> Manage multiple projects
-                </li>
-                <li>
-                  <span style={{ color: '#3b82f6' }}>✓</span> Flexible credit top-ups
-                </li>
-              </ul>
-              <Link
-                to="/signup"
-                state={{ preselectOwner: true }}
-                className="btn-outline"
-                style={{ marginTop: 'auto', alignSelf: 'flex-start' }}
-              >
-                Find a Contractor
-              </Link>
-            </div>
+            <Link to="/signup/trade-select" className="btn-primary btn-lg lpfb-cta">
+              Join Free as a Contractor
+            </Link>
           </div>
+
+          {/* Credit bundles divider */}
+          <div className="landing-pricing-divider">
+            <span>Credit bundles for project owners, homeowners &amp; agents</span>
+          </div>
+
+          {/* Four credit bundle cards */}
+          <div className="landing-credits-grid">
+            {CREDIT_BUNDLES.map(bundle => (
+              <div
+                key={bundle.id}
+                className={`landing-credit-card${bundle.popular ? ' landing-credit-card--popular' : ''}`}
+              >
+                {bundle.popular && <div className="lcc-popular-badge">Most Popular</div>}
+                <div className="lcc-header">
+                  <div className="lcc-name">{bundle.name}</div>
+                  <div className="lcc-price">
+                    <span className="lcc-price-dollar">$</span>
+                    {bundle.price}
+                  </div>
+                  <div className="lcc-credits">{bundle.credits} credits</div>
+                  <div className="lcc-tagline">{bundle.tagline}</div>
+                </div>
+                <div className="lcc-welcome">
+                  🎁 50 credits free when you sign up
+                </div>
+                <div className="lcc-actions">
+                  <div className="lcc-actions-label">What you can do:</div>
+                  <ul className="lcc-actions-list">
+                    {CREDIT_ACTIONS.map(a => (
+                      <li key={a.action}>
+                        <span className="lcc-action-name">{a.action}</span>
+                        <span className="lcc-action-cost">{a.cost} cr</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <Link
+                  to="/signup"
+                  state={{ preselectOwner: true }}
+                  className={bundle.popular ? 'btn-primary' : 'btn-outline'}
+                  style={{ marginTop: 'auto', textAlign: 'center' }}
+                >
+                  Get Started
+                </Link>
+              </div>
+            ))}
+          </div>
+          <p className="landing-pricing-note">
+            Credits are purchased after signup. No subscription — top up whenever you need.
+          </p>
         </div>
       </section>
 

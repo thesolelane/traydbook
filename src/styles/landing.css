@@ -824,7 +824,7 @@
   background: var(--color-border);
 }
 
-/* ── Pricing transparency ── */
+/* ── Pricing ── */
 .landing-pricing {
   background: var(--color-surface);
   border-top: 1px solid var(--color-border);
@@ -833,35 +833,42 @@
 }
 
 .landing-pricing-inner {
-  max-width: 900px;
+  max-width: 1100px;
   margin: 0 auto;
 }
 
-.landing-pricing-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-}
-
-.landing-pricing-card {
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: 28px;
+/* Contractor free banner */
+.landing-pricing-free-banner {
   display: flex;
-  flex-direction: column;
-  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  background: rgba(232, 93, 4, 0.05);
+  border: 1px solid rgba(232, 93, 4, 0.3);
+  border-radius: var(--radius-md);
+  padding: 28px 32px;
+  margin-bottom: 40px;
+  flex-wrap: wrap;
 }
 
-.landing-pricing-card--free {
-  border-color: rgba(232, 93, 4, 0.35);
-  background: rgba(232, 93, 4, 0.04);
+.lpfb-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  flex: 1;
+  min-width: 0;
 }
 
-.lpc-badge {
+.lpfb-icon {
+  font-size: 36px;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.lpfb-badge {
   display: inline-flex;
-  align-self: flex-start;
-  padding: 3px 10px;
+  padding: 2px 10px;
   border-radius: 3px;
   font-family: var(--font-condensed);
   font-size: 10px;
@@ -871,53 +878,240 @@
   background: var(--color-brand-light);
   color: var(--color-brand);
   border: 1px solid rgba(232, 93, 4, 0.25);
+  margin-bottom: 8px;
 }
 
-.lpc-badge--credit {
-  background: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
-  border-color: rgba(59, 130, 246, 0.25);
-}
-
-.lpc-icon {
-  font-size: 32px;
-  line-height: 1;
-}
-
-.lpc-title {
+.lpfb-title {
   font-family: var(--font-condensed);
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 800;
   color: var(--color-text);
   letter-spacing: 0.2px;
+  margin-bottom: 6px;
 }
 
-.lpc-desc {
+.lpfb-desc {
   font-size: 14px;
   color: var(--color-text-muted);
-  line-height: 1.65;
+  line-height: 1.6;
+  margin-bottom: 14px;
+  max-width: 520px;
 }
 
-.lpc-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+.lpfb-perks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+}
+
+.lpfb-perks span {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lpfb-cta {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Divider between free banner and credit cards */
+.landing-pricing-divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.landing-pricing-divider::before,
+.landing-pricing-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+}
+
+.landing-pricing-divider span {
+  font-family: var(--font-condensed);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-text-light);
+  white-space: nowrap;
+}
+
+/* Credit bundle cards grid */
+.landing-credits-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.landing-credit-card {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 22px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.landing-credit-card:hover {
+  border-color: var(--color-text-muted);
+  transform: translateY(-2px);
+}
+
+.landing-credit-card--popular {
+  border-color: var(--color-brand);
+  background: rgba(232, 93, 4, 0.03);
+}
+
+.landing-credit-card--popular:hover {
+  border-color: var(--color-brand-dark);
+}
+
+.lcc-popular-badge {
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-brand);
+  color: #fff;
+  font-family: var(--font-condensed);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 3px 12px;
+  border-radius: 0 0 4px 4px;
+}
+
+.lcc-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lcc-name {
+  font-family: var(--font-condensed);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.lcc-price {
+  font-family: var(--font-condensed);
+  font-size: 42px;
+  font-weight: 800;
+  color: var(--color-text);
+  line-height: 1;
+  letter-spacing: -1px;
+  display: flex;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.lcc-price-dollar {
+  font-size: 20px;
+  font-weight: 700;
+  margin-top: 8px;
+  color: var(--color-text-muted);
+}
+
+.lcc-credits {
+  font-family: var(--font-condensed);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-brand);
+  letter-spacing: 0.3px;
+}
+
+.lcc-tagline {
+  font-size: 12px;
+  color: var(--color-text-light);
+  line-height: 1.4;
+  margin-top: 2px;
+}
+
+.lcc-welcome {
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: 4px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #22c55e;
+  line-height: 1.3;
+}
+
+.lcc-actions {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.lpc-list li {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: var(--color-text-muted);
+.lcc-actions-label {
+  font-family: var(--font-condensed);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-text-light);
 }
 
-.lpc-list span {
+.lcc-actions-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lcc-actions-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-border-light);
+  padding-bottom: 6px;
+}
+
+.lcc-actions-list li:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.lcc-action-name {
+  flex: 1;
+}
+
+.lcc-action-cost {
+  font-family: var(--font-condensed);
+  font-size: 11px;
   font-weight: 700;
-  flex-shrink: 0;
+  letter-spacing: 0.5px;
+  color: var(--color-text-light);
+  white-space: nowrap;
+}
+
+.landing-pricing-note {
+  text-align: center;
+  font-size: 13px;
+  color: var(--color-text-light);
+  margin-top: 8px;
 }
 
 @media (max-width: 768px) {
@@ -989,6 +1183,21 @@
   }
   .landing-pricing-grid {
     grid-template-columns: 1fr;
+  }
+  .landing-pricing-free-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 22px 20px;
+  }
+  .lpfb-cta {
+    width: 100%;
+    justify-content: center;
+  }
+  .landing-credits-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .landing-pricing-divider span {
+    font-size: 10px;
   }
 
   .landing-section-sub {
