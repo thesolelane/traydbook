@@ -1,4 +1,0 @@
-schema,typtype,typname,definition
-public,e,osha_requirement,"none, osha_10, osha_30"
-public,e,rfq_status,"open, awarded, closed, cancelled, draft"
-public,e,trade_type,"general_contractor, framing_carpentry, finish_carpentry, concrete_masonry, electrical, plumbing, hvac, roofing, ironwork_steel, demolition, site_work, painting, flooring, landscaping, general_labor, architect, structural_engineer, civil_engineer, mep_engineer, fire_suppression, geotechnical, interior_design, landscape_architect, land_surveyor, home_inspector, code_compliance, other"
