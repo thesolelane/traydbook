@@ -4,6 +4,12 @@ import { supabaseAdmin, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } from './lib/cl
 import stripeRoutes from './routes/stripe.js'
 import teamRoutes from './routes/team.js'
 import adminRoutes from './routes/admin.js'
+import adminMonitorRoutes from './routes/admin-monitor.js'
+import adminUserSecurityRoutes from './routes/admin-users-security.js'
+import adminModerationRoutes from './routes/admin-moderation.js'
+import adminRepairRoutes from './routes/admin-repair.js'
+import adminRevokeRoutes from './routes/admin-revoke.js'
+import adminAiRoutes from './routes/admin-ai-command.js'
 import smsRoutes, { sendSmsAlert } from './routes/sms.js'
 import walletRoutes from './routes/wallet.js'
 import onboardingRoutes from './routes/onboarding.js'
@@ -41,6 +47,12 @@ app.use((req, res, next) => {
 
 app.use(teamRoutes)
 app.use(adminRoutes)
+app.use('/api/admin/monitor', adminMonitorRoutes)
+app.use('/api/admin/users/security', adminUserSecurityRoutes)
+app.use('/api/admin/moderation', adminModerationRoutes)
+app.use('/api/admin/repair', adminRepairRoutes)
+app.use('/api/admin/revoke', adminRevokeRoutes)
+app.use('/api/admin/ai', adminAiRoutes)
 app.use(simRoutes)
 app.use(smsRoutes)
 app.use(walletRoutes)

@@ -10,6 +10,11 @@ import {
   Shield,
   KeyRound,
   AlertTriangle,
+  ShieldAlert,
+  ClipboardList,
+  ScrollText,
+  LogOut,
+  Terminal,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { isSuperAdmin } from '../lib/roles'
@@ -22,6 +27,11 @@ import PaymentsSection from './admin/PaymentsSection'
 import DomainsSection from './admin/DomainsSection'
 import SecretsSection from './admin/SecretsSection'
 import ErrorLogSection from './admin/ErrorLogSection'
+import ThreatMonitorSection from './admin/ThreatMonitorSection'
+import ModerationQueueSection from './admin/ModerationQueueSection'
+import AuditLogSection from './admin/AuditLogSection'
+import SessionRevokeSection from './admin/SessionRevokeSection'
+import AiCommandSection from './admin/AiCommandSection'
 
 type Section =
   | 'overview'
@@ -33,6 +43,11 @@ type Section =
   | 'domains'
   | 'secrets'
   | 'errors'
+  | 'threats'
+  | 'moderation'
+  | 'audit'
+  | 'revoke'
+  | 'ai'
 
 type NavItem = { id: Section; label: string; icon: React.ReactNode; superOnly?: boolean }
 
@@ -51,6 +66,11 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: 'Security',
     items: [
+      { id: 'threats', label: 'Threat Monitor', icon: <ShieldAlert size={16} /> },
+      { id: 'moderation', label: 'Moderation Queue', icon: <ClipboardList size={16} /> },
+      { id: 'audit', label: 'Audit Log', icon: <ScrollText size={16} /> },
+      { id: 'revoke', label: 'Session Revoke', icon: <LogOut size={16} />, superOnly: true },
+      { id: 'ai', label: 'AI Command Bar', icon: <Terminal size={16} />, superOnly: true },
       { id: 'domains', label: 'Domain Status', icon: <Globe size={16} /> },
       { id: 'secrets', label: 'Secrets & Env', icon: <KeyRound size={16} /> },
       { id: 'controls', label: 'Platform Controls', icon: <Settings size={16} /> },
@@ -118,6 +138,7 @@ export default function Admin() {
             {isSuperAdminUser ? 'Super Admin' : 'Admin'}
           </div>
         </div>
+
         {NAV_GROUPS.map((group, gi) => (
           <div key={group.label} style={{ marginTop: gi === 0 ? 0 : 16 }}>
             <div
@@ -188,15 +209,20 @@ export default function Admin() {
           </p>
         </div>
 
-        {section === 'overview' && <OverviewSection authHeaders={authHeaders} />}
-        {section === 'users' && <UsersSection authHeaders={authHeaders} />}
-        {section === 'wallets' && <WalletsSection authHeaders={authHeaders} />}
-        {section === 'feed' && <FeedSection authHeaders={authHeaders} />}
-        {section === 'controls' && <ControlsSection />}
-        {section === 'payments' && <PaymentsSection authHeaders={authHeaders} />}
-        {section === 'domains' && <DomainsSection />}
-        {section === 'secrets' && <SecretsSection authHeaders={authHeaders} />}
-        {section === 'errors' && <ErrorLogSection authHeaders={authHeaders} />}
+        {section === 'overview'    && <OverviewSection authHeaders={authHeaders} />}
+        {section === 'users'       && <UsersSection authHeaders={authHeaders} />}
+        {section === 'wallets'     && <WalletsSection authHeaders={authHeaders} />}
+        {section === 'feed'        && <FeedSection authHeaders={authHeaders} />}
+        {section === 'controls'    && <ControlsSection />}
+        {section === 'payments'    && <PaymentsSection authHeaders={authHeaders} />}
+        {section === 'domains'     && <DomainsSection />}
+        {section === 'secrets'     && <SecretsSection authHeaders={authHeaders} />}
+        {section === 'errors'      && <ErrorLogSection authHeaders={authHeaders} />}
+        {section === 'threats'     && <ThreatMonitorSection authHeaders={authHeaders} />}
+        {section === 'moderation'  && <ModerationQueueSection authHeaders={authHeaders} />}
+        {section === 'audit'       && <AuditLogSection authHeaders={authHeaders} />}
+        {section === 'revoke'      && <SessionRevokeSection authHeaders={authHeaders} />}
+        {section === 'ai'          && <AiCommandSection authHeaders={authHeaders} />}
       </main>
     </div>
   )
