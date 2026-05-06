@@ -94,6 +94,7 @@ _Populate as you build_
 - **Simulation Environment**: The simulation script `scripts/simulate.mjs` is designed to run in a Coolify host environment and may not function as expected in a Replit development container due to network access restrictions.
 - **Admin Panel IP Whitelist**: Remember to configure `ADMIN_ALLOWED_IPS` for the admin panel; leaving it empty allows all IPs.
 - **Solana Wallet Setup**: New contractor signups are redirected to `/wallet-setup` before `/feed`.
+- **Sim Data Leftovers**: Previous simulation test runs (`scripts/simulate.mjs`) did not fully clean up after themselves — the database may contain leftover fake users, posts, bids, and messages from those runs. Before any production launch, do a manual cleanup pass in Supabase to remove sim-generated records (they typically have generated display names and handle patterns). Consider adding a dedicated cleanup/teardown function to the sim script.
 
 ## Pointers
 
