@@ -30,3 +30,9 @@ id = "AXJr9_wioEA8eFHtTrQ4l"
 uri = "file://traydbook-server-config.tar.gz"
 type = "unspecified"
 title = "TraydBook Server Config"
+
+[[outputs]]
+id = "Qksvg8y9ab1oP0wYDIbg7"
+uri = "file://supabase/migrations/admin_security_migration.txt"
+type = "text"
+title = "Admin Security Migration SQL"
