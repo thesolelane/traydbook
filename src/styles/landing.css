@@ -1221,4 +1221,7 @@
   .landing-features-grid {
     grid-template-columns: 1fr;
   }
+  .landing-credits-grid {
+    grid-template-columns: 1fr;
+  }
 }

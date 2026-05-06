@@ -681,7 +681,7 @@ export default function Landing() {
                   <div className="lcc-tagline">{bundle.tagline}</div>
                 </div>
                 <div className="lcc-welcome">
-                  🎁 50 credits free when you sign up
+                  🎁 Get started free — 50 credits included
                 </div>
                 <div className="lcc-actions">
                   <div className="lcc-actions-label">What you can do:</div>
