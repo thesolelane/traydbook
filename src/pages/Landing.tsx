@@ -639,7 +639,7 @@ export default function Landing() {
             <div className="lpfb-left">
               <span className="lpfb-icon">👷</span>
               <div>
-                <div className="lpfb-badge">Always Free</div>
+                <div className="lpfb-badge">Free</div>
                 <h3 className="lpfb-title">Contractors &amp; Tradespeople</h3>
                 <p className="lpfb-desc">
                   Trade accounts are permanently free. Post work, submit unlimited bids, message
