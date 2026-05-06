@@ -36,3 +36,9 @@ id = "Qksvg8y9ab1oP0wYDIbg7"
 uri = "file://supabase/migrations/admin_security_migration.txt"
 type = "text"
 title = "Admin Security Migration SQL"
+
+[[outputs]]
+id = "pjG2GA020ktIElFS_jfb9"
+uri = "file://supabase/migrations/protect_super_admin.txt"
+type = "text"
+title = "Protect Super Admin SQL — run in Supabase"

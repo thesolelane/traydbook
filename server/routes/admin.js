@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { supabaseAdmin } from '../lib/clients.js'
-import { requireAuth, requireSuperAdmin, requireAdminLevel, ALL_INVITE_ROLES } from '../lib/auth.js'
+import { requireAuth, requireSuperAdmin, requireAdminLevel, blockProtectedAdmin, ALL_INVITE_ROLES } from '../lib/auth.js'
 import { logError, getErrorLog, clearErrorLog } from '../lib/errorLog.js'
 import fs from 'fs'
 import path from 'path'
@@ -217,7 +217,7 @@ router.get('/api/admin/users', requireAuth, requireAdminLevel, async (req, res) 
   }
 })
 
-router.patch('/api/admin/user/:id/role', requireAuth, requireAdminLevel, async (req, res) => {
+router.patch('/api/admin/user/:id/role', requireAuth, requireAdminLevel, blockProtectedAdmin, async (req, res) => {
   const { id } = req.params
   const { role } = req.body ?? {}
   if (!role || !ALL_INVITE_ROLES.includes(role))
@@ -246,7 +246,7 @@ router.patch('/api/admin/user/:id/role', requireAuth, requireAdminLevel, async (
   res.json({ ok: true })
 })
 
-router.patch('/api/admin/user/:id/suspend', requireAuth, requireAdminLevel, async (req, res) => {
+router.patch('/api/admin/user/:id/suspend', requireAuth, requireAdminLevel, blockProtectedAdmin, async (req, res) => {
   const { id } = req.params
   const { suspend } = req.body ?? {}
 

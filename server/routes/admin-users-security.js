@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { supabaseAdmin } from '../lib/clients.js'
+import { blockProtectedAdmin } from '../lib/auth.js'
 
 const router = Router()
 
@@ -35,7 +36,7 @@ router.get('/:id', async (req, res) => {
 })
 
 // POST /api/admin/users/:id/ban
-router.post('/:id/ban', async (req, res) => {
+router.post('/:id/ban', blockProtectedAdmin, async (req, res) => {
   const { id } = req.params
   const { reason, duration = 'permanent' } = req.body
 
@@ -79,7 +80,7 @@ router.post('/:id/ban', async (req, res) => {
 })
 
 // POST /api/admin/users/:id/hold
-router.post('/:id/hold', async (req, res) => {
+router.post('/:id/hold', blockProtectedAdmin, async (req, res) => {
   const { id } = req.params
   const { reason, hold_until } = req.body
 
@@ -119,7 +120,7 @@ router.post('/:id/hold', async (req, res) => {
 })
 
 // POST /api/admin/users/:id/unban
-router.post('/:id/unban', async (req, res) => {
+router.post('/:id/unban', blockProtectedAdmin, async (req, res) => {
   const { id } = req.params
   const { reason } = req.body
 

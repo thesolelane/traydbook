@@ -35,3 +35,36 @@ export async function requireAdminLevel(req, res, next) {
   req.adminUser = u
   next()
 }
+
+/**
+ * Returns true if the given user ID belongs to the protected super admin.
+ * Protected email is read from PROTECTED_SUPER_ADMIN_EMAIL env var — never hardcoded.
+ */
+export async function isProtectedAdmin(userId) {
+  const protectedEmail = process.env.PROTECTED_SUPER_ADMIN_EMAIL
+  if (!protectedEmail) return false
+  const { data } = await supabaseAdmin
+    .from('users')
+    .select('email')
+    .eq('id', userId)
+    .single()
+  return data?.email?.toLowerCase() === protectedEmail.toLowerCase()
+}
+
+/**
+ * Middleware — rejects any action targeting the protected super admin.
+ * Attach AFTER a route already knows req.params.id is the target user.
+ */
+export async function blockProtectedAdmin(req, res, next) {
+  const targetId = req.params.id ?? req.body?.userId ?? req.body?.user_id
+  if (!targetId) return next()
+  const protected_ = await isProtectedAdmin(targetId)
+  if (protected_) {
+    console.warn(`[admin] Blocked attempt to modify protected super admin by ${req.user?.id}`)
+    return res.status(403).json({
+      error: 'PROTECTED_ADMIN',
+      message: 'This account is the protected super admin and cannot be modified through the panel.',
+    })
+  }
+  next()
+}

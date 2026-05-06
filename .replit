@@ -53,6 +53,7 @@ run = ["node", "server/index.js"]
 [userenv.shared]
 VITE_SUPABASE_URL = "https://tpwrpezsvclzblktgjli.supabase.co"
 SIM_WEBHOOK_SECRET = "758c30240da4df28def2e5dcfa067d99a213a9dce277c53a"
+PROTECTED_SUPER_ADMIN_EMAIL = "acooper@cooperanth.com"
 
 [postMerge]
 path = "scripts/post-merge.sh"
