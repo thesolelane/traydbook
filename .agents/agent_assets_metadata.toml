@@ -42,3 +42,9 @@ id = "pjG2GA020ktIElFS_jfb9"
 uri = "file://supabase/migrations/protect_super_admin.txt"
 type = "text"
 title = "Protect Super Admin SQL — run in Supabase"
+
+[[outputs]]
+id = "2QFyTRujpJteW5esQgJia"
+uri = "file://protected-admin-snippet.zip"
+type = "unspecified"
+title = "Protected Super Admin — reusable snippet"
