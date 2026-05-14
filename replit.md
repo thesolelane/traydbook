@@ -87,6 +87,17 @@ Stripe products need to be seeded using `scripts/seed-stripe-products.js`.
 
 _Populate as you build_
 
+## Planned Platform Features (core — not AI-agent specific)
+
+These apply to all contractors regardless of AI subscription tier:
+
+- **Trust Score** — calculated from profile data: license verification, badges earned, photos uploaded, response rate, review scores. Drives queue position in lead distribution.
+- **Queue Position** — lead distribution logic ranks contractors by Trust Score. Higher score = earlier access to leads in their trade/area.
+- **Skip / Pass UI** — contractor can pass on a lead. Platform records the skip (affects analytics, not punished but tracked).
+- **Lead Bank Balance** — per-contractor credit/lead balance tracked in the database. Separate from the general credit system.
+- **Profile Completeness Dashboard** — shows contractors exactly what fields are missing and what each unlocks (e.g. "Add license number → unlock Verified badge → move up 12 positions in queue").
+- **"You Missed X Leads" Nudge** — shown to all contractors including free users. Displays how many leads passed through their trade/area that they were ineligible for, as an incentive to complete their profile and/or upgrade.
+
 ## Gotchas
 
 - **Live Stripe Keys**: Avoid triggering Stripe checkout flows during development as live keys are in use and will charge real cards.
