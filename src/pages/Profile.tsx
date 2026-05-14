@@ -35,6 +35,7 @@ import {
   SocialLinks,
 } from '../types/profile'
 import VerifiedBadge from '../components/VerifiedBadge'
+import TrustScoreBadge from '../components/TrustScoreBadge'
 import { safeExternalUrl } from '../lib/urlUtils'
 
 function timeAgo(iso: string): string {
@@ -910,6 +911,9 @@ export default function Profile() {
               </h1>
               {isContractor && cp && cp.badge_tier && (
                 <VerifiedBadge tier={cp.badge_tier} size="md" />
+              )}
+              {isContractor && user && (
+                <TrustScoreBadge userId={user.id} isOwn={isOwn} size="sm" />
               )}
               {isContractor && cp && (
                 <span className="badge badge-brand" style={{ fontSize: 12 }}>
