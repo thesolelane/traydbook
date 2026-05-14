@@ -728,8 +728,8 @@ export default function Landing() {
           <Link to="/signup">Sign Up</Link>
           <a href="#">About</a>
           <a href="#">Blog</a>
-          <a href="#">Privacy</a>
-          <a href="#">Terms</a>
+          <Link to="/privacy">Privacy</Link>
+          <Link to="/terms">Terms</Link>
         </div>
         <span className="landing-footer-copy">© 2026 TraydBook</span>
       </footer>

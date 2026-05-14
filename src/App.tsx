@@ -32,6 +32,8 @@ import ResetPassword from './pages/ResetPassword'
 import JoinDelegate from './pages/JoinDelegate'
 import StaffInvite from './pages/StaffInvite'
 import WalletSetup from './pages/WalletSetup'
+import Privacy from './pages/Privacy'
+import Terms from './pages/Terms'
 
 function SubdomainRedirect() {
   const navigate = useNavigate()
@@ -338,6 +340,10 @@ export default function App() {
               </AdminRoute>
             }
           />
+
+          {/* Legal pages — public, no auth required */}
+          <Route path="/privacy" element={<AppLayout><Privacy /></AppLayout>} />
+          <Route path="/terms" element={<AppLayout><Terms /></AppLayout>} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
