@@ -48,3 +48,15 @@ id = "2QFyTRujpJteW5esQgJia"
 uri = "file://protected-admin-snippet.zip"
 type = "unspecified"
 title = "Protected Super Admin — reusable snippet"
+
+[[outputs]]
+id = "46jdmpn63FWYMseNBD46I"
+uri = "file://docs/openapi.yaml"
+type = "unspecified"
+title = "TraydBook OpenAPI Spec"
+
+[[outputs]]
+id = "R1D1TektvD0vREZiTiKyn"
+uri = "file://docs/agent-api-gap-analysis.md"
+type = "text"
+title = "Agent API Gap Analysis"

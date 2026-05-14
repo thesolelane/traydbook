@@ -1,0 +1,578 @@
+openapi: 3.0.3
+info:
+  title: TraydBook API
+  description: |
+    REST API for the TraydBook construction professional network.
+    All protected endpoints require a Bearer JWT token issued by Supabase Auth.
+    Base URL: https://app.traydbook.com/api
+  version: 1.0.0
+  contact:
+    email: dev@traydbook.com
+
+servers:
+  - url: https://app.traydbook.com/api
+    description: Production
+  - url: http://localhost:3001/api
+    description: Local development
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Supabase JWT access token
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        display_name: { type: string }
+        handle: { type: string }
+        account_type:
+          type: string
+          enum: [contractor, project_owner, design_professional, real_estate_agent, homeowner, admin]
+        credit_balance: { type: integer }
+        account_status:
+          type: string
+          enum: [active, frozen, deleted]
+        created_at: { type: string, format: date-time }
+
+    ContractorProfile:
+      type: object
+      properties:
+        user_id: { type: string, format: uuid }
+        trade: { type: string }
+        license_number: { type: string }
+        company_name: { type: string }
+        service_areas: { type: array, items: { type: string } }
+        visible_to_owners: { type: boolean }
+        verified_badges:
+          type: array
+          items:
+            type: string
+            enum: [pro_verified, licensed, vouched]
+
+    Lead:
+      type: object
+      description: Not yet built — planned feature
+      properties:
+        id: { type: string, format: uuid }
+        contractor_id: { type: string, format: uuid }
+        status:
+          type: string
+          enum: [pending, claimed, passed, expired]
+        trade: { type: string }
+        location: { type: string }
+        description: { type: string }
+        created_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+
+    Post:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        user_id: { type: string, format: uuid }
+        post_type:
+          type: string
+          enum: [project_update, bid_post, job_post, trade_tip, safety_alert, referral]
+        content: { type: string }
+        created_at: { type: string, format: date-time }
+
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+
+security:
+  - BearerAuth: []
+
+paths:
+
+  # ─── SESSION ──────────────────────────────────────────────────────
+  /session-status:
+    get:
+      summary: Get current session and profile
+      tags: [Auth]
+      responses:
+        '200':
+          description: Active session info
+        '401':
+          description: Unauthorized
+
+  # ─── ONBOARDING ───────────────────────────────────────────────────
+  /onboarding/complete:
+    post:
+      summary: Complete onboarding for new OAuth users
+      tags: [Onboarding]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                display_name: { type: string }
+                handle: { type: string }
+                account_type: { type: string }
+                trade: { type: string }
+      responses:
+        '200':
+          description: Onboarding complete
+        '400':
+          description: Validation error
+
+  # ─── POSTS ────────────────────────────────────────────────────────
+  /posts:
+    post:
+      summary: Create a new post
+      tags: [Posts]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                post_type: { type: string }
+                content: { type: string }
+      responses:
+        '201':
+          description: Post created
+        '400':
+          description: Validation error
+
+  /post-media:
+    post:
+      summary: Upload media files for a post (max 4)
+      tags: [Posts]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '200':
+          description: Upload URLs returned
+
+  # ─── TEAM ─────────────────────────────────────────────────────────
+  /team:
+    get:
+      summary: Get team members for current account
+      tags: [Team]
+      responses:
+        '200':
+          description: List of team members
+
+  /team/invite:
+    post:
+      summary: Invite a team member
+      tags: [Team]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string }
+                role: { type: string, enum: [admin, contributor] }
+      responses:
+        '200':
+          description: Invite sent
+
+  /team/revoke:
+    post:
+      summary: Revoke a team member's access
+      tags: [Team]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                member_id: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Access revoked
+
+  # ─── SMS ──────────────────────────────────────────────────────────
+  /sms/status:
+    get:
+      summary: Get SMS subscription status for current user
+      tags: [SMS]
+      responses:
+        '200':
+          description: SMS subscription info
+
+  /sms/create-subscription:
+    post:
+      summary: Subscribe to SMS alerts
+      tags: [SMS]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                price_id: { type: string }
+                phone_number: { type: string }
+      responses:
+        '200':
+          description: Subscription created
+
+  /sms/cancel-subscription:
+    post:
+      summary: Cancel SMS subscription
+      tags: [SMS]
+      responses:
+        '200':
+          description: Subscription cancelled
+
+  /sms/send-verification:
+    post:
+      summary: Send SMS verification code
+      tags: [SMS]
+      responses:
+        '200':
+          description: Code sent
+
+  /sms/verify:
+    post:
+      summary: Verify SMS code
+      tags: [SMS]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code: { type: string }
+      responses:
+        '200':
+          description: Verified
+
+  /sms/toggle-alerts:
+    post:
+      summary: Enable or disable SMS message alerts
+      tags: [SMS]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                enabled: { type: boolean }
+      responses:
+        '200':
+          description: Updated
+
+  # ─── WALLET ───────────────────────────────────────────────────────
+  /wallet/status:
+    get:
+      summary: Get Solana wallet status
+      tags: [Wallet]
+      responses:
+        '200':
+          description: Wallet info
+
+  /wallet/save-pubkey:
+    post:
+      summary: Save contractor's Solana public key
+      tags: [Wallet]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                public_key: { type: string }
+      responses:
+        '200':
+          description: Saved
+
+  /wallet/remove:
+    post:
+      summary: Remove saved wallet
+      tags: [Wallet]
+      responses:
+        '200':
+          description: Removed
+
+  /wallet/send-reward:
+    post:
+      summary: Send SOL reward to contractor wallet
+      tags: [Wallet]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id: { type: string, format: uuid }
+                amount_sol: { type: number }
+      responses:
+        '200':
+          description: Reward sent
+
+  # ─── BILLING ──────────────────────────────────────────────────────
+  /create-checkout-session:
+    post:
+      summary: Create a Stripe checkout session for credit purchase
+      tags: [Billing]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                price_id: { type: string }
+      responses:
+        '200':
+          description: Checkout URL returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url: { type: string }
+
+  /webhooks/stripe:
+    post:
+      summary: Stripe webhook receiver
+      tags: [Billing]
+      security: []
+      responses:
+        '200':
+          description: Acknowledged
+
+  # ─── ADMIN (admin/admin_2 access only) ────────────────────────────
+  /admin/stats:
+    get:
+      summary: Platform overview stats
+      tags: [Admin]
+      responses:
+        '200':
+          description: Stats object
+
+  /admin/users:
+    get:
+      summary: List users with filters
+      tags: [Admin]
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string }
+        - in: query
+          name: trade
+          schema: { type: string }
+        - in: query
+          name: sort_by
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 50 }
+      responses:
+        '200':
+          description: User list
+
+  /admin/user/{id}/role:
+    patch:
+      summary: Change a user's role
+      tags: [Admin]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role: { type: string }
+      responses:
+        '200':
+          description: Role updated
+        '403':
+          description: Cannot modify protected admin
+
+  /admin/user/{id}/suspend:
+    patch:
+      summary: Suspend or unsuspend a user
+      tags: [Admin]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                suspend: { type: boolean }
+      responses:
+        '200':
+          description: Status updated
+
+  /admin/credits:
+    post:
+      summary: Adjust a user's credit balance
+      tags: [Admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id: { type: string, format: uuid }
+                amount: { type: integer }
+                reason: { type: string }
+      responses:
+        '200':
+          description: Credits adjusted
+
+  /admin/posts:
+    get:
+      summary: List all posts (with moderation filters)
+      tags: [Admin]
+      responses:
+        '200':
+          description: Post list
+
+  /admin/flagged-posts:
+    get:
+      summary: List flagged posts
+      tags: [Admin]
+      responses:
+        '200':
+          description: Flagged post list
+
+  /admin/post/{id}/flag:
+    patch:
+      summary: Flag or unflag a post
+      tags: [Admin]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Updated
+
+  /admin/post/{id}:
+    delete:
+      summary: Delete a post
+      tags: [Admin]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Deleted
+
+  /admin/users/{id}/ban:
+    post:
+      summary: Ban a user
+      tags: [Admin]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: string, minLength: 10 }
+                duration: { type: string, enum: [permanent, 7d, 30d, 90d] }
+      responses:
+        '200':
+          description: Banned
+
+  /admin/users/{id}/hold:
+    post:
+      summary: Place a user on hold
+      tags: [Admin]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: string, minLength: 10 }
+                hold_until: { type: string, format: date-time }
+      responses:
+        '200':
+          description: On hold
+
+  /admin/users/{id}/unban:
+    post:
+      summary: Unban a user
+      tags: [Admin]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: { type: string }
+      responses:
+        '200':
+          description: Unbanned
+
+  /admin/wallets:
+    get:
+      summary: List contractor wallets
+      tags: [Admin]
+      responses:
+        '200':
+          description: Wallet list
+
+  /admin/purchases:
+    get:
+      summary: List credit purchases
+      tags: [Admin]
+      responses:
+        '200':
+          description: Purchase list
