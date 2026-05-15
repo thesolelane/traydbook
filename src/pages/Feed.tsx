@@ -7,6 +7,7 @@ import PostCard, { AuthorAvatar } from '../components/PostCard'
 import FeedFilterBar from '../components/FeedFilterBar'
 import ComposeModal from '../components/ComposeModal'
 import { FeedPost, FilterType, SidebarUser, POST_TYPE_BADGE } from '../types/feed'
+import MissedLeadsNudge from '../components/MissedLeadsNudge'
 import '../styles/feed.css'
 
 function compositeScore(post: FeedPost, connIds: Set<string>): number {
@@ -593,6 +594,9 @@ export default function Feed() {
         </aside>
 
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Missed leads nudge — contractors only */}
+          {isContractor && <MissedLeadsNudge />}
+
           {/* For You / Following toggle */}
           <div
             style={{

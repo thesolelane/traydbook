@@ -22,6 +22,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { RFQ, MyBid } from '../types/bids'
 import { TRADE_OPTIONS } from '../data/trades'
+import MissedLeadsNudge from '../components/MissedLeadsNudge'
 
 type BidTab = 'open' | 'mybids' | 'awarded' | 'archived'
 
@@ -753,6 +754,9 @@ export default function Bids() {
           )}
         </Link>
       </div>
+
+      {/* Missed leads nudge — contractors only */}
+      {isContractor && <MissedLeadsNudge />}
 
       {/* Stats strip */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
