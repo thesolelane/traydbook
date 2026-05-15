@@ -37,6 +37,7 @@ import {
 import VerifiedBadge from '../components/VerifiedBadge'
 import TrustScoreBadge from '../components/TrustScoreBadge'
 import QueuePositionBadge from '../components/QueuePositionBadge'
+import LeadBankBalance from '../components/LeadBankBalance'
 import { safeExternalUrl } from '../lib/urlUtils'
 
 function timeAgo(iso: string): string {
@@ -936,10 +937,11 @@ export default function Profile() {
               </p>
             )}
 
-            {/* Queue position — own contractor profile only */}
+            {/* Queue position + Lead Bank — own contractor profile only */}
             {isOwn && isContractor && user && (
-              <div style={{ marginTop: 12, marginBottom: 4 }}>
+              <div style={{ marginTop: 12, marginBottom: 4, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                 <QueuePositionBadge userId={user.id} />
+                <LeadBankBalance userId={user.id} />
               </div>
             )}
 
