@@ -36,6 +36,7 @@ import {
 } from '../types/profile'
 import VerifiedBadge from '../components/VerifiedBadge'
 import TrustScoreBadge from '../components/TrustScoreBadge'
+import QueuePositionBadge from '../components/QueuePositionBadge'
 import { safeExternalUrl } from '../lib/urlUtils'
 
 function timeAgo(iso: string): string {
@@ -933,6 +934,13 @@ export default function Profile() {
               <p style={{ fontSize: 14, color: 'var(--color-text-muted)', marginTop: 2 }}>
                 {cp.business_name}
               </p>
+            )}
+
+            {/* Queue position — own contractor profile only */}
+            {isOwn && isContractor && user && (
+              <div style={{ marginTop: 12, marginBottom: 4 }}>
+                <QueuePositionBadge userId={user.id} />
+              </div>
             )}
 
             <div

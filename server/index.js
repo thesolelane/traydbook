@@ -17,6 +17,7 @@ import uploadRoutes from './routes/upload.js'
 import postRoutes from './routes/posts.js'
 import simRoutes from './routes/sim.js'
 import trustScoreRoutes from './routes/trust-score.js'
+import queuePositionRoutes from './routes/queue-position.js'
 import { logError, loadLogFromDisk } from './lib/errorLog.js'
 
 const app = express()
@@ -61,6 +62,7 @@ app.use(onboardingRoutes)
 app.use('/api/upload', uploadRoutes)
 app.use('/api/posts', postRoutes)
 app.use(trustScoreRoutes)
+app.use(queuePositionRoutes)
 
 if (process.env.NODE_ENV === 'production') {
   const path = await import('path')
