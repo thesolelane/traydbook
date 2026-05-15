@@ -38,6 +38,7 @@ import VerifiedBadge from '../components/VerifiedBadge'
 import TrustScoreBadge from '../components/TrustScoreBadge'
 import QueuePositionBadge from '../components/QueuePositionBadge'
 import LeadBankBalance from '../components/LeadBankBalance'
+import ProfileCompletenessCard from '../components/ProfileCompletenessCard'
 import { safeExternalUrl } from '../lib/urlUtils'
 
 function timeAgo(iso: string): string {
@@ -259,7 +260,7 @@ export default function Profile() {
     const { data: userData, error } = await supabase
       .from('users')
       .select(
-        'id, display_name, handle, avatar_url, account_type, location_city, location_state, location_zip, credit_balance, social_links, created_at, is_delegate'
+        'id, display_name, handle, avatar_url, account_type, location_city, location_state, location_zip, credit_balance, social_links, created_at, is_delegate, phone_number, phone_verified'
       )
       .eq('handle', handle)
       .is('deleted_at', null)
@@ -1703,6 +1704,15 @@ export default function Profile() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {/* Profile Completeness — own contractor view only */}
+            {isOwn && isContractor && user && cp && (
+              <ProfileCompletenessCard
+                user={user}
+                cp={cp}
+                credentials={credentials}
+              />
+            )}
+
             {isContractor && cp && (
               <>
                 <div className="card" style={{ padding: '14px 16px' }}>

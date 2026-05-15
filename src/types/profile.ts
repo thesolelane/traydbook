@@ -19,6 +19,8 @@ export interface ProfileUser {
   credit_balance: number
   social_links: SocialLinks | null
   created_at: string
+  phone_number?: string | null
+  phone_verified?: boolean | null
 }
 
 export type BadgeTier = 'pro_verified' | 'licensed' | 'vouched' | null
