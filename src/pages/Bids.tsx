@@ -15,6 +15,8 @@ import {
   Archive,
   FileText,
   TrendingUp,
+  XCircle,
+  RotateCcw,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -217,7 +219,17 @@ function BidFaceStack({ count }: { count: number }) {
   )
 }
 
-function RFQCard({ rfq, isContractor }: { rfq: RFQ; isContractor: boolean }) {
+function RFQCard({
+  rfq,
+  isContractor,
+  isPassed,
+  onPass,
+}: {
+  rfq: RFQ
+  isContractor: boolean
+  isPassed?: boolean
+  onPass?: (id: string, undo: boolean) => void
+}) {
   const navigate = useNavigate()
   return (
     <div
@@ -225,8 +237,9 @@ function RFQCard({ rfq, isContractor }: { rfq: RFQ; isContractor: boolean }) {
       style={{
         padding: '18px 20px',
         cursor: 'pointer',
-        transition: 'transform 0.1s',
+        transition: 'transform 0.1s, opacity 0.2s',
         borderLeft: rfq.is_boosted ? '3px solid var(--color-brand)' : undefined,
+        opacity: isPassed ? 0.45 : 1,
       }}
       onClick={() => navigate(`/bids/${rfq.id}`)}
     >
@@ -362,7 +375,29 @@ function RFQCard({ rfq, isContractor }: { rfq: RFQ; isContractor: boolean }) {
           <BidFaceStack count={rfq.bid_count} />
 
           <div style={{ display: 'flex', gap: 6 }}>
-            {isContractor && (
+            {isContractor && onPass && (
+              <button
+                onClick={e => { e.stopPropagation(); onPass(rfq.id, !!isPassed) }}
+                className="btn btn-ghost"
+                style={{
+                  fontSize: 12,
+                  padding: '6px 10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  color: isPassed ? 'var(--color-text-muted)' : '#DC2626',
+                  border: isPassed
+                    ? '1.5px solid var(--color-border)'
+                    : '1.5px solid #DC262640',
+                }}
+                title={isPassed ? 'Undo pass' : 'Pass on this RFQ'}
+              >
+                {isPassed
+                  ? <><RotateCcw size={11} /> Undo</>
+                  : <><XCircle size={11} /> Pass</>}
+              </button>
+            )}
+            {isContractor && !isPassed && (
               <Link
                 to={`/bids/${rfq.id}/submit`}
                 onClick={e => e.stopPropagation()}
@@ -424,13 +459,48 @@ export default function Bids() {
   const [statClosingCount, setStatClosingCount] = useState(0)
   const [statTotalBudget, setStatTotalBudget] = useState(0)
 
+  const [passedRfqIds, setPassedRfqIds] = useState<Set<string>>(new Set())
+
   useEffect(() => {
     void loadOpenRfqs()
     void loadStats()
     if (profile && isContractor) {
       void loadPendingCount()
+      void loadPasses()
     }
   }, [profile])
+
+  async function loadPasses() {
+    const { data: { session } } = await supabase.auth.getSession()
+    const res = await fetch('/api/passes/rfq', {
+      headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+    })
+    if (res.ok) {
+      const { passed } = await res.json()
+      setPassedRfqIds(new Set(passed as string[]))
+    }
+  }
+
+  async function handlePass(rfqId: string, undo: boolean) {
+    const { data: { session } } = await supabase.auth.getSession()
+    const method = undo ? 'DELETE' : 'POST'
+    const res = await fetch('/api/pass', {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+      },
+      body: JSON.stringify({ target_type: 'rfq', target_id: rfqId }),
+    })
+    if (res.ok) {
+      setPassedRfqIds(prev => {
+        const next = new Set(prev)
+        if (undo) next.delete(rfqId)
+        else next.add(rfqId)
+        return next
+      })
+    }
+  }
 
   useEffect(() => {
     if (activeTab === 'mybids' && myBids.length === 0 && !myBidsLoading) void loadMyBids()
@@ -875,7 +945,13 @@ export default function Bids() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {filteredOpen.map(rfq => (
-                <RFQCard key={rfq.id} rfq={rfq} isContractor={isContractor} />
+                <RFQCard
+                  key={rfq.id}
+                  rfq={rfq}
+                  isContractor={isContractor}
+                  isPassed={passedRfqIds.has(rfq.id)}
+                  onPass={isContractor ? handlePass : undefined}
+                />
               ))}
             </div>
           )}
