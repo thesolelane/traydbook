@@ -13,6 +13,7 @@ import {
   KeyRound,
   AlertTriangle,
   LogOut,
+  HardHat,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { AdminAuthProvider } from '../context/AuthContext'
@@ -25,6 +26,7 @@ import PaymentsSection from '@main/pages/admin/PaymentsSection'
 import DomainsSection from '@main/pages/admin/DomainsSection'
 import SecretsSection from '@main/pages/admin/SecretsSection'
 import ErrorLogSection from '@main/pages/admin/ErrorLogSection'
+import ContractorsSection from '@main/pages/admin/ContractorsSection'
 
 const SUPABASE_ENV = (import.meta.env.VITE_SUPABASE_ENV as string) || 'production'
 const isBeta = SUPABASE_ENV === 'beta'
@@ -39,6 +41,7 @@ type Section =
   | 'domains'
   | 'secrets'
   | 'errors'
+  | 'contractors'
 
 const NAV_GROUPS: { label: string; items: { id: Section; label: string; icon: React.ReactNode }[] }[] = [
   {
@@ -47,6 +50,7 @@ const NAV_GROUPS: { label: string; items: { id: Section; label: string; icon: Re
       { id: 'overview', label: 'Analytics Overview', icon: <BarChart2 size={16} /> },
       { id: 'users', label: 'User Management', icon: <Users size={16} /> },
       { id: 'wallets', label: 'Wallet & Credits', icon: <Wallet size={16} /> },
+      { id: 'contractors', label: 'Contractors', icon: <HardHat size={16} /> },
       { id: 'feed', label: 'Feed Moderation', icon: <MessageSquare size={16} /> },
       { id: 'payments', label: 'Stripe & Payments', icon: <CreditCard size={16} /> },
       { id: 'errors', label: 'Error Log', icon: <AlertTriangle size={16} /> },
@@ -270,6 +274,7 @@ export default function AdminPanel({ session }: Props) {
           {section === 'domains' && <DomainsSection />}
           {section === 'secrets' && <SecretsSection authHeaders={authHeaders} />}
           {section === 'errors' && <ErrorLogSection authHeaders={authHeaders} />}
+          {section === 'contractors' && <ContractorsSection authHeaders={authHeaders} />}
         </main>
       </div>
     </AdminAuthProvider>

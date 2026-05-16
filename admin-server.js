@@ -17,6 +17,7 @@ import moderationRoutes from './server/routes/admin-moderation.js'
 import repairRoutes from './server/routes/admin-repair.js'
 import revokeRoutes from './server/routes/admin-revoke.js'
 import aiCommandRoutes from './server/routes/admin-ai-command.js'
+import contractorsRoutes from './server/routes/admin-contractors.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -94,6 +95,9 @@ app.use('/api/admin/revoke', revokeRoutes)
 
 // ── Security: AI Command Bar (BOB/OpenAI) ────────────────────────────────────
 app.use('/api/admin/ai', aiCommandRoutes)
+
+// ── Contractor Trust Score / Lead Bank ───────────────────────────────────────
+app.use(contractorsRoutes)
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/api/admin-health', (_req, res) =>
