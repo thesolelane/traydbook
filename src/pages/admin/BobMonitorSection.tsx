@@ -25,10 +25,6 @@ interface BobControl {
   max_leads_per_cycle: number
 }
 
-interface LeadStat {
-  status: string
-  count: number
-}
 
 const DISMISSED_KEY = 'bob_suggestions_dismissed'
 
@@ -105,7 +101,6 @@ export default function BobMonitorSection({ authHeaders }: SectionProps) {
   const [suggestions, setSuggestions] = useState<AgentLog[]>([])
   const [dismissed, setDismissed] = useState<Set<string>>(loadDismissed)
   const [controls, setControls] = useState<BobControl | null>(null)
-  const [leadStats, setLeadStats] = useState<LeadStat[]>([])
   const [loading, setLoading] = useState(true)
   const [controlLoading, setControlLoading] = useState(false)
   const [err, setErr] = useState('')
@@ -123,10 +118,9 @@ export default function BobMonitorSection({ authHeaders }: SectionProps) {
       if (actionFilter) params.set('action', actionFilter)
       if (statusFilter) params.set('status', statusFilter)
 
-      const [logsRes, controlsRes, statsRes, suggestionsRes] = await Promise.all([
+      const [logsRes, controlsRes, suggestionsRes] = await Promise.all([
         fetch(`/api/admin/bob/logs?${params}`, { headers: authHeaders() }),
         fetch('/api/admin/bob/control', { headers: authHeaders() }),
-        fetch('/api/admin/bob/lead-stats', { headers: authHeaders() }),
         fetch('/api/admin/bob/logs?action=panel.suggestion&limit=20', { headers: authHeaders() }),
       ])
       if (logsRes.ok) setLogs((await logsRes.json()).logs ?? [])
@@ -136,7 +130,6 @@ export default function BobMonitorSection({ authHeaders }: SectionProps) {
         setProviderOverride(c.ai_provider_override ?? '')
         setMaxLeads(String(c.max_leads_per_cycle))
       }
-      if (statsRes.ok) setLeadStats((await statsRes.json()).stats ?? [])
       if (suggestionsRes.ok) setSuggestions((await suggestionsRes.json()).logs ?? [])
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Failed to load')
