@@ -33,6 +33,8 @@ Stripe products need to be seeded using `scripts/seed-stripe-products.js`.
 - `PAGERDUTY_KEY` (optional — CRITICAL alert paging)
 - `BOB_ENDPOINT` (optional — Ollama endpoint for AI command bar, e.g. `http://bob:11434`)
 - `BOB_MODEL` (optional — Ollama model name, default `llama3`)
+- `BOB_AGENT_ENDPOINT` (optional — Bob's own HTTP server URL, e.g. `https://bob.traydbook.com`; enables push commands from admin)
+- `ADMIN_TO_BOB_TOKEN` (required if BOB_AGENT_ENDPOINT set — shared secret; admin includes as `X-Admin-Token` header, Bob verifies it to accept only admin commands)
 - `ENABLE_KEY_ROTATION` (`true` to activate 10-minute key rotation)
 - `SOLANA_TREASURY_PRIVATE_KEY` (for admin rewards)
 - `SIM_WEBHOOK_SECRET` (for internal simulation webhook)

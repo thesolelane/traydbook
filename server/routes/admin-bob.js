@@ -1,11 +1,36 @@
 /**
  * Admin routes for Bob monitoring and control
- * Read agent logs, adjust control flags, view lead stats
+ * Read agent logs, adjust control flags, view lead stats.
+ *
+ * When BOB_AGENT_ENDPOINT is set, write-commands are ALSO pushed directly to
+ * Bob's server via X-Admin-Token so Bob gets instant notification instead of
+ * waiting for his next poll cycle.
  */
 import { Router } from 'express'
 import { supabaseAdmin } from '../lib/clients.js'
 
 const router = Router()
+
+// ── Helper: push a command directly to Bob's server (fire-and-forget) ─────────
+async function pushToBob(path, body = {}) {
+  const endpoint = process.env.BOB_AGENT_ENDPOINT
+  const token    = process.env.ADMIN_TO_BOB_TOKEN
+  if (!endpoint || !token) return   // not configured — Bob will pick it up on next poll
+
+  try {
+    await fetch(`${endpoint.replace(/\/$/, '')}${path}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Admin-Token': token,
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(5000),
+    })
+  } catch {
+    // Non-fatal — DB is source of truth, Bob will sync on next poll
+  }
+}
 
 // GET /api/admin/bob/logs
 router.get('/logs', async (req, res) => {
@@ -62,6 +87,10 @@ router.patch('/control', async (req, res) => {
     .eq('key', key)
 
   if (error) return res.status(500).json({ error: error.message })
+
+  // Push instantly to Bob if his endpoint is configured
+  void pushToBob('/admin/control', { key, value })
+
   res.json({ ok: true, key, value })
 })
 
