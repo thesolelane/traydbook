@@ -14,6 +14,12 @@ import {
   AlertTriangle,
   LogOut,
   HardHat,
+  Bot,
+  ScrollText,
+  ShieldAlert,
+  LogIn,
+  Flag,
+  Terminal,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { AdminAuthProvider } from '../context/AuthContext'
@@ -27,6 +33,12 @@ import DomainsSection from '@main/pages/admin/DomainsSection'
 import SecretsSection from '@main/pages/admin/SecretsSection'
 import ErrorLogSection from '@main/pages/admin/ErrorLogSection'
 import ContractorsSection from '@main/pages/admin/ContractorsSection'
+import AiCommandSection from '@main/pages/admin/AiCommandSection'
+import AuditLogSection from '@main/pages/admin/AuditLogSection'
+import ThreatMonitorSection from '@main/pages/admin/ThreatMonitorSection'
+import SessionRevokeSection from '@main/pages/admin/SessionRevokeSection'
+import ModerationQueueSection from '@main/pages/admin/ModerationQueueSection'
+import BobMonitorSection from '@main/pages/admin/BobMonitorSection'
 
 const SUPABASE_ENV = (import.meta.env.VITE_SUPABASE_ENV as string) || 'production'
 const isBeta = SUPABASE_ENV === 'beta'
@@ -35,33 +47,50 @@ type Section =
   | 'overview'
   | 'users'
   | 'wallets'
+  | 'contractors'
   | 'feed'
-  | 'controls'
   | 'payments'
+  | 'errors'
+  | 'bob-monitor'
+  | 'moderation-queue'
+  | 'session-revoke'
+  | 'ai-command'
+  | 'threat-monitor'
+  | 'audit-log'
   | 'domains'
   | 'secrets'
-  | 'errors'
-  | 'contractors'
+  | 'controls'
 
 const NAV_GROUPS: { label: string; items: { id: Section; label: string; icon: React.ReactNode }[] }[] = [
   {
     label: 'Business',
     items: [
-      { id: 'overview', label: 'Analytics Overview', icon: <BarChart2 size={16} /> },
-      { id: 'users', label: 'User Management', icon: <Users size={16} /> },
-      { id: 'wallets', label: 'Wallet & Credits', icon: <Wallet size={16} /> },
-      { id: 'contractors', label: 'Contractors', icon: <HardHat size={16} /> },
-      { id: 'feed', label: 'Feed Moderation', icon: <MessageSquare size={16} /> },
-      { id: 'payments', label: 'Stripe & Payments', icon: <CreditCard size={16} /> },
-      { id: 'errors', label: 'Error Log', icon: <AlertTriangle size={16} /> },
+      { id: 'overview',    label: 'Analytics Overview',  icon: <BarChart2 size={16} /> },
+      { id: 'users',       label: 'User Management',     icon: <Users size={16} /> },
+      { id: 'wallets',     label: 'Wallet & Credits',    icon: <Wallet size={16} /> },
+      { id: 'contractors', label: 'Contractors',         icon: <HardHat size={16} /> },
+      { id: 'feed',        label: 'Feed Moderation',     icon: <MessageSquare size={16} /> },
+      { id: 'payments',    label: 'Stripe & Payments',   icon: <CreditCard size={16} /> },
+      { id: 'errors',      label: 'Error Log',           icon: <AlertTriangle size={16} /> },
+    ],
+  },
+  {
+    label: 'Agent / Bob',
+    items: [
+      { id: 'bob-monitor',      label: 'Bob Monitor',       icon: <Bot size={16} /> },
+      { id: 'moderation-queue', label: 'Moderation Queue',  icon: <Flag size={16} /> },
+      { id: 'session-revoke',   label: 'Session Revoke',    icon: <LogIn size={16} /> },
+      { id: 'ai-command',       label: 'AI Command Bar',    icon: <Terminal size={16} /> },
     ],
   },
   {
     label: 'Security',
     items: [
-      { id: 'domains', label: 'Domain Status', icon: <Globe size={16} /> },
-      { id: 'secrets', label: 'Secrets & Env', icon: <KeyRound size={16} /> },
-      { id: 'controls', label: 'Platform Controls', icon: <Settings size={16} /> },
+      { id: 'threat-monitor', label: 'Threat Monitor',   icon: <ShieldAlert size={16} /> },
+      { id: 'audit-log',      label: 'Audit Log',        icon: <ScrollText size={16} /> },
+      { id: 'domains',        label: 'Domain Status',    icon: <Globe size={16} /> },
+      { id: 'secrets',        label: 'Secrets & Env',    icon: <KeyRound size={16} /> },
+      { id: 'controls',       label: 'Platform Controls',icon: <Settings size={16} /> },
     ],
   },
 ]
@@ -211,9 +240,11 @@ export default function AdminPanel({ session }: Props) {
                         ? section === item.id
                           ? '#e05252'
                           : '#e05252cc'
-                        : section === item.id
-                          ? 'var(--color-brand)'
-                          : 'var(--color-text-muted)',
+                        : item.id === 'threat-monitor'
+                          ? section === item.id ? '#e07c52' : '#e07c52cc'
+                          : section === item.id
+                            ? 'var(--color-brand)'
+                            : 'var(--color-text-muted)',
                     transition: 'all 0.15s',
                   }}
                 >
@@ -265,16 +296,22 @@ export default function AdminPanel({ session }: Props) {
             </p>
           </div>
 
-          {section === 'overview' && <OverviewSection authHeaders={authHeaders} />}
-          {section === 'users' && <UsersSection authHeaders={authHeaders} />}
-          {section === 'wallets' && <WalletsSection authHeaders={authHeaders} />}
-          {section === 'feed' && <FeedSection authHeaders={authHeaders} />}
-          {section === 'controls' && <ControlsSection />}
-          {section === 'payments' && <PaymentsSection authHeaders={authHeaders} />}
-          {section === 'domains' && <DomainsSection />}
-          {section === 'secrets' && <SecretsSection authHeaders={authHeaders} />}
-          {section === 'errors' && <ErrorLogSection authHeaders={authHeaders} />}
-          {section === 'contractors' && <ContractorsSection authHeaders={authHeaders} />}
+          {section === 'overview'         && <OverviewSection authHeaders={authHeaders} />}
+          {section === 'users'            && <UsersSection authHeaders={authHeaders} />}
+          {section === 'wallets'          && <WalletsSection authHeaders={authHeaders} />}
+          {section === 'contractors'      && <ContractorsSection authHeaders={authHeaders} />}
+          {section === 'feed'             && <FeedSection authHeaders={authHeaders} />}
+          {section === 'payments'         && <PaymentsSection authHeaders={authHeaders} />}
+          {section === 'errors'           && <ErrorLogSection authHeaders={authHeaders} />}
+          {section === 'bob-monitor'      && <BobMonitorSection authHeaders={authHeaders} />}
+          {section === 'moderation-queue' && <ModerationQueueSection authHeaders={authHeaders} />}
+          {section === 'session-revoke'   && <SessionRevokeSection authHeaders={authHeaders} />}
+          {section === 'ai-command'       && <AiCommandSection authHeaders={authHeaders} />}
+          {section === 'threat-monitor'   && <ThreatMonitorSection authHeaders={authHeaders} />}
+          {section === 'audit-log'        && <AuditLogSection authHeaders={authHeaders} />}
+          {section === 'domains'          && <DomainsSection />}
+          {section === 'secrets'          && <SecretsSection authHeaders={authHeaders} />}
+          {section === 'controls'         && <ControlsSection />}
         </main>
       </div>
     </AdminAuthProvider>

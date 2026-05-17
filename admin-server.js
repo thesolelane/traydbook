@@ -18,6 +18,9 @@ import repairRoutes from './server/routes/admin-repair.js'
 import revokeRoutes from './server/routes/admin-revoke.js'
 import aiCommandRoutes from './server/routes/admin-ai-command.js'
 import contractorsRoutes from './server/routes/admin-contractors.js'
+import apiKeysRoutes from './server/routes/admin-api-keys.js'
+import webhookRoutes from './server/routes/webhook-dispatch.js'
+import bobRoutes from './server/routes/admin-bob.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -98,6 +101,9 @@ app.use('/api/admin/ai', aiCommandRoutes)
 
 // ── Contractor Trust Score / Lead Bank ───────────────────────────────────────
 app.use(contractorsRoutes)
+app.use(apiKeysRoutes)
+app.use(webhookRoutes)
+app.use('/api/admin/bob', bobRoutes)
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/api/admin-health', (_req, res) =>

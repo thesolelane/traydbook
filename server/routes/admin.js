@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { supabaseAdmin } from '../lib/clients.js'
-import { requireAuth, requireSuperAdmin, requireAdminLevel, blockProtectedAdmin, ALL_INVITE_ROLES } from '../lib/auth.js'
+import { requireAuth, requireSuperAdmin, requireAdminLevel, blockProtectedAdmin, blockServiceKeys, ALL_INVITE_ROLES } from '../lib/auth.js'
 import { logError, getErrorLog, clearErrorLog } from '../lib/errorLog.js'
 import fs from 'fs'
 import path from 'path'
@@ -451,7 +451,7 @@ router.get('/api/admin/wallets', requireAuth, requireAdminLevel, async (req, res
 
 // ── Secrets Management ────────────────────────────────────────────────────────
 
-router.get('/api/admin/secrets', requireAuth, requireSuperAdmin, (req, res) => {
+router.get('/api/admin/secrets', blockServiceKeys, requireAuth, requireSuperAdmin, (req, res) => {
   const fileMap = parseEnvFile()
   const secrets = KNOWN_KEYS.map(name => {
     const fileVal = fileMap.get(name)
@@ -473,7 +473,7 @@ router.get('/api/admin/secrets', requireAuth, requireSuperAdmin, (req, res) => {
   res.json({ secrets })
 })
 
-router.put('/api/admin/secrets', requireAuth, requireSuperAdmin, (req, res) => {
+router.put('/api/admin/secrets', blockServiceKeys, requireAuth, requireSuperAdmin, (req, res) => {
   const { name, value } = req.body ?? {}
   if (!name || typeof name !== 'string') return res.status(400).json({ error: 'name is required' })
   if (typeof value !== 'string') return res.status(400).json({ error: 'value is required' })
@@ -487,7 +487,7 @@ router.put('/api/admin/secrets', requireAuth, requireSuperAdmin, (req, res) => {
   res.json({ ok: true })
 })
 
-router.delete('/api/admin/secrets/:name', requireAuth, requireSuperAdmin, (req, res) => {
+router.delete('/api/admin/secrets/:name', blockServiceKeys, requireAuth, requireSuperAdmin, (req, res) => {
   const { name } = req.params
   if (!/^[A-Z0-9_]+$/.test(name)) return res.status(400).json({ error: 'Invalid key name' })
 
@@ -502,14 +502,14 @@ router.delete('/api/admin/secrets/:name', requireAuth, requireSuperAdmin, (req, 
 
 // ─── Error Log ────────────────────────────────────────────────────────────────
 
-router.get('/api/admin/error-log', requireAuth, requireSuperAdmin, (req, res) => {
+router.get('/api/admin/error-log', blockServiceKeys, requireAuth, requireSuperAdmin, (req, res) => {
   const limit = Math.min(parseInt(req.query.limit ?? '100'), 500)
   const offset = parseInt(req.query.offset ?? '0')
   const context = req.query.context?.toString() || undefined
   res.json(getErrorLog({ limit, offset, context }))
 })
 
-router.delete('/api/admin/error-log', requireAuth, requireSuperAdmin, (req, res) => {
+router.delete('/api/admin/error-log', blockServiceKeys, requireAuth, requireSuperAdmin, (req, res) => {
   clearErrorLog()
   console.log(`[admin] Error log cleared by ${req.user.id}`)
   res.json({ ok: true })

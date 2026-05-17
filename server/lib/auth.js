@@ -52,6 +52,21 @@ export async function isProtectedAdmin(userId) {
 }
 
 /**
+ * Middleware — hard-blocks any request that carries a service API key (X-Api-Key).
+ * Apply to secrets, vault, and error-log routes so Bob can NEVER reach them,
+ * even if a scope bug or misconfiguration occurs elsewhere.
+ */
+export function blockServiceKeys(req, res, next) {
+  if (req.headers['x-api-key']) {
+    return res.status(403).json({
+      error: 'FORBIDDEN',
+      message: 'Service API keys are not permitted to access this endpoint.',
+    })
+  }
+  next()
+}
+
+/**
  * Middleware — rejects any action targeting the protected super admin.
  * Attach AFTER a route already knows req.params.id is the target user.
  */

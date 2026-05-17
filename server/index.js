@@ -21,6 +21,7 @@ import queuePositionRoutes from './routes/queue-position.js'
 import passesRoutes from './routes/passes.js'
 import leadBankRoutes from './routes/lead-bank.js'
 import missedLeadsRoutes from './routes/missed-leads.js'
+import agentRoutes from './routes/agent.js'
 import { logError, loadLogFromDisk } from './lib/errorLog.js'
 
 const app = express()
@@ -69,6 +70,7 @@ app.use(queuePositionRoutes)
 app.use(passesRoutes)
 app.use(leadBankRoutes)
 app.use(missedLeadsRoutes)
+app.use(agentRoutes)
 
 if (process.env.NODE_ENV === 'production') {
   const path = await import('path')
