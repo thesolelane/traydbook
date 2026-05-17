@@ -12,6 +12,10 @@ export async function validateConnection() {
       console.warn('⚠️  connection_test table missing — run admin migration SQL in Supabase')
       return
     }
+    if (error.code === '42501' || error.message?.includes('permission denied')) {
+      console.warn('⚠️  connection_test permission denied — skipping connection check')
+      return
+    }
     throw new Error(`Supabase connection failed: ${error.message}`)
   }
 
