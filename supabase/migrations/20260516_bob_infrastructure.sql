@@ -131,4 +131,13 @@ VALUES
   ('max_leads_per_cycle',  '10',       'Max leads Bob delivers per cycle')
 ON CONFLICT (key) DO NOTHING;
 
+-- ============================================================
+-- 6. GRANTS — allow service_role to bypass RLS on these tables
+-- ============================================================
+GRANT ALL ON public.service_api_keys   TO service_role;
+GRANT ALL ON public.agent_logs         TO service_role;
+GRANT ALL ON public.leads              TO service_role;
+GRANT ALL ON public.availability_windows TO service_role;
+GRANT ALL ON public.bob_control        TO service_role;
+
 SELECT 'bob_infrastructure created' AS status;
