@@ -12,17 +12,19 @@ import { supabaseAdmin } from '../lib/clients.js'
 const router = Router()
 
 // ── Helper: push a command directly to Bob's server (fire-and-forget) ─────────
+// Bob's contract: Authorization: Bearer <BOB_ADMIN_KEY>
+// Endpoint paths follow Bob's spec: /bob/admin/*
 async function pushToBob(path, body = {}) {
-  const endpoint = process.env.BOB_AGENT_ENDPOINT
-  const token    = process.env.ADMIN_TO_BOB_TOKEN
+  const endpoint = process.env.BOB_AGENT_ENDPOINT       // e.g. https://bob.traydbook.com
+  const token    = process.env.ADMIN_TO_BOB_TOKEN       // the BOB_ADMIN_KEY value
   if (!endpoint || !token) return   // not configured — Bob will pick it up on next poll
 
   try {
-    await fetch(`${endpoint.replace(/\/$/, '')}${path}`, {
+    await fetch(`${endpoint.replace(/\/$/, '')}/bob/admin${path}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Admin-Token': token,
+        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(5000),

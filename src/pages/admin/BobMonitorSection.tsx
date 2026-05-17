@@ -7,11 +7,13 @@ interface AgentLog {
   id: string
   agent_name: string
   action: string
-  status: 'ok' | 'warn' | 'error'
+  status: 'success' | 'failure' | 'skipped' | 'ok' | 'warn' | 'error'
   target_type: string | null
   target_id: string | null
   contractor_id: string | null
-  payload: Record<string, unknown>
+  message: string | null
+  metadata: Record<string, unknown>
+  ai_provider: string | null
   duration_ms: number | null
   created_at: string
 }
@@ -28,18 +30,49 @@ interface LeadStat {
   count: number
 }
 
+// Full action vocabulary from Bob's contract
+const ACTION_GROUPS: Record<string, string[]> = {
+  'Leads':    ['lead.found','lead.scored','lead.delivered','lead.skipped'],
+  'Outreach': ['outreach.drafted','outreach.sent','outreach.opened','outreach.replied'],
+  'Content':  ['content.generated','content.posted','content.failed'],
+  'Quote':    ['quote.drafted','quote.sent'],
+  'Schedule': ['schedule.created','schedule.confirmed'],
+  'AI':       ['ai.fallback','ai.error','agent.provider_switched'],
+  'Agent':    ['agent.paused','agent.resumed'],
+  'System':   ['error.occurred','webhook.received','webhook.rejected'],
+}
+const ALL_ACTIONS = Object.values(ACTION_GROUPS).flat()
+
 const STATUS_COLOR: Record<string, string> = {
-  ok: '#10B981',
-  warn: '#F59E0B',
-  error: '#EF4444',
+  success:  '#10B981',
+  ok:       '#10B981',
+  skipped:  '#F59E0B',
+  warn:     '#F59E0B',
+  failure:  '#EF4444',
+  error:    '#EF4444',
 }
 
 const ACTION_COLOR: Record<string, string> = {
-  lead_delivered: '#6366F1',
-  lead_claimed: '#10B981',
-  lead_passed: '#F97316',
-  lead_expired: '#94A3B8',
-  error: '#EF4444',
+  'lead.delivered':       '#6366F1',
+  'lead.found':           '#8B5CF6',
+  'lead.scored':          '#A78BFA',
+  'lead.skipped':         '#94A3B8',
+  'outreach.sent':        '#10B981',
+  'outreach.drafted':     '#34D399',
+  'outreach.opened':      '#6EE7B7',
+  'outreach.replied':     '#059669',
+  'content.generated':    '#F59E0B',
+  'content.posted':       '#D97706',
+  'content.failed':       '#EF4444',
+  'quote.sent':           '#3B82F6',
+  'quote.drafted':        '#60A5FA',
+  'ai.fallback':          '#F97316',
+  'ai.error':             '#EF4444',
+  'error.occurred':       '#EF4444',
+  'agent.paused':         '#94A3B8',
+  'agent.resumed':        '#10B981',
+  'webhook.received':     '#6366F1',
+  'webhook.rejected':     '#EF4444',
 }
 
 function timeAgo(iso: string) {
@@ -60,12 +93,18 @@ export default function BobMonitorSection({ authHeaders }: SectionProps) {
   const [providerOverride, setProviderOverride] = useState('')
   const [maxLeads, setMaxLeads] = useState('')
   const [autoRefresh, setAutoRefresh] = useState(true)
+  const [actionFilter, setActionFilter] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
 
   const load = useCallback(async () => {
     setErr('')
     try {
+      const params = new URLSearchParams({ limit: '50' })
+      if (actionFilter) params.set('action', actionFilter)
+      if (statusFilter) params.set('status', statusFilter)
+
       const [logsRes, controlsRes, statsRes] = await Promise.all([
-        fetch('/api/admin/bob/logs?limit=50', { headers: authHeaders() }),
+        fetch(`/api/admin/bob/logs?${params}`, { headers: authHeaders() }),
         fetch('/api/admin/bob/control', { headers: authHeaders() }),
         fetch('/api/admin/bob/lead-stats', { headers: authHeaders() }),
       ])
@@ -82,9 +121,8 @@ export default function BobMonitorSection({ authHeaders }: SectionProps) {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [actionFilter, statusFilter])
 
-  // Initial load + realtime subscription
   useEffect(() => {
     void load()
 
@@ -98,7 +136,6 @@ export default function BobMonitorSection({ authHeaders }: SectionProps) {
     return () => { void supabase.removeChannel(channel) }
   }, [load])
 
-  // Auto-refresh every 15s
   useEffect(() => {
     if (!autoRefresh) return
     const t = setInterval(() => void load(), 15000)
@@ -123,10 +160,14 @@ export default function BobMonitorSection({ authHeaders }: SectionProps) {
     setTimeout(() => setControlMsg(''), 3000)
   }
 
-  const totalLogs = logs.length
-  const errorCount = logs.filter(l => l.status === 'error').length
+  const failureCount = logs.filter(l => l.status === 'failure' || l.status === 'error').length
   const claimedCount = leadStats.find(s => s.status === 'claimed')?.count ?? 0
   const pendingCount = leadStats.find(s => s.status === 'pending')?.count ?? 0
+  const filteredLogs = logs.filter(l => {
+    if (actionFilter && l.action !== actionFilter) return false
+    if (statusFilter && l.status !== statusFilter) return false
+    return true
+  })
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -139,16 +180,14 @@ export default function BobMonitorSection({ authHeaders }: SectionProps) {
           icon={controls?.paused ? <Pause size={18} /> : <Zap size={18} />}
           color={controls?.paused ? '#EF4444' : '#10B981'}
         />
-        <StatCard label="Recent Actions" value={totalLogs} sub="last 50" icon={<Clock size={18} />} />
-        <StatCard label="Errors" value={errorCount} sub="in recent logs" icon={<AlertTriangle size={18} />} color={errorCount > 0 ? '#EF4444' : '#10B981'} />
+        <StatCard label="Recent Actions" value={logs.length} sub="last 50" icon={<Clock size={18} />} />
+        <StatCard label="Failures" value={failureCount} sub="in recent logs" icon={<AlertTriangle size={18} />} color={failureCount > 0 ? '#EF4444' : '#10B981'} />
         <StatCard label="Leads Claimed" value={claimedCount} sub={`${pendingCount} pending`} icon={<CheckCircle size={18} />} color="#6366F1" />
       </div>
 
       {/* Controls */}
       <SectionCard title="Bob Controls">
-        {controlMsg && (
-          <p style={{ fontSize: 13, color: '#10B981', marginBottom: 12 }}>{controlMsg}</p>
-        )}
+        {controlMsg && <p style={{ fontSize: 13, color: '#10B981', marginBottom: 12 }}>{controlMsg}</p>}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-end' }}>
           <button
             onClick={() => setControl('paused', controls?.paused ? 'false' : 'true')}
@@ -165,7 +204,7 @@ export default function BobMonitorSection({ authHeaders }: SectionProps) {
             className="btn btn-secondary"
             style={{ fontSize: 13, padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 6 }}
           >
-            <RotateCcw size={14} /> Force Lead Refresh
+            <RotateCcw size={14} /> Force Lead Search
           </button>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -174,37 +213,18 @@ export default function BobMonitorSection({ authHeaders }: SectionProps) {
               <AdminInput
                 value={providerOverride}
                 onChange={setProviderOverride}
-                placeholder="e.g. openai or ollama (blank = default)"
-                style={{ width: 240 }}
+                placeholder="openai / ollama / blank = default"
+                style={{ width: 220 }}
               />
-              <button
-                onClick={() => setControl('ai_provider_override', providerOverride)}
-                disabled={controlLoading}
-                className="btn btn-secondary"
-                style={{ fontSize: 12, padding: '8px 12px' }}
-              >
-                Set
-              </button>
+              <button onClick={() => setControl('ai_provider_override', providerOverride)} disabled={controlLoading} className="btn btn-secondary" style={{ fontSize: 12, padding: '8px 12px' }}>Set</button>
             </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <label style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: 600 }}>Max Leads / Cycle</label>
             <div style={{ display: 'flex', gap: 6 }}>
-              <AdminInput
-                value={maxLeads}
-                onChange={setMaxLeads}
-                placeholder="10"
-                style={{ width: 80 }}
-              />
-              <button
-                onClick={() => setControl('max_leads_per_cycle', maxLeads)}
-                disabled={controlLoading}
-                className="btn btn-secondary"
-                style={{ fontSize: 12, padding: '8px 12px' }}
-              >
-                Set
-              </button>
+              <AdminInput value={maxLeads} onChange={setMaxLeads} placeholder="10" style={{ width: 70 }} />
+              <button onClick={() => setControl('max_leads_per_cycle', maxLeads)} disabled={controlLoading} className="btn btn-secondary" style={{ fontSize: 12, padding: '8px 12px' }}>Set</button>
             </div>
           </div>
         </div>
@@ -214,19 +234,37 @@ export default function BobMonitorSection({ authHeaders }: SectionProps) {
       <SectionCard
         title="Live Activity Feed"
         action={
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <button
-              onClick={() => setAutoRefresh(a => !a)}
-              className="btn btn-ghost"
-              style={{ fontSize: 12, padding: '4px 10px', color: autoRefresh ? '#10B981' : 'var(--color-text-muted)' }}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            {/* Action filter */}
+            <select
+              value={actionFilter}
+              onChange={e => setActionFilter(e.target.value)}
+              style={{ fontSize: 12, padding: '4px 8px', borderRadius: 5, border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)' }}
             >
+              <option value="">All actions</option>
+              {Object.entries(ACTION_GROUPS).map(([group, actions]) => (
+                <optgroup key={group} label={group}>
+                  {actions.map(a => <option key={a} value={a}>{a}</option>)}
+                </optgroup>
+              ))}
+            </select>
+
+            {/* Status filter */}
+            <select
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
+              style={{ fontSize: 12, padding: '4px 8px', borderRadius: 5, border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text)' }}
+            >
+              <option value="">All statuses</option>
+              <option value="success">Success</option>
+              <option value="failure">Failure</option>
+              <option value="skipped">Skipped</option>
+            </select>
+
+            <button onClick={() => setAutoRefresh(a => !a)} className="btn btn-ghost" style={{ fontSize: 12, padding: '4px 10px', color: autoRefresh ? '#10B981' : 'var(--color-text-muted)' }}>
               {autoRefresh ? '● Live' : '○ Paused'}
             </button>
-            <button
-              onClick={load}
-              className="btn btn-secondary"
-              style={{ fontSize: 12, padding: '6px 10px', display: 'flex', alignItems: 'center', gap: 4 }}
-            >
+            <button onClick={load} className="btn btn-secondary" style={{ fontSize: 12, padding: '6px 10px', display: 'flex', alignItems: 'center', gap: 4 }}>
               <RefreshCw size={12} /> Refresh
             </button>
           </div>
@@ -237,7 +275,7 @@ export default function BobMonitorSection({ authHeaders }: SectionProps) {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                {['Time', 'Agent', 'Action', 'Status', 'Target', 'Duration', 'Details'].map(h => (
+                {['Time', 'Action', 'Status', 'Message', 'Target', 'AI', 'ms'].map(h => (
                   <th key={h} style={tableHeaderStyle}>{h}</th>
                 ))}
               </tr>
@@ -245,58 +283,53 @@ export default function BobMonitorSection({ authHeaders }: SectionProps) {
             <tbody>
               {loading
                 ? Array.from({ length: 8 }).map((_, i) => (
-                    <tr key={i}>
-                      {Array.from({ length: 7 }).map((_, j) => (
-                        <td key={j} style={{ padding: '10px 12px' }}>
-                          <div style={{ height: 12, background: 'var(--color-border)', borderRadius: 4, opacity: 0.5 }} />
-                        </td>
-                      ))}
-                    </tr>
+                    <tr key={i}>{Array.from({ length: 7 }).map((_, j) => (
+                      <td key={j} style={{ padding: '10px 12px' }}>
+                        <div style={{ height: 12, background: 'var(--color-border)', borderRadius: 4, opacity: 0.5 }} />
+                      </td>
+                    ))}</tr>
                   ))
-                : logs.length === 0
+                : filteredLogs.length === 0
                   ? (
                     <tr>
                       <td colSpan={7} style={{ ...tableCellStyle, textAlign: 'center', color: 'var(--color-text-muted)', padding: 32 }}>
-                        No activity yet — Bob hasn't logged anything
+                        {logs.length === 0 ? 'No activity yet — Bob hasn\'t logged anything' : 'No logs match the current filters'}
                       </td>
                     </tr>
                   )
-                  : logs.map(log => (
+                  : filteredLogs.map(log => (
                     <tr key={log.id}>
                       <td style={{ ...tableCellStyle, fontSize: 11, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
                         {timeAgo(log.created_at)}
                       </td>
-                      <td style={{ ...tableCellStyle, fontSize: 12 }}>{log.agent_name}</td>
                       <td style={tableCellStyle}>
                         <span style={{
                           fontSize: 11, fontWeight: 700,
                           color: ACTION_COLOR[log.action] ?? 'var(--color-text)',
                           background: `${ACTION_COLOR[log.action] ?? '#888'}18`,
-                          padding: '2px 7px', borderRadius: 10,
+                          padding: '2px 7px', borderRadius: 10, whiteSpace: 'nowrap',
                         }}>
-                          {log.action.replace(/_/g, ' ')}
+                          {log.action}
                         </span>
                       </td>
                       <td style={tableCellStyle}>
-                        <span style={{
-                          fontSize: 11, fontWeight: 700,
-                          color: STATUS_COLOR[log.status],
-                        }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: STATUS_COLOR[log.status] ?? '#888' }}>
                           {log.status.toUpperCase()}
                         </span>
                       </td>
+                      <td style={{ ...tableCellStyle, fontSize: 12, maxWidth: 260 }}>
+                        {log.message || <span style={{ color: 'var(--color-text-muted)' }}>—</span>}
+                      </td>
                       <td style={{ ...tableCellStyle, fontSize: 11, color: 'var(--color-text-muted)' }}>
                         {log.target_type && log.target_id
-                          ? `${log.target_type} ${log.target_id.slice(0, 8)}…`
+                          ? `${log.target_type} ${String(log.target_id).slice(0, 8)}…`
                           : '—'}
                       </td>
                       <td style={{ ...tableCellStyle, fontSize: 11, color: 'var(--color-text-muted)' }}>
-                        {log.duration_ms != null ? `${log.duration_ms}ms` : '—'}
+                        {log.ai_provider || '—'}
                       </td>
-                      <td style={{ ...tableCellStyle, fontSize: 11, color: 'var(--color-text-muted)', maxWidth: 200 }}>
-                        {Object.keys(log.payload).length > 0
-                          ? <code style={{ fontSize: 10 }}>{JSON.stringify(log.payload).slice(0, 80)}</code>
-                          : '—'}
+                      <td style={{ ...tableCellStyle, fontSize: 11, color: 'var(--color-text-muted)' }}>
+                        {log.duration_ms != null ? `${log.duration_ms}` : '—'}
                       </td>
                     </tr>
                   ))}
