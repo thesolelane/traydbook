@@ -121,6 +121,8 @@ export default function BobMonitorSection({ authHeaders }: SectionProps) {
   const [controlLoading, setControlLoading] = useState(false)
   const [err, setErr] = useState('')
   const [controlMsg, setControlMsg] = useState('')
+  const [pingResult, setPingResult] = useState<{ reachable: boolean; status?: number; reason?: string; endpoint?: string } | null>(null)
+  const [pinging, setPinging] = useState(false)
   const [providerOverride, setProviderOverride] = useState('')
   const [maxLeads, setMaxLeads] = useState('')
   const [autoRefresh, setAutoRefresh] = useState(true)
@@ -215,6 +217,19 @@ export default function BobMonitorSection({ authHeaders }: SectionProps) {
     setTimeout(() => setControlMsg(''), 3000)
   }
 
+  async function pingBob() {
+    setPinging(true)
+    setPingResult(null)
+    try {
+      const res = await fetch('/api/admin/bob/ping', { headers: authHeaders() })
+      setPingResult(await res.json())
+    } catch {
+      setPingResult({ reachable: false, reason: 'Request failed' })
+    } finally {
+      setPinging(false)
+    }
+  }
+
   const activeSuggestions = suggestions.filter(s => !dismissed.has(s.id))
   const failureCount = logs.filter(l => l.status === 'failure' || l.status === 'error').length
   const filteredLogs = logs.filter(l => {
@@ -225,6 +240,32 @@ export default function BobMonitorSection({ authHeaders }: SectionProps) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+      {/* Ping Bob */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <button
+          onClick={pingBob}
+          disabled={pinging}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '8px 16px', borderRadius: 6, border: '1px solid var(--color-border)',
+            background: pinging ? 'var(--color-surface-2)' : 'var(--color-surface)',
+            color: 'var(--color-text)', fontSize: 13, fontWeight: 600,
+            cursor: pinging ? 'not-allowed' : 'pointer',
+          }}
+        >
+          <Zap size={14} />
+          {pinging ? 'Pinging…' : 'Ping Bob'}
+        </button>
+        {pingResult && (
+          <span style={{ fontSize: 13, fontWeight: 600, color: pingResult.reachable ? '#10B981' : '#EF4444' }}>
+            {pingResult.reachable
+              ? `✓ Reachable (HTTP ${pingResult.status})`
+              : `✗ ${pingResult.reason ?? 'Unreachable'}${pingResult.endpoint ? ` — ${pingResult.endpoint}` : ''}`}
+          </span>
+        )}
+      </div>
+
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
         <StatCard

@@ -116,4 +116,24 @@ router.get('/lead-stats', async (req, res) => {
   res.json({ stats })
 })
 
+// GET /api/admin/bob/ping — test connectivity to Bob's server
+router.get('/ping', async (req, res) => {
+  const endpoint = process.env.BOB_AGENT_ENDPOINT
+  if (!endpoint) {
+    return res.json({ reachable: false, reason: 'BOB_AGENT_ENDPOINT not set' })
+  }
+  const token = process.env.ADMIN_TO_BOB_TOKEN
+  const url = `${endpoint.replace(/\/$/, '')}/bob/admin/ping`
+  try {
+    const r = await fetch(url, {
+      method: 'GET',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      signal: AbortSignal.timeout(5000),
+    })
+    res.json({ reachable: r.ok, status: r.status, endpoint: url })
+  } catch (e) {
+    res.json({ reachable: false, reason: e instanceof Error ? e.message : 'unreachable', endpoint: url })
+  }
+})
+
 export default router
