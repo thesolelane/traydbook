@@ -40,14 +40,14 @@ router.get('/api/admin/contractors', requireAuth, requireAdminLevel, async (req,
   if (error) return res.status(500).json({ error: error.message })
 
   let rows = (data ?? []).map(r => {
-    const u = r.users as Record<string, unknown> | null
+    const u = r.users ?? null
     return {
       user_id: r.user_id,
-      display_name: (u?.display_name as string) ?? '—',
-      handle: (u?.handle as string) ?? '',
-      avatar_url: (u?.avatar_url as string | null) ?? null,
-      created_at: (u?.created_at as string) ?? '',
-      deleted_at: (u?.deleted_at as string | null) ?? null,
+      display_name: u?.display_name ?? '—',
+      handle: u?.handle ?? '',
+      avatar_url: u?.avatar_url ?? null,
+      created_at: u?.created_at ?? '',
+      deleted_at: u?.deleted_at ?? null,
       primary_trade: r.primary_trade,
       badge_tier: r.badge_tier,
       trust_score: r.trust_score ?? 0,
