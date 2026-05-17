@@ -36,9 +36,10 @@ async function pushToBob(path, body = {}) {
 
 // GET /api/admin/bob/logs
 router.get('/logs', async (req, res) => {
-  const limit = Math.min(parseInt(req.query.limit) || 50, 200)
-  const agent = req.query.agent || null
+  const limit  = Math.min(parseInt(req.query.limit) || 50, 200)
+  const agent  = req.query.agent  || null
   const status = req.query.status || null
+  const action = req.query.action || null
 
   let q = supabaseAdmin
     .from('agent_logs')
@@ -46,8 +47,9 @@ router.get('/logs', async (req, res) => {
     .order('created_at', { ascending: false })
     .limit(limit)
 
-  if (agent) q = q.eq('agent_name', agent)
+  if (agent)  q = q.eq('agent_name', agent)
   if (status) q = q.eq('status', status)
+  if (action) q = q.eq('action', action)
 
   const { data, error } = await q
   if (error) return res.status(500).json({ error: error.message })

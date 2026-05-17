@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { RefreshCw, Pause, Play, Zap, AlertTriangle, CheckCircle, Clock, RotateCcw } from 'lucide-react'
+import { RefreshCw, Pause, Play, Zap, AlertTriangle, CheckCircle, Clock, RotateCcw, Lightbulb, X } from 'lucide-react'
 import { SectionProps, SectionCard, StatCard, tableHeaderStyle, tableCellStyle, AdminInput } from './shared'
 import { supabase } from '../../lib/supabase'
 
@@ -30,26 +30,43 @@ interface LeadStat {
   count: number
 }
 
-// Full action vocabulary from Bob's contract
-const ACTION_GROUPS: Record<string, string[]> = {
-  'Leads':    ['lead.found','lead.scored','lead.delivered','lead.skipped'],
-  'Outreach': ['outreach.drafted','outreach.sent','outreach.opened','outreach.replied'],
-  'Content':  ['content.generated','content.posted','content.failed'],
-  'Quote':    ['quote.drafted','quote.sent'],
-  'Schedule': ['schedule.created','schedule.confirmed'],
-  'AI':       ['ai.fallback','ai.error','agent.provider_switched'],
-  'Agent':    ['agent.paused','agent.resumed'],
-  'System':   ['error.occurred','webhook.received','webhook.rejected'],
+const DISMISSED_KEY = 'bob_suggestions_dismissed'
+
+function loadDismissed(): Set<string> {
+  try {
+    const raw = localStorage.getItem(DISMISSED_KEY)
+    return new Set(raw ? JSON.parse(raw) : [])
+  } catch {
+    return new Set()
+  }
 }
-const ALL_ACTIONS = Object.values(ACTION_GROUPS).flat()
+
+function saveDismissed(ids: Set<string>) {
+  try {
+    localStorage.setItem(DISMISSED_KEY, JSON.stringify([...ids]))
+  } catch {}
+}
+
+// Full action vocabulary from Bob's contract + suggestions
+const ACTION_GROUPS: Record<string, string[]> = {
+  'Leads':       ['lead.found','lead.scored','lead.delivered','lead.skipped'],
+  'Outreach':    ['outreach.drafted','outreach.sent','outreach.opened','outreach.replied'],
+  'Content':     ['content.generated','content.posted','content.failed'],
+  'Quote':       ['quote.drafted','quote.sent'],
+  'Schedule':    ['schedule.created','schedule.confirmed'],
+  'AI':          ['ai.fallback','ai.error','agent.provider_switched'],
+  'Agent':       ['agent.paused','agent.resumed'],
+  'System':      ['error.occurred','webhook.received','webhook.rejected'],
+  'Suggestions': ['panel.suggestion'],
+}
 
 const STATUS_COLOR: Record<string, string> = {
-  success:  '#10B981',
-  ok:       '#10B981',
-  skipped:  '#F59E0B',
-  warn:     '#F59E0B',
-  failure:  '#EF4444',
-  error:    '#EF4444',
+  success: '#10B981',
+  ok:      '#10B981',
+  skipped: '#F59E0B',
+  warn:    '#F59E0B',
+  failure: '#EF4444',
+  error:   '#EF4444',
 }
 
 const ACTION_COLOR: Record<string, string> = {
@@ -73,6 +90,7 @@ const ACTION_COLOR: Record<string, string> = {
   'agent.resumed':        '#10B981',
   'webhook.received':     '#6366F1',
   'webhook.rejected':     '#EF4444',
+  'panel.suggestion':     '#F59E0B',
 }
 
 function timeAgo(iso: string) {
@@ -84,6 +102,8 @@ function timeAgo(iso: string) {
 
 export default function BobMonitorSection({ authHeaders }: SectionProps) {
   const [logs, setLogs] = useState<AgentLog[]>([])
+  const [suggestions, setSuggestions] = useState<AgentLog[]>([])
+  const [dismissed, setDismissed] = useState<Set<string>>(loadDismissed)
   const [controls, setControls] = useState<BobControl | null>(null)
   const [leadStats, setLeadStats] = useState<LeadStat[]>([])
   const [loading, setLoading] = useState(true)
@@ -103,10 +123,11 @@ export default function BobMonitorSection({ authHeaders }: SectionProps) {
       if (actionFilter) params.set('action', actionFilter)
       if (statusFilter) params.set('status', statusFilter)
 
-      const [logsRes, controlsRes, statsRes] = await Promise.all([
+      const [logsRes, controlsRes, statsRes, suggestionsRes] = await Promise.all([
         fetch(`/api/admin/bob/logs?${params}`, { headers: authHeaders() }),
         fetch('/api/admin/bob/control', { headers: authHeaders() }),
         fetch('/api/admin/bob/lead-stats', { headers: authHeaders() }),
+        fetch('/api/admin/bob/logs?action=panel.suggestion&limit=20', { headers: authHeaders() }),
       ])
       if (logsRes.ok) setLogs((await logsRes.json()).logs ?? [])
       if (controlsRes.ok) {
@@ -116,6 +137,7 @@ export default function BobMonitorSection({ authHeaders }: SectionProps) {
         setMaxLeads(String(c.max_leads_per_cycle))
       }
       if (statsRes.ok) setLeadStats((await statsRes.json()).stats ?? [])
+      if (suggestionsRes.ok) setSuggestions((await suggestionsRes.json()).logs ?? [])
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Failed to load')
     } finally {
@@ -129,7 +151,11 @@ export default function BobMonitorSection({ authHeaders }: SectionProps) {
     const channel = supabase
       .channel('admin-agent-logs')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'agent_logs' }, payload => {
-        setLogs(prev => [payload.new as AgentLog, ...prev].slice(0, 50))
+        const entry = payload.new as AgentLog
+        if (entry.action === 'panel.suggestion') {
+          setSuggestions(prev => [entry, ...prev].slice(0, 20))
+        }
+        setLogs(prev => [entry, ...prev].slice(0, 50))
       })
       .subscribe()
 
@@ -141,6 +167,20 @@ export default function BobMonitorSection({ authHeaders }: SectionProps) {
     const t = setInterval(() => void load(), 15000)
     return () => clearInterval(t)
   }, [autoRefresh, load])
+
+  function dismiss(id: string) {
+    const next = new Set(dismissed)
+    next.add(id)
+    setDismissed(next)
+    saveDismissed(next)
+  }
+
+  function dismissAll() {
+    const next = new Set(dismissed)
+    suggestions.forEach(s => next.add(s.id))
+    setDismissed(next)
+    saveDismissed(next)
+  }
 
   async function setControl(key: string, value: string) {
     setControlLoading(true)
@@ -160,6 +200,7 @@ export default function BobMonitorSection({ authHeaders }: SectionProps) {
     setTimeout(() => setControlMsg(''), 3000)
   }
 
+  const activeSuggestions = suggestions.filter(s => !dismissed.has(s.id))
   const failureCount = logs.filter(l => l.status === 'failure' || l.status === 'error').length
   const claimedCount = leadStats.find(s => s.status === 'claimed')?.count ?? 0
   const pendingCount = leadStats.find(s => s.status === 'pending')?.count ?? 0
@@ -182,8 +223,84 @@ export default function BobMonitorSection({ authHeaders }: SectionProps) {
         />
         <StatCard label="Recent Actions" value={logs.length} sub="last 50" icon={<Clock size={18} />} />
         <StatCard label="Failures" value={failureCount} sub="in recent logs" icon={<AlertTriangle size={18} />} color={failureCount > 0 ? '#EF4444' : '#10B981'} />
-        <StatCard label="Leads Claimed" value={claimedCount} sub={`${pendingCount} pending`} icon={<CheckCircle size={18} />} color="#6366F1" />
+        <StatCard
+          label="Suggestions"
+          value={activeSuggestions.length}
+          sub={activeSuggestions.length > 0 ? 'from Bob' : 'nothing new'}
+          icon={<Lightbulb size={18} />}
+          color={activeSuggestions.length > 0 ? '#F59E0B' : undefined}
+        />
       </div>
+
+      {/* Bob Suggestions inbox — only shown when there are active ones */}
+      {activeSuggestions.length > 0 && (
+        <SectionCard
+          title={
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Lightbulb size={15} color="#F59E0B" />
+              Bob Suggestions
+              <span style={{
+                fontSize: 11, fontWeight: 800, padding: '1px 7px', borderRadius: 10,
+                background: 'rgba(245,158,11,0.15)', color: '#F59E0B',
+              }}>
+                {activeSuggestions.length}
+              </span>
+            </span>
+          }
+          action={
+            <button
+              onClick={dismissAll}
+              className="btn btn-ghost"
+              style={{ fontSize: 12, padding: '4px 10px', color: 'var(--color-text-muted)' }}
+            >
+              Dismiss all
+            </button>
+          }
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {activeSuggestions.map(s => (
+              <div
+                key={s.id}
+                style={{
+                  display: 'flex',
+                  gap: 12,
+                  padding: '12px 14px',
+                  borderRadius: 8,
+                  background: 'rgba(245,158,11,0.06)',
+                  border: '1px solid rgba(245,158,11,0.2)',
+                  alignItems: 'flex-start',
+                }}
+              >
+                <Lightbulb size={15} color="#F59E0B" style={{ flexShrink: 0, marginTop: 2 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: 'var(--color-text)' }}>
+                    {s.message || '(no message)'}
+                  </p>
+                  {s.metadata && Object.keys(s.metadata).length > 0 && (
+                    <pre style={{
+                      margin: '6px 0 0', fontSize: 11, color: 'var(--color-text-muted)',
+                      background: 'var(--color-bg)', padding: '6px 8px', borderRadius: 5,
+                      overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                    }}>
+                      {JSON.stringify(s.metadata, null, 2)}
+                    </pre>
+                  )}
+                  <span style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4, display: 'block' }}>
+                    {s.agent_name} · {timeAgo(s.created_at)}
+                  </span>
+                </div>
+                <button
+                  onClick={() => dismiss(s.id)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--color-text-muted)', flexShrink: 0 }}
+                  title="Dismiss"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+      )}
 
       {/* Controls */}
       <SectionCard title="Bob Controls">
@@ -235,7 +352,6 @@ export default function BobMonitorSection({ authHeaders }: SectionProps) {
         title="Live Activity Feed"
         action={
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            {/* Action filter */}
             <select
               value={actionFilter}
               onChange={e => setActionFilter(e.target.value)}
@@ -249,7 +365,6 @@ export default function BobMonitorSection({ authHeaders }: SectionProps) {
               ))}
             </select>
 
-            {/* Status filter */}
             <select
               value={statusFilter}
               onChange={e => setStatusFilter(e.target.value)}
@@ -293,12 +408,12 @@ export default function BobMonitorSection({ authHeaders }: SectionProps) {
                   ? (
                     <tr>
                       <td colSpan={7} style={{ ...tableCellStyle, textAlign: 'center', color: 'var(--color-text-muted)', padding: 32 }}>
-                        {logs.length === 0 ? 'No activity yet — Bob hasn\'t logged anything' : 'No logs match the current filters'}
+                        {logs.length === 0 ? "No activity yet — Bob hasn't logged anything" : 'No logs match the current filters'}
                       </td>
                     </tr>
                   )
                   : filteredLogs.map(log => (
-                    <tr key={log.id}>
+                    <tr key={log.id} style={{ background: log.action === 'panel.suggestion' ? 'rgba(245,158,11,0.04)' : undefined }}>
                       <td style={{ ...tableCellStyle, fontSize: 11, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
                         {timeAgo(log.created_at)}
                       </td>
