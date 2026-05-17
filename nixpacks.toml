@@ -2,7 +2,7 @@
 nixPkgs = ['nodejs_22']
 
 [phases.build]
-cmds = ['npm run build:admin']
+cmds = ['npm run build:admin', 'cp -r admin-dist dist']
 
 [start]
 cmd = 'node admin-server.js'
