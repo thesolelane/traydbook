@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import type { AccountType } from '../lib/database.types'
 import '../styles/auth.css'
+import { getReferral, clearReferral } from '../lib/referral'
 
 const TRADES = [
   'Design Professional',
@@ -227,6 +228,8 @@ export default function SignupContractor() {
 
       const uploadedAvatarUrl = await uploadAvatar(uid)
 
+      const referral = getReferral()
+
       const { error: profileError } = await supabase.from('users').insert({
         id: uid,
         email: step1.email,
@@ -239,9 +242,16 @@ export default function SignupContractor() {
         location_zip: null,
         credit_balance: 0,
         deleted_at: null,
+        ...(referral ? {
+          referral_source: referral.referral_source,
+          referral_code: referral.referral_code,
+          utm_params: referral.utm_params,
+          referred_at: referral.referred_at,
+        } : {}),
       })
 
       if (profileError) throw new Error(profileError.message)
+      clearReferral()
 
       const { error: contractorError } = await supabase.from('contractor_profiles').insert({
         user_id: uid,

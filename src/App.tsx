@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
+import { captureReferral } from './lib/referral'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
@@ -40,6 +41,7 @@ function SubdomainRedirect() {
   const location = useLocation()
 
   useEffect(() => {
+    captureReferral()
     const hostname = window.location.hostname
     const isAdminSubdomain = hostname.startsWith('admin.') || hostname === 'admin.localhost'
     if (isAdminSubdomain && !location.pathname.startsWith('/admin')) {

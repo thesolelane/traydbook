@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import type { AccountType } from '../lib/database.types'
 import '../styles/auth.css'
+import { getReferral, clearReferral } from '../lib/referral'
 
 const US_STATES = [
   'AL',
@@ -255,6 +256,8 @@ export default function SignupOwner() {
 
       const uploadedAvatarUrl = await uploadAvatar(uid)
 
+      const referral = getReferral()
+
       const { error: profileError } = await supabase.from('users').insert({
         id: uid,
         email,
@@ -267,9 +270,16 @@ export default function SignupOwner() {
         location_zip: null,
         credit_balance: 50,
         deleted_at: null,
+        ...(referral ? {
+          referral_source: referral.referral_source,
+          referral_code: referral.referral_code,
+          utm_params: referral.utm_params,
+          referred_at: referral.referred_at,
+        } : {}),
       })
 
       if (profileError) throw new Error(profileError.message)
+      clearReferral()
 
       await supabase.from('credit_ledger').insert({
         user_id: uid,
