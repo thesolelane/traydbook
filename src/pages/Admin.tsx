@@ -15,6 +15,7 @@ import {
   ScrollText,
   LogOut,
   Terminal,
+  Bot,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { isSuperAdmin } from '../lib/roles'
@@ -32,6 +33,7 @@ import ModerationQueueSection from './admin/ModerationQueueSection'
 import AuditLogSection from './admin/AuditLogSection'
 import SessionRevokeSection from './admin/SessionRevokeSection'
 import AiCommandSection from './admin/AiCommandSection'
+import BobMonitorSection from './admin/BobMonitorSection'
 
 type Section =
   | 'overview'
@@ -48,6 +50,7 @@ type Section =
   | 'audit'
   | 'revoke'
   | 'ai'
+  | 'bob'
 
 type NavItem = { id: Section; label: string; icon: React.ReactNode; superOnly?: boolean }
 
@@ -64,13 +67,19 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     ],
   },
   {
+    label: 'Agent / Bob',
+    items: [
+      { id: 'bob', label: 'Bob Monitor', icon: <Bot size={16} /> },
+      { id: 'ai', label: 'AI Command Bar', icon: <Terminal size={16} />, superOnly: true },
+    ],
+  },
+  {
     label: 'Security',
     items: [
       { id: 'threats', label: 'Threat Monitor', icon: <ShieldAlert size={16} /> },
       { id: 'moderation', label: 'Moderation Queue', icon: <ClipboardList size={16} /> },
       { id: 'audit', label: 'Audit Log', icon: <ScrollText size={16} /> },
       { id: 'revoke', label: 'Session Revoke', icon: <LogOut size={16} />, superOnly: true },
-      { id: 'ai', label: 'AI Command Bar', icon: <Terminal size={16} />, superOnly: true },
       { id: 'domains', label: 'Domain Status', icon: <Globe size={16} /> },
       { id: 'secrets', label: 'Secrets & Env', icon: <KeyRound size={16} /> },
       { id: 'controls', label: 'Platform Controls', icon: <Settings size={16} /> },
@@ -223,6 +232,7 @@ export default function Admin() {
         {section === 'audit'       && <AuditLogSection authHeaders={authHeaders} />}
         {section === 'revoke'      && <SessionRevokeSection authHeaders={authHeaders} />}
         {section === 'ai'          && <AiCommandSection authHeaders={authHeaders} />}
+        {section === 'bob'         && <BobMonitorSection authHeaders={authHeaders} />}
       </main>
     </div>
   )
