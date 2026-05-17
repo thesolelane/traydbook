@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom'
 import { CheckCircle, Circle, ChevronRight } from 'lucide-react'
+import type { SocialLinks } from '../types/profile'
 
 interface User {
   avatar_url?: string | null
-  social_links?: Record<string, string | null> | null
+  social_links?: SocialLinks | null
   phone_number?: string | null
   phone_verified?: boolean | null
 }
