@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Shield, AlertTriangle, RefreshCw, Eye, EyeOff } from 'lucide-react'
+import { Shield, RefreshCw, Eye, EyeOff } from 'lucide-react'
 import { SectionProps } from './shared'
 
 interface SecurityEvent {

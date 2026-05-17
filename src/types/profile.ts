@@ -1,4 +1,5 @@
 export interface SocialLinks {
+  [key: string]: string | undefined
   website?: string
   instagram?: string
   linkedin?: string

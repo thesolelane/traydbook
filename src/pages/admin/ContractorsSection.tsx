@@ -77,7 +77,7 @@ export default function ContractorsSection({ authHeaders }: SectionProps) {
   const [recalcMsg, setRecalcMsg] = useState('')
   const [recalcErr, setRecalcErr] = useState('')
 
-  const [msg, setMsg] = useState('')
+  const [msg, _setMsg] = useState('')
   const [err, setErr] = useState('')
 
   const loadContractors = useCallback(async () => {

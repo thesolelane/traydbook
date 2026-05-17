@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { RefreshCw, Pause, Play, Zap, AlertTriangle, CheckCircle, Clock, RotateCcw, Lightbulb, X } from 'lucide-react'
+import { RefreshCw, Pause, Play, Zap, AlertTriangle, Clock, RotateCcw, Lightbulb, X } from 'lucide-react'
 import { SectionProps, SectionCard, StatCard, tableHeaderStyle, tableCellStyle, AdminInput } from './shared'
 import { supabase } from '../../lib/supabase'
 
@@ -202,8 +202,6 @@ export default function BobMonitorSection({ authHeaders }: SectionProps) {
 
   const activeSuggestions = suggestions.filter(s => !dismissed.has(s.id))
   const failureCount = logs.filter(l => l.status === 'failure' || l.status === 'error').length
-  const claimedCount = leadStats.find(s => s.status === 'claimed')?.count ?? 0
-  const pendingCount = leadStats.find(s => s.status === 'pending')?.count ?? 0
   const filteredLogs = logs.filter(l => {
     if (actionFilter && l.action !== actionFilter) return false
     if (statusFilter && l.status !== statusFilter) return false
