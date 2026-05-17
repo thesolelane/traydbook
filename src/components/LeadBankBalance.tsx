@@ -44,11 +44,11 @@ export default function LeadBankBalance({ userId }: Props) {
 
   useEffect(() => {
     async function load() {
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       const res = await fetch('/api/lead-bank/balance', {
-        headers: session?.access_token
-          ? { Authorization: `Bearer ${session.access_token}` }
-          : {},
+        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
       })
       if (res.ok) setData(await res.json())
     }
@@ -137,9 +137,11 @@ export default function LeadBankBalance({ userId }: Props) {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                    {entry.delta >= 0
-                      ? <TrendingUp size={11} color="#10B981" />
-                      : <TrendingDown size={11} color="#DC2626" />}
+                    {entry.delta >= 0 ? (
+                      <TrendingUp size={11} color="#10B981" />
+                    ) : (
+                      <TrendingDown size={11} color="#DC2626" />
+                    )}
                     <span style={{ color: 'var(--color-text)' }}>
                       {friendlyReason(entry.reason)}
                     </span>
@@ -151,7 +153,8 @@ export default function LeadBankBalance({ userId }: Props) {
                         color: entry.delta >= 0 ? '#10B981' : '#DC2626',
                       }}
                     >
-                      {entry.delta >= 0 ? '+' : ''}{entry.delta}
+                      {entry.delta >= 0 ? '+' : ''}
+                      {entry.delta}
                     </span>
                     <span style={{ color: 'var(--color-text-muted)', fontSize: 11 }}>
                       {timeAgo(entry.created_at)}

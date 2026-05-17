@@ -40,11 +40,11 @@ export default function TrustScoreBadge({ userId, isOwn = false, size = 'md' }: 
 
   useEffect(() => {
     async function load() {
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       const res = await fetch(`/api/contractor/${userId}/trust-score`, {
-        headers: session?.access_token
-          ? { Authorization: `Bearer ${session.access_token}` }
-          : {},
+        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
       })
       if (res.ok) setData(await res.json())
     }
@@ -57,7 +57,7 @@ export default function TrustScoreBadge({ userId, isOwn = false, size = 'md' }: 
   const color = scoreColor(score)
   const dim = size === 'sm' ? 36 : size === 'lg' ? 64 : 48
   const strokeW = size === 'sm' ? 3 : 4
-  const radius = (dim / 2) - strokeW
+  const radius = dim / 2 - strokeW
   const circumference = 2 * Math.PI * radius
   const dash = (score / 100) * circumference
 
@@ -137,9 +137,7 @@ export default function TrustScoreBadge({ userId, isOwn = false, size = 'md' }: 
               }}
             >
               {scoreLabel(score)}
-              {isOwn && (
-                <span style={{ marginLeft: 4, opacity: 0.6 }}>· click for breakdown</span>
-              )}
+              {isOwn && <span style={{ marginLeft: 4, opacity: 0.6 }}>· click for breakdown</span>}
             </div>
           </div>
         )}

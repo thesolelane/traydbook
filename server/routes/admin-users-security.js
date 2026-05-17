@@ -25,11 +25,7 @@ router.get('/', async (req, res) => {
 // GET /api/admin/users/:id
 router.get('/:id', async (req, res) => {
   const { id } = req.params
-  const { data, error } = await supabaseAdmin
-    .from('users')
-    .select('*')
-    .eq('id', id)
-    .single()
+  const { data, error } = await supabaseAdmin.from('users').select('*').eq('id', id).single()
 
   if (error) return res.status(500).json({ error: error.message })
   res.json(data)
@@ -168,10 +164,7 @@ router.post('/:id/adjust-credits', async (req, res) => {
   const balanceBefore = user.credits || 0
   const balanceAfter = balanceBefore + amount
 
-  const { error } = await supabaseAdmin
-    .from('users')
-    .update({ credits: balanceAfter })
-    .eq('id', id)
+  const { error } = await supabaseAdmin.from('users').update({ credits: balanceAfter }).eq('id', id)
 
   if (error) return res.status(500).json({ error: error.message })
 
@@ -196,7 +189,12 @@ router.post('/:id/adjust-credits', async (req, res) => {
     details: { amount, balance_before: balanceBefore, balance_after: balanceAfter },
   })
 
-  res.json({ success: true, user_id: id, balance_before: balanceBefore, balance_after: balanceAfter })
+  res.json({
+    success: true,
+    user_id: id,
+    balance_before: balanceBefore,
+    balance_after: balanceAfter,
+  })
 })
 
 export default router

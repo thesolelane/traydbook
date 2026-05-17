@@ -27,11 +27,11 @@ export default function QueuePositionBadge({ userId }: Props) {
 
   useEffect(() => {
     async function load() {
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
       const res = await fetch(`/api/contractor/${userId}/queue-position`, {
-        headers: session?.access_token
-          ? { Authorization: `Bearer ${session.access_token}` }
-          : {},
+        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
       })
       if (res.ok) setData(await res.json())
     }
@@ -80,9 +80,7 @@ export default function QueuePositionBadge({ userId }: Props) {
         >
           #{data.position}
         </span>
-        <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
-          of {data.total}
-        </span>
+        <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>of {data.total}</span>
       </div>
 
       {/* Progress bar */}

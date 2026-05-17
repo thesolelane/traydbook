@@ -61,7 +61,9 @@ export default function ThreatMonitorSection({ authHeaders }: SectionProps) {
     }
   }, [hours])
 
-  useEffect(() => { void load() }, [load])
+  useEffect(() => {
+    void load()
+  }, [load])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -87,10 +89,16 @@ export default function ThreatMonitorSection({ authHeaders }: SectionProps) {
         <button
           onClick={() => void load()}
           style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            background: 'var(--color-surface)', border: '1px solid var(--color-border)',
-            borderRadius: 6, color: 'var(--color-text-muted)', padding: '6px 12px',
-            fontSize: 13, cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 6,
+            color: 'var(--color-text-muted)',
+            padding: '6px 12px',
+            fontSize: 13,
+            cursor: 'pointer',
           }}
         >
           <RefreshCw size={13} /> Refresh
@@ -98,26 +106,57 @@ export default function ThreatMonitorSection({ authHeaders }: SectionProps) {
       </div>
 
       {err && (
-        <div style={{ padding: 12, background: '#2a1515', border: '1px solid #e05252', borderRadius: 8, color: '#e05252', fontSize: 13 }}>
+        <div
+          style={{
+            padding: 12,
+            background: '#2a1515',
+            border: '1px solid #e05252',
+            borderRadius: 8,
+            color: '#e05252',
+            fontSize: 13,
+          }}
+        >
           {err}
         </div>
       )}
 
       {/* Summary cards */}
       {summary && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+            gap: 12,
+          }}
+        >
           {[
             { label: 'Total Events', value: summary.total, color: 'var(--color-text)' },
             { label: 'Critical', value: summary.critical, color: '#e05252' },
             { label: 'High', value: summary.high, color: '#e07c52' },
             { label: 'Blocked IPs', value: summary.blocked_ips.length, color: '#e0b852' },
           ].map(card => (
-            <div key={card.label} style={{
-              background: 'var(--color-surface)', border: '1px solid var(--color-border)',
-              borderRadius: 8, padding: '14px 16px',
-            }}>
-              <div style={{ fontSize: 11, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{card.label}</div>
-              <div style={{ fontSize: 28, fontWeight: 800, color: card.color, marginTop: 4 }}>{card.value}</div>
+            <div
+              key={card.label}
+              style={{
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 8,
+                padding: '14px 16px',
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 11,
+                  color: 'var(--color-text-muted)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                }}
+              >
+                {card.label}
+              </div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: card.color, marginTop: 4 }}>
+                {card.value}
+              </div>
             </div>
           ))}
         </div>
@@ -132,10 +171,16 @@ export default function ThreatMonitorSection({ authHeaders }: SectionProps) {
         <button
           onClick={() => setShowQuarantine(v => !v)}
           style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            background: 'none', border: '1px solid var(--color-border)',
-            borderRadius: 6, color: 'var(--color-text-muted)', padding: '4px 10px',
-            fontSize: 12, cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            background: 'none',
+            border: '1px solid var(--color-border)',
+            borderRadius: 6,
+            color: 'var(--color-text-muted)',
+            padding: '4px 10px',
+            fontSize: 12,
+            cursor: 'pointer',
           }}
         >
           {showQuarantine ? <EyeOff size={12} /> : <Eye size={12} />}
@@ -145,16 +190,37 @@ export default function ThreatMonitorSection({ authHeaders }: SectionProps) {
 
       {/* Quarantine log */}
       {showQuarantine && (
-        <div style={{ background: 'var(--color-surface)', border: '1px solid #e05252', borderRadius: 8, padding: 16 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#e05252', marginBottom: 10 }}>🛡 Quarantine Buffer</div>
+        <div
+          style={{
+            background: 'var(--color-surface)',
+            border: '1px solid #e05252',
+            borderRadius: 8,
+            padding: 16,
+          }}
+        >
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#e05252', marginBottom: 10 }}>
+            🛡 Quarantine Buffer
+          </div>
           {quarantine.length === 0 ? (
-            <div style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>No quarantined requests</div>
-          ) : quarantine.map(q => (
-            <div key={q.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--color-border)', fontSize: 12, fontFamily: 'monospace' }}>
-              <span style={{ color: '#e05252' }}>[{q.timestamp}]</span>{' '}
-              {q.method} {q.path} from {q.ip} — {q.reason}
+            <div style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>
+              No quarantined requests
             </div>
-          ))}
+          ) : (
+            quarantine.map(q => (
+              <div
+                key={q.id}
+                style={{
+                  padding: '8px 0',
+                  borderBottom: '1px solid var(--color-border)',
+                  fontSize: 12,
+                  fontFamily: 'monospace',
+                }}
+              >
+                <span style={{ color: '#e05252' }}>[{q.timestamp}]</span> {q.method} {q.path} from{' '}
+                {q.ip} — {q.reason}
+              </div>
+            ))
+          )}
         </div>
       )}
 
@@ -162,37 +228,106 @@ export default function ThreatMonitorSection({ authHeaders }: SectionProps) {
       {loading ? (
         <div style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>Loading...</div>
       ) : events.length === 0 ? (
-        <div style={{ color: 'var(--color-text-muted)', fontSize: 13, textAlign: 'center', padding: 32 }}>
+        <div
+          style={{
+            color: 'var(--color-text-muted)',
+            fontSize: 13,
+            textAlign: 'center',
+            padding: 32,
+          }}
+        >
           No security events in the last {hours}h
         </div>
       ) : (
-        <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8, overflow: 'hidden' }}>
+        <div
+          style={{
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 8,
+            overflow: 'hidden',
+          }}
+        >
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
                 {['Time', 'Severity', 'Type', 'IP', 'Path', 'Action'].map(h => (
-                  <th key={h} style={{ padding: '10px 12px', textAlign: 'left', color: 'var(--color-text-muted)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase' }}>{h}</th>
+                  <th
+                    key={h}
+                    style={{
+                      padding: '10px 12px',
+                      textAlign: 'left',
+                      color: 'var(--color-text-muted)',
+                      fontWeight: 600,
+                      fontSize: 11,
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    {h}
+                  </th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {events.map(ev => (
                 <tr key={ev.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                  <td style={{ padding: '9px 12px', color: 'var(--color-text-muted)', fontFamily: 'monospace' }}>
+                  <td
+                    style={{
+                      padding: '9px 12px',
+                      color: 'var(--color-text-muted)',
+                      fontFamily: 'monospace',
+                    }}
+                  >
                     {new Date(ev.timestamp).toLocaleTimeString()}
                   </td>
                   <td style={{ padding: '9px 12px' }}>
-                    <span style={{
-                      padding: '2px 7px', borderRadius: 4, fontSize: 10, fontWeight: 700,
-                      background: (SEVERITY_COLOR[ev.severity] || '#888') + '22',
-                      color: SEVERITY_COLOR[ev.severity] || '#888',
-                      textTransform: 'uppercase',
-                    }}>{ev.severity}</span>
+                    <span
+                      style={{
+                        padding: '2px 7px',
+                        borderRadius: 4,
+                        fontSize: 10,
+                        fontWeight: 700,
+                        background: (SEVERITY_COLOR[ev.severity] || '#888') + '22',
+                        color: SEVERITY_COLOR[ev.severity] || '#888',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      {ev.severity}
+                    </span>
                   </td>
-                  <td style={{ padding: '9px 12px', fontFamily: 'monospace', color: 'var(--color-text)' }}>{ev.type}</td>
-                  <td style={{ padding: '9px 12px', fontFamily: 'monospace', color: 'var(--color-text-muted)' }}>{ev.ip || '—'}</td>
-                  <td style={{ padding: '9px 12px', fontFamily: 'monospace', color: 'var(--color-text-muted)', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.path || '—'}</td>
-                  <td style={{ padding: '9px 12px', color: 'var(--color-text-muted)' }}>{ev.action_taken || '—'}</td>
+                  <td
+                    style={{
+                      padding: '9px 12px',
+                      fontFamily: 'monospace',
+                      color: 'var(--color-text)',
+                    }}
+                  >
+                    {ev.type}
+                  </td>
+                  <td
+                    style={{
+                      padding: '9px 12px',
+                      fontFamily: 'monospace',
+                      color: 'var(--color-text-muted)',
+                    }}
+                  >
+                    {ev.ip || '—'}
+                  </td>
+                  <td
+                    style={{
+                      padding: '9px 12px',
+                      fontFamily: 'monospace',
+                      color: 'var(--color-text-muted)',
+                      maxWidth: 180,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {ev.path || '—'}
+                  </td>
+                  <td style={{ padding: '9px 12px', color: 'var(--color-text-muted)' }}>
+                    {ev.action_taken || '—'}
+                  </td>
                 </tr>
               ))}
             </tbody>

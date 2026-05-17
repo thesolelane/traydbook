@@ -6,7 +6,11 @@ const router = Router()
 
 function getLLMConfig() {
   if (process.env.BOB_ENDPOINT) {
-    return { type: 'ollama', endpoint: process.env.BOB_ENDPOINT, model: process.env.BOB_MODEL || 'llama3' }
+    return {
+      type: 'ollama',
+      endpoint: process.env.BOB_ENDPOINT,
+      model: process.env.BOB_MODEL || 'llama3',
+    }
   }
   if (process.env.OPENAI_API_KEY) {
     return { type: 'openai', apiKey: process.env.OPENAI_API_KEY, model: 'gpt-4o' }
@@ -165,7 +169,11 @@ router.post('/execute', async (req, res) => {
 
       case 'adjustCredits': {
         const { userId, amount, reason } = confirmedPlan.parameters
-        const { data: before } = await supabaseAdmin.from('users').select('credits').eq('id', userId).single()
+        const { data: before } = await supabaseAdmin
+          .from('users')
+          .select('credits')
+          .eq('id', userId)
+          .single()
         const { data: after } = await supabaseAdmin
           .from('users')
           .update({ credits: (before?.credits || 0) + amount })

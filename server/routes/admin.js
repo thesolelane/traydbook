@@ -1,6 +1,13 @@
 import { Router } from 'express'
 import { supabaseAdmin } from '../lib/clients.js'
-import { requireAuth, requireSuperAdmin, requireAdminLevel, blockProtectedAdmin, blockServiceKeys, ALL_INVITE_ROLES } from '../lib/auth.js'
+import {
+  requireAuth,
+  requireSuperAdmin,
+  requireAdminLevel,
+  blockProtectedAdmin,
+  blockServiceKeys,
+  ALL_INVITE_ROLES,
+} from '../lib/auth.js'
 import { logError, getErrorLog, clearErrorLog } from '../lib/errorLog.js'
 import fs from 'fs'
 import path from 'path'
@@ -217,67 +224,80 @@ router.get('/api/admin/users', requireAuth, requireAdminLevel, async (req, res) 
   }
 })
 
-router.patch('/api/admin/user/:id/role', requireAuth, requireAdminLevel, blockProtectedAdmin, async (req, res) => {
-  const { id } = req.params
-  const { role } = req.body ?? {}
-  if (!role || !ALL_INVITE_ROLES.includes(role))
-    return res.status(400).json({ error: 'Invalid role' })
+router.patch(
+  '/api/admin/user/:id/role',
+  requireAuth,
+  requireAdminLevel,
+  blockProtectedAdmin,
+  async (req, res) => {
+    const { id } = req.params
+    const { role } = req.body ?? {}
+    if (!role || !ALL_INVITE_ROLES.includes(role))
+      return res.status(400).json({ error: 'Invalid role' })
 
-  const { data: targetUser, error: targetErr } = await supabaseAdmin
-    .from('users')
-    .select('account_type')
-    .eq('id', id)
-    .single()
-  if (targetErr || !targetUser) return res.status(404).json({ error: 'Target user not found' })
+    const { data: targetUser, error: targetErr } = await supabaseAdmin
+      .from('users')
+      .select('account_type')
+      .eq('id', id)
+      .single()
+    if (targetErr || !targetUser) return res.status(404).json({ error: 'Target user not found' })
 
-  const actorIsAdmin2 = req.adminUser.account_type === 'admin_2'
-  const targetIsAdminLevel = ['admin', 'admin_2'].includes(targetUser.account_type)
-  const newRoleIsAdminLevel = ['admin', 'admin_2'].includes(role)
+    const actorIsAdmin2 = req.adminUser.account_type === 'admin_2'
+    const targetIsAdminLevel = ['admin', 'admin_2'].includes(targetUser.account_type)
+    const newRoleIsAdminLevel = ['admin', 'admin_2'].includes(role)
 
-  if (actorIsAdmin2 && (targetIsAdminLevel || newRoleIsAdminLevel)) {
-    return res.status(403).json({ error: 'admin_2 cannot assign or demote admin-level roles' })
+    if (actorIsAdmin2 && (targetIsAdminLevel || newRoleIsAdminLevel)) {
+      return res.status(403).json({ error: 'admin_2 cannot assign or demote admin-level roles' })
+    }
+
+    const { error } = await supabaseAdmin.from('users').update({ account_type: role }).eq('id', id)
+    if (error) return res.status(500).json({ error: error.message })
+    console.log(
+      `[admin/role] User ${id} role changed from ${targetUser.account_type} to ${role} by ${req.user.id}`
+    )
+    res.json({ ok: true })
   }
+)
 
-  const { error } = await supabaseAdmin.from('users').update({ account_type: role }).eq('id', id)
-  if (error) return res.status(500).json({ error: error.message })
-  console.log(
-    `[admin/role] User ${id} role changed from ${targetUser.account_type} to ${role} by ${req.user.id}`
-  )
-  res.json({ ok: true })
-})
+router.patch(
+  '/api/admin/user/:id/suspend',
+  requireAuth,
+  requireAdminLevel,
+  blockProtectedAdmin,
+  async (req, res) => {
+    const { id } = req.params
+    const { suspend } = req.body ?? {}
 
-router.patch('/api/admin/user/:id/suspend', requireAuth, requireAdminLevel, blockProtectedAdmin, async (req, res) => {
-  const { id } = req.params
-  const { suspend } = req.body ?? {}
+    if (id === req.user.id)
+      return res.status(400).json({ error: 'Cannot suspend your own account' })
 
-  if (id === req.user.id) return res.status(400).json({ error: 'Cannot suspend your own account' })
+    const { data: targetUser, error: targetErr } = await supabaseAdmin
+      .from('users')
+      .select('account_type')
+      .eq('id', id)
+      .single()
+    if (targetErr || !targetUser) return res.status(404).json({ error: 'Target user not found' })
 
-  const { data: targetUser, error: targetErr } = await supabaseAdmin
-    .from('users')
-    .select('account_type')
-    .eq('id', id)
-    .single()
-  if (targetErr || !targetUser) return res.status(404).json({ error: 'Target user not found' })
+    if (
+      req.adminUser.account_type === 'admin_2' &&
+      ['admin', 'admin_2'].includes(targetUser.account_type)
+    ) {
+      return res
+        .status(403)
+        .json({ error: 'admin_2 cannot suspend or reinstate admin-level accounts' })
+    }
 
-  if (
-    req.adminUser.account_type === 'admin_2' &&
-    ['admin', 'admin_2'].includes(targetUser.account_type)
-  ) {
-    return res
-      .status(403)
-      .json({ error: 'admin_2 cannot suspend or reinstate admin-level accounts' })
+    const { error } = await supabaseAdmin
+      .from('users')
+      .update({ deleted_at: suspend ? new Date().toISOString() : null })
+      .eq('id', id)
+    if (error) return res.status(500).json({ error: error.message })
+    console.log(
+      `[admin/suspend] User ${id} ${suspend ? 'suspended' : 'reinstated'} by ${req.user.id}`
+    )
+    res.json({ ok: true })
   }
-
-  const { error } = await supabaseAdmin
-    .from('users')
-    .update({ deleted_at: suspend ? new Date().toISOString() : null })
-    .eq('id', id)
-  if (error) return res.status(500).json({ error: error.message })
-  console.log(
-    `[admin/suspend] User ${id} ${suspend ? 'suspended' : 'reinstated'} by ${req.user.id}`
-  )
-  res.json({ ok: true })
-})
+)
 
 router.post('/api/admin/credits', requireAuth, requireAdminLevel, async (req, res) => {
   const { userId, delta, reason } = req.body ?? {}
@@ -487,18 +507,24 @@ router.put('/api/admin/secrets', blockServiceKeys, requireAuth, requireSuperAdmi
   res.json({ ok: true })
 })
 
-router.delete('/api/admin/secrets/:name', blockServiceKeys, requireAuth, requireSuperAdmin, (req, res) => {
-  const { name } = req.params
-  if (!/^[A-Z0-9_]+$/.test(name)) return res.status(400).json({ error: 'Invalid key name' })
+router.delete(
+  '/api/admin/secrets/:name',
+  blockServiceKeys,
+  requireAuth,
+  requireSuperAdmin,
+  (req, res) => {
+    const { name } = req.params
+    if (!/^[A-Z0-9_]+$/.test(name)) return res.status(400).json({ error: 'Invalid key name' })
 
-  const map = parseEnvFile()
-  const existed = map.has(name)
-  map.delete(name)
-  writeEnvFile(map)
-  delete process.env[name]
-  console.log(`[secrets] Deleted ${name} (by ${req.user.id})`)
-  res.json({ ok: true, existed })
-})
+    const map = parseEnvFile()
+    const existed = map.has(name)
+    map.delete(name)
+    writeEnvFile(map)
+    delete process.env[name]
+    console.log(`[secrets] Deleted ${name} (by ${req.user.id})`)
+    res.json({ ok: true, existed })
+  }
+)
 
 // ─── Error Log ────────────────────────────────────────────────────────────────
 
@@ -509,11 +535,17 @@ router.get('/api/admin/error-log', blockServiceKeys, requireAuth, requireSuperAd
   res.json(getErrorLog({ limit, offset, context }))
 })
 
-router.delete('/api/admin/error-log', blockServiceKeys, requireAuth, requireSuperAdmin, (req, res) => {
-  clearErrorLog()
-  console.log(`[admin] Error log cleared by ${req.user.id}`)
-  res.json({ ok: true })
-})
+router.delete(
+  '/api/admin/error-log',
+  blockServiceKeys,
+  requireAuth,
+  requireSuperAdmin,
+  (req, res) => {
+    clearErrorLog()
+    console.log(`[admin] Error log cleared by ${req.user.id}`)
+    res.json({ ok: true })
+  }
+)
 
 export { logError }
 export default router

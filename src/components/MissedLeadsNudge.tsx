@@ -32,7 +32,9 @@ export default function MissedLeadsNudge() {
   }, [])
 
   async function load() {
-    const { data: { session } } = await supabase.auth.getSession()
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
     if (!session?.access_token) return
     const res = await fetch('/api/contractor/missed-leads', {
       headers: { Authorization: `Bearer ${session.access_token}` },
@@ -90,7 +92,8 @@ export default function MissedLeadsNudge() {
             letterSpacing: '0.2px',
           }}
         >
-          {data.missed} {data.trade} project{data.missed !== 1 ? 's' : ''} went to other contractors this month
+          {data.missed} {data.trade} project{data.missed !== 1 ? 's' : ''} went to other contractors
+          this month
         </div>
         <p style={{ fontSize: 12, color: '#94A3B8', marginTop: 3, lineHeight: 1.5 }}>
           {hasLowScore
@@ -100,11 +103,19 @@ export default function MissedLeadsNudge() {
               : 'Stay active — bid on open RFQs to keep winning work in your trade.'}
         </p>
 
-        <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div
+          style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}
+        >
           <Link
             to={primaryCta.href}
             className="btn btn-primary"
-            style={{ fontSize: 12, padding: '6px 12px', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+            style={{
+              fontSize: 12,
+              padding: '6px 12px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
             onClick={dismiss}
           >
             {primaryCta.label} <ArrowRight size={12} />
@@ -113,7 +124,14 @@ export default function MissedLeadsNudge() {
             <Link
               to="/profile"
               onClick={dismiss}
-              style={{ fontSize: 12, color: '#94A3B8', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 3 }}
+              style={{
+                fontSize: 12,
+                color: '#94A3B8',
+                textDecoration: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 3,
+              }}
             >
               View completeness guide <ArrowRight size={11} />
             </Link>

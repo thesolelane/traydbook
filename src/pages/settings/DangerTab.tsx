@@ -32,7 +32,10 @@ export default function DangerTab() {
       .update({ account_status: 'frozen', frozen_at: new Date().toISOString() })
       .eq('id', profile.id)
     setLoading(false)
-    if (error) { setErr(error.message); return }
+    if (error) {
+      setErr(error.message)
+      return
+    }
     setModal(null)
     await signOut()
     navigate('/', { replace: true })
@@ -51,7 +54,10 @@ export default function DangerTab() {
       .update({ account_status: 'deleted', deleted_at: new Date().toISOString() })
       .eq('id', profile.id)
     setLoading(false)
-    if (error) { setErr(error.message); return }
+    if (error) {
+      setErr(error.message)
+      return
+    }
     setModal(null)
     await signOut()
     navigate('/', { replace: true })
@@ -89,10 +95,18 @@ export default function DangerTab() {
         >
           Freeze Account
         </div>
-        <div style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 14, lineHeight: 1.55 }}>
-          Temporarily hide your profile and pause all activity. You can log back in any time to reactivate.
-          If you do not return within <strong style={{ color: 'var(--color-text)' }}>6 months</strong>,
-          your account and all data will be permanently deleted.
+        <div
+          style={{
+            fontSize: 13,
+            color: 'var(--color-text-muted)',
+            marginBottom: 14,
+            lineHeight: 1.55,
+          }}
+        >
+          Temporarily hide your profile and pause all activity. You can log back in any time to
+          reactivate. If you do not return within{' '}
+          <strong style={{ color: 'var(--color-text)' }}>6 months</strong>, your account and all
+          data will be permanently deleted.
         </div>
         {isFrozen ? (
           <div style={{ fontSize: 13, color: '#B45309', fontWeight: 600 }}>
@@ -140,10 +154,18 @@ export default function DangerTab() {
         >
           Delete Account
         </div>
-        <div style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 14, lineHeight: 1.55 }}>
+        <div
+          style={{
+            fontSize: 13,
+            color: 'var(--color-text-muted)',
+            marginBottom: 14,
+            lineHeight: 1.55,
+          }}
+        >
           Permanently delete your TraydBook account. Your profile, posts, bids, messages, and all
-          associated data will be removed and <strong style={{ color: 'var(--color-text)' }}>cannot be recovered</strong>.
-          Consider freezing your account instead if you may want to return.
+          associated data will be removed and{' '}
+          <strong style={{ color: 'var(--color-text)' }}>cannot be recovered</strong>. Consider
+          freezing your account instead if you may want to return.
         </div>
         <button
           onClick={() => openModal('delete')}
@@ -178,7 +200,9 @@ export default function DangerTab() {
             justifyContent: 'center',
             padding: 20,
           }}
-          onClick={() => { if (!loading) setModal(null) }}
+          onClick={() => {
+            if (!loading) setModal(null)
+          }}
         >
           <div
             style={{
@@ -204,11 +228,18 @@ export default function DangerTab() {
                 >
                   Freeze your account?
                 </div>
-                <div style={{ fontSize: 13, color: 'var(--color-text-muted)', lineHeight: 1.6, marginBottom: 20 }}>
-                  Your profile will be hidden immediately and you will be signed out.
-                  You can log back in any time to reactivate. If you don't return
-                  within <strong style={{ color: 'var(--color-text)' }}>6 months</strong>,
-                  your account and all data will be permanently deleted with no option to recover it.
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: 'var(--color-text-muted)',
+                    lineHeight: 1.6,
+                    marginBottom: 20,
+                  }}
+                >
+                  Your profile will be hidden immediately and you will be signed out. You can log
+                  back in any time to reactivate. If you don't return within{' '}
+                  <strong style={{ color: 'var(--color-text)' }}>6 months</strong>, your account and
+                  all data will be permanently deleted with no option to recover it.
                 </div>
                 {err && <ErrorBanner msg={err} />}
                 <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
@@ -268,10 +299,18 @@ export default function DangerTab() {
                 >
                   This is permanent.
                 </div>
-                <div style={{ fontSize: 13, color: 'var(--color-text-muted)', lineHeight: 1.6, marginBottom: 16 }}>
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: 'var(--color-text-muted)',
+                    lineHeight: 1.6,
+                    marginBottom: 16,
+                  }}
+                >
                   Deleting your account removes your profile, posts, bids, messages, credits, and
-                  all other data. <strong style={{ color: 'var(--color-text)' }}>This cannot be undone.</strong>
-                  {' '}There is no grace period and no way to recover your account after this step.
+                  all other data.{' '}
+                  <strong style={{ color: 'var(--color-text)' }}>This cannot be undone.</strong>{' '}
+                  There is no grace period and no way to recover your account after this step.
                 </div>
                 <div style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 8 }}>
                   Type <strong style={{ color: 'var(--color-text)' }}>DELETE</strong> to confirm:

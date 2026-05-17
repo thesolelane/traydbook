@@ -646,10 +646,18 @@ export default function Landing() {
                   clients, and build your verified profile — zero cost, forever.
                 </p>
                 <div className="lpfb-perks">
-                  <span><span style={{ color: '#e85d04' }}>✓</span> Unlimited bid submissions</span>
-                  <span><span style={{ color: '#e85d04' }}>✓</span> Full profile + portfolio</span>
-                  <span><span style={{ color: '#e85d04' }}>✓</span> Direct messaging</span>
-                  <span><span style={{ color: '#e85d04' }}>✓</span> Verified badge eligibility</span>
+                  <span>
+                    <span style={{ color: '#e85d04' }}>✓</span> Unlimited bid submissions
+                  </span>
+                  <span>
+                    <span style={{ color: '#e85d04' }}>✓</span> Full profile + portfolio
+                  </span>
+                  <span>
+                    <span style={{ color: '#e85d04' }}>✓</span> Direct messaging
+                  </span>
+                  <span>
+                    <span style={{ color: '#e85d04' }}>✓</span> Verified badge eligibility
+                  </span>
                 </div>
               </div>
             </div>
@@ -680,9 +688,7 @@ export default function Landing() {
                   <div className="lcc-credits">{bundle.credits} credits</div>
                   <div className="lcc-tagline">{bundle.tagline}</div>
                 </div>
-                <div className="lcc-welcome">
-                  🎁 Get started free — 50 credits included
-                </div>
+                <div className="lcc-welcome">🎁 Get started free — 50 credits included</div>
                 <div className="lcc-actions">
                   <div className="lcc-actions-label">What you can do:</div>
                   <ul className="lcc-actions-list">

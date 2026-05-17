@@ -43,11 +43,7 @@ export async function requireAdminLevel(req, res, next) {
 export async function isProtectedAdmin(userId) {
   const protectedEmail = process.env.PROTECTED_SUPER_ADMIN_EMAIL
   if (!protectedEmail) return false
-  const { data } = await supabaseAdmin
-    .from('users')
-    .select('email')
-    .eq('id', userId)
-    .single()
+  const { data } = await supabaseAdmin.from('users').select('email').eq('id', userId).single()
   return data?.email?.toLowerCase() === protectedEmail.toLowerCase()
 }
 
@@ -78,7 +74,8 @@ export async function blockProtectedAdmin(req, res, next) {
     console.warn(`[admin] Blocked attempt to modify protected super admin by ${req.user?.id}`)
     return res.status(403).json({
       error: 'PROTECTED_ADMIN',
-      message: 'This account is the protected super admin and cannot be modified through the panel.',
+      message:
+        'This account is the protected super admin and cannot be modified through the panel.',
     })
   }
   next()

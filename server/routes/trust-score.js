@@ -10,7 +10,9 @@ router.get('/api/contractor/:id/trust-score', async (req, res) => {
 
   const { data: cp, error: cpErr } = await supabaseAdmin
     .from('contractor_profiles')
-    .select('trust_score, trust_score_updated_at, badge_tier, bio, years_experience, secondary_trades, service_radius_miles, rating_avg, rating_count, projects_completed, id')
+    .select(
+      'trust_score, trust_score_updated_at, badge_tier, bio, years_experience, secondary_trades, service_radius_miles, rating_avg, rating_count, projects_completed, id'
+    )
     .eq('user_id', id)
     .single()
 
@@ -34,7 +36,7 @@ router.get('/api/contractor/:id/trust-score', async (req, res) => {
   const breakdown = [
     {
       label: 'Profile photo',
-      earned: !!(user?.avatar_url),
+      earned: !!user?.avatar_url,
       points: 10,
       tip: 'Add a profile photo',
     },
@@ -52,7 +54,7 @@ router.get('/api/contractor/:id/trust-score', async (req, res) => {
     },
     {
       label: 'Trades & service area',
-      earned: (cp.secondary_trades?.length > 0) || cp.service_radius_miles !== 50,
+      earned: cp.secondary_trades?.length > 0 || cp.service_radius_miles !== 50,
       points: 5,
       tip: 'Add secondary trades or customise your service radius',
     },
@@ -65,7 +67,14 @@ router.get('/api/contractor/:id/trust-score', async (req, res) => {
     {
       label: 'Verified badge',
       earned: !!cp.badge_tier,
-      points: cp.badge_tier === 'pro_verified' ? 20 : cp.badge_tier === 'licensed' ? 15 : cp.badge_tier === 'vouched' ? 10 : 0,
+      points:
+        cp.badge_tier === 'pro_verified'
+          ? 20
+          : cp.badge_tier === 'licensed'
+            ? 15
+            : cp.badge_tier === 'vouched'
+              ? 10
+              : 0,
       tip: 'Earn a Verified badge (Vouched, Licensed, or Pro Verified)',
     },
     {
@@ -73,8 +82,8 @@ router.get('/api/contractor/:id/trust-score', async (req, res) => {
       earned: cp.rating_avg >= 3.5 && cp.rating_count >= 1,
       points: Math.min(
         (cp.rating_avg >= 3.5 && cp.rating_count >= 1 ? 5 : 0) +
-        (cp.rating_avg >= 4.0 && cp.rating_count >= 3 ? 5 : 0) +
-        (cp.rating_avg >= 4.5 && cp.rating_count >= 5 ? 5 : 0),
+          (cp.rating_avg >= 4.0 && cp.rating_count >= 3 ? 5 : 0) +
+          (cp.rating_avg >= 4.5 && cp.rating_count >= 5 ? 5 : 0),
         15
       ),
       tip: 'Receive reviews from clients',
@@ -83,9 +92,9 @@ router.get('/api/contractor/:id/trust-score', async (req, res) => {
       label: 'Projects completed',
       earned: cp.projects_completed >= 1,
       points: Math.min(
-        (cp.projects_completed >= 1  ? 5 : 0) +
-        (cp.projects_completed >= 5  ? 5 : 0) +
-        (cp.projects_completed >= 20 ? 5 : 0),
+        (cp.projects_completed >= 1 ? 5 : 0) +
+          (cp.projects_completed >= 5 ? 5 : 0) +
+          (cp.projects_completed >= 20 ? 5 : 0),
         15
       ),
       tip: 'Log completed projects on your profile',
@@ -104,8 +113,7 @@ router.get('/api/contractor/:id/trust-score', async (req, res) => {
 router.post('/api/contractor/:id/trust-score/recalculate', async (req, res) => {
   const { id } = req.params
 
-  const { data, error } = await supabaseAdmin
-    .rpc('recalculate_trust_score', { p_user_id: id })
+  const { data, error } = await supabaseAdmin.rpc('recalculate_trust_score', { p_user_id: id })
 
   if (error) return res.status(500).json({ error: error.message })
 

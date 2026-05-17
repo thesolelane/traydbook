@@ -163,39 +163,43 @@ export default function Admin() {
             >
               {group.label}
             </div>
-            {group.items.filter(item => !item.superOnly || isSuperAdminUser).map(item => (
-              <button
-                key={item.id}
-                onClick={() => setSection(item.id)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  padding: '10px 20px',
-                  width: '100%',
-                  background: section === item.id ? 'rgba(226,114,42,0.1)' : 'none',
-                  border: 'none',
-                  borderRight:
-                    section === item.id ? '3px solid var(--color-brand)' : '3px solid transparent',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color:
-                    item.id === 'errors'
-                      ? section === item.id
-                        ? '#e05252'
-                        : '#e05252cc'
-                      : section === item.id
-                        ? 'var(--color-brand)'
-                        : 'var(--color-text-muted)',
-                  transition: 'all 0.15s',
-                }}
-              >
-                {item.icon}
-                {item.label}
-              </button>
-            ))}
+            {group.items
+              .filter(item => !item.superOnly || isSuperAdminUser)
+              .map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => setSection(item.id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '10px 20px',
+                    width: '100%',
+                    background: section === item.id ? 'rgba(226,114,42,0.1)' : 'none',
+                    border: 'none',
+                    borderRight:
+                      section === item.id
+                        ? '3px solid var(--color-brand)'
+                        : '3px solid transparent',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color:
+                      item.id === 'errors'
+                        ? section === item.id
+                          ? '#e05252'
+                          : '#e05252cc'
+                        : section === item.id
+                          ? 'var(--color-brand)'
+                          : 'var(--color-text-muted)',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {item.icon}
+                  {item.label}
+                </button>
+              ))}
           </div>
         ))}
       </aside>
@@ -218,21 +222,21 @@ export default function Admin() {
           </p>
         </div>
 
-        {section === 'overview'    && <OverviewSection authHeaders={authHeaders} />}
-        {section === 'users'       && <UsersSection authHeaders={authHeaders} />}
-        {section === 'wallets'     && <WalletsSection authHeaders={authHeaders} />}
-        {section === 'feed'        && <FeedSection authHeaders={authHeaders} />}
-        {section === 'controls'    && <ControlsSection />}
-        {section === 'payments'    && <PaymentsSection authHeaders={authHeaders} />}
-        {section === 'domains'     && <DomainsSection />}
-        {section === 'secrets'     && <SecretsSection authHeaders={authHeaders} />}
-        {section === 'errors'      && <ErrorLogSection authHeaders={authHeaders} />}
-        {section === 'threats'     && <ThreatMonitorSection authHeaders={authHeaders} />}
-        {section === 'moderation'  && <ModerationQueueSection authHeaders={authHeaders} />}
-        {section === 'audit'       && <AuditLogSection authHeaders={authHeaders} />}
-        {section === 'revoke'      && <SessionRevokeSection authHeaders={authHeaders} />}
-        {section === 'ai'          && <AiCommandSection authHeaders={authHeaders} />}
-        {section === 'bob'         && <BobMonitorSection authHeaders={authHeaders} />}
+        {section === 'overview' && <OverviewSection authHeaders={authHeaders} />}
+        {section === 'users' && <UsersSection authHeaders={authHeaders} />}
+        {section === 'wallets' && <WalletsSection authHeaders={authHeaders} />}
+        {section === 'feed' && <FeedSection authHeaders={authHeaders} />}
+        {section === 'controls' && <ControlsSection />}
+        {section === 'payments' && <PaymentsSection authHeaders={authHeaders} />}
+        {section === 'domains' && <DomainsSection />}
+        {section === 'secrets' && <SecretsSection authHeaders={authHeaders} />}
+        {section === 'errors' && <ErrorLogSection authHeaders={authHeaders} />}
+        {section === 'threats' && <ThreatMonitorSection authHeaders={authHeaders} />}
+        {section === 'moderation' && <ModerationQueueSection authHeaders={authHeaders} />}
+        {section === 'audit' && <AuditLogSection authHeaders={authHeaders} />}
+        {section === 'revoke' && <SessionRevokeSection authHeaders={authHeaders} />}
+        {section === 'ai' && <AiCommandSection authHeaders={authHeaders} />}
+        {section === 'bob' && <BobMonitorSection authHeaders={authHeaders} />}
       </main>
     </div>
   )

@@ -960,7 +960,9 @@
   flex-direction: column;
   gap: 16px;
   position: relative;
-  transition: border-color 0.15s, transform 0.15s;
+  transition:
+    border-color 0.15s,
+    transform 0.15s;
 }
 
 .landing-credit-card:hover {

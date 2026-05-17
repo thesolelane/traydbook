@@ -270,12 +270,14 @@ export default function SignupOwner() {
         location_zip: null,
         credit_balance: 50,
         deleted_at: null,
-        ...(referral ? {
-          referral_source: referral.referral_source,
-          referral_code: referral.referral_code,
-          utm_params: referral.utm_params,
-          referred_at: referral.referred_at,
-        } : {}),
+        ...(referral
+          ? {
+              referral_source: referral.referral_source,
+              referral_code: referral.referral_code,
+              utm_params: referral.utm_params,
+              referred_at: referral.referred_at,
+            }
+          : {}),
       })
 
       if (profileError) throw new Error(profileError.message)

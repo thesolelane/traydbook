@@ -378,7 +378,10 @@ function RFQCard({
           <div style={{ display: 'flex', gap: 6 }}>
             {isContractor && onPass && (
               <button
-                onClick={e => { e.stopPropagation(); onPass(rfq.id, !!isPassed) }}
+                onClick={e => {
+                  e.stopPropagation()
+                  onPass(rfq.id, !!isPassed)
+                }}
                 className="btn btn-ghost"
                 style={{
                   fontSize: 12,
@@ -387,15 +390,19 @@ function RFQCard({
                   alignItems: 'center',
                   gap: 4,
                   color: isPassed ? 'var(--color-text-muted)' : '#DC2626',
-                  border: isPassed
-                    ? '1.5px solid var(--color-border)'
-                    : '1.5px solid #DC262640',
+                  border: isPassed ? '1.5px solid var(--color-border)' : '1.5px solid #DC262640',
                 }}
                 title={isPassed ? 'Undo pass' : 'Pass on this RFQ'}
               >
-                {isPassed
-                  ? <><RotateCcw size={11} /> Undo</>
-                  : <><XCircle size={11} /> Pass</>}
+                {isPassed ? (
+                  <>
+                    <RotateCcw size={11} /> Undo
+                  </>
+                ) : (
+                  <>
+                    <XCircle size={11} /> Pass
+                  </>
+                )}
               </button>
             )}
             {isContractor && !isPassed && (
@@ -472,7 +479,9 @@ export default function Bids() {
   }, [profile])
 
   async function loadPasses() {
-    const { data: { session } } = await supabase.auth.getSession()
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
     const res = await fetch('/api/passes/rfq', {
       headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
     })
@@ -483,7 +492,9 @@ export default function Bids() {
   }
 
   async function handlePass(rfqId: string, undo: boolean) {
-    const { data: { session } } = await supabase.auth.getSession()
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
     const method = undo ? 'DELETE' : 'POST'
     const res = await fetch('/api/pass', {
       method,

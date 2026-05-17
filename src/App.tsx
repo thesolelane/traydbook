@@ -344,8 +344,22 @@ export default function App() {
           />
 
           {/* Legal pages — public, no auth required */}
-          <Route path="/privacy" element={<AppLayout><Privacy /></AppLayout>} />
-          <Route path="/terms" element={<AppLayout><Terms /></AppLayout>} />
+          <Route
+            path="/privacy"
+            element={
+              <AppLayout>
+                <Privacy />
+              </AppLayout>
+            }
+          />
+          <Route
+            path="/terms"
+            element={
+              <AppLayout>
+                <Terms />
+              </AppLayout>
+            }
+          />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

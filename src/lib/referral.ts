@@ -25,7 +25,7 @@ export function captureReferral(): void {
   const ref = params.get('ref')
   const utmSource = params.get('utm_source')
 
-  if (!ref && !utmSource) return  // no tracking params — organic visit
+  if (!ref && !utmSource) return // no tracking params — organic visit
 
   const utmParams: Record<string, string> = {}
   for (const key of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term']) {

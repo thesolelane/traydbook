@@ -14,12 +14,14 @@ export async function alertAdmins(alert) {
     channels.push(sendPagerDutyAlert(alert))
   }
 
-  channels.push(appendToLocalAuditLog({
-    type: 'ALERT',
-    severity: alert.severity,
-    content: alert,
-    timestamp: new Date().toISOString(),
-  }))
+  channels.push(
+    appendToLocalAuditLog({
+      type: 'ALERT',
+      severity: alert.severity,
+      content: alert,
+      timestamp: new Date().toISOString(),
+    })
+  )
 
   await Promise.allSettled(channels)
 }

@@ -20,7 +20,10 @@ router.post('/api/pass', requireAuth, async (req, res) => {
 
   const { error } = await supabaseAdmin
     .from('passes')
-    .upsert({ user_id: userId, target_type, target_id }, { onConflict: 'user_id,target_type,target_id' })
+    .upsert(
+      { user_id: userId, target_type, target_id },
+      { onConflict: 'user_id,target_type,target_id' }
+    )
 
   if (error) return res.status(500).json({ error: error.message })
 

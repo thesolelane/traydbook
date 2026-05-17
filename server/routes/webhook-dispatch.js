@@ -13,9 +13,7 @@ const router = Router()
 export async function dispatchWebhook({ url, secret, event, payload }) {
   const timestamp = Math.floor(Date.now() / 1000)
   const body = JSON.stringify({ event, timestamp, payload })
-  const sig = createHmac('sha256', secret)
-    .update(`${timestamp}.${body}`)
-    .digest('hex')
+  const sig = createHmac('sha256', secret).update(`${timestamp}.${body}`).digest('hex')
 
   const res = await fetch(url, {
     method: 'POST',

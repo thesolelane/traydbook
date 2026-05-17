@@ -38,13 +38,17 @@ interface CheckItem {
   unlocks: string
   done: boolean
   href: string
-  weight: number   // impact points (sums to 100)
+  weight: number // impact points (sums to 100)
 }
 
 function buildItems(user: User, cp: ContractorProfile, credentials: Credential[]): CheckItem[] {
-  const hasLicense = credentials.some(c => c.status === 'active' && c.credential_type !== 'insurance')
-  const hasInsurance = credentials.some(c => c.status === 'active' && c.credential_type === 'insurance')
-  const hasLinkedIn = !!(user.social_links?.linkedin)
+  const hasLicense = credentials.some(
+    c => c.status === 'active' && c.credential_type !== 'insurance'
+  )
+  const hasInsurance = credentials.some(
+    c => c.status === 'active' && c.credential_type === 'insurance'
+  )
+  const hasLinkedIn = !!user.social_links?.linkedin
 
   return [
     {
@@ -68,7 +72,7 @@ function buildItems(user: User, cp: ContractorProfile, credentials: Credential[]
     {
       key: 'years',
       label: 'Set years of experience',
-      description: 'Shows clients how long you\'ve been in the trade.',
+      description: "Shows clients how long you've been in the trade.",
       unlocks: '+5 Trust Score',
       done: !!cp.years_experience && cp.years_experience > 0,
       href: '/settings/profile',
@@ -169,12 +173,16 @@ export default function ProfileCompletenessCard({ user, cp, credentials }: Props
   const barColor = pct >= 80 ? '#10B981' : pct >= 50 ? '#F59E0B' : 'var(--color-brand)'
 
   return (
-    <div
-      className="card"
-      style={{ padding: '20px 24px' }}
-    >
+    <div className="card" style={{ padding: '20px 24px' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          marginBottom: 16,
+        }}
+      >
         <div>
           <h3
             style={{
@@ -268,7 +276,10 @@ export default function ProfileCompletenessCard({ user, cp, credentials }: Props
                     {item.label}
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 1 }}>
-                    Unlocks: <span style={{ color: 'var(--color-brand)', fontWeight: 600 }}>{item.unlocks}</span>
+                    Unlocks:{' '}
+                    <span style={{ color: 'var(--color-brand)', fontWeight: 600 }}>
+                      {item.unlocks}
+                    </span>
                   </div>
                 </div>
                 <ChevronRight size={13} color="var(--color-text-muted)" style={{ flexShrink: 0 }} />
@@ -310,7 +321,13 @@ export default function ProfileCompletenessCard({ user, cp, credentials }: Props
                 }}
               >
                 <CheckCircle size={15} color="#10B981" style={{ flexShrink: 0 }} />
-                <span style={{ fontSize: 13, color: 'var(--color-text)', textDecoration: 'line-through' }}>
+                <span
+                  style={{
+                    fontSize: 13,
+                    color: 'var(--color-text)',
+                    textDecoration: 'line-through',
+                  }}
+                >
                   {item.label}
                 </span>
               </div>

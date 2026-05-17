@@ -93,7 +93,7 @@ export default function AiCommandSection({ authHeaders }: SectionProps) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <Terminal size={16} color='var(--color-brand)' />
+        <Terminal size={16} color="var(--color-brand)" />
         <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
           Natural language admin commands — powered by BOB (Ollama) or OpenAI
         </span>
@@ -104,11 +104,17 @@ export default function AiCommandSection({ authHeaders }: SectionProps) {
         {EXAMPLES.map(ex => (
           <button
             key={ex}
-            onClick={() => { setCommand(ex); inputRef.current?.focus() }}
+            onClick={() => {
+              setCommand(ex)
+              inputRef.current?.focus()
+            }}
             style={{
-              padding: '4px 10px', borderRadius: 20, fontSize: 11,
+              padding: '4px 10px',
+              borderRadius: 20,
+              fontSize: 11,
               border: '1px solid var(--color-border)',
-              background: 'var(--color-surface)', color: 'var(--color-text-muted)',
+              background: 'var(--color-surface)',
+              color: 'var(--color-text-muted)',
               cursor: 'pointer',
             }}
           >
@@ -123,23 +129,41 @@ export default function AiCommandSection({ authHeaders }: SectionProps) {
           ref={inputRef}
           value={command}
           onChange={e => setCommand(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void runCommand() } }}
+          onKeyDown={e => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault()
+              void runCommand()
+            }
+          }}
           rows={2}
           placeholder="Type a command... (Enter to send)"
           style={{
-            flex: 1, background: 'var(--color-surface)', border: '1px solid var(--color-border)',
-            borderRadius: 8, color: 'var(--color-text)', padding: '10px 14px', fontSize: 13,
-            resize: 'none', fontFamily: 'var(--font-sans)',
+            flex: 1,
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 8,
+            color: 'var(--color-text)',
+            padding: '10px 14px',
+            fontSize: 13,
+            resize: 'none',
+            fontFamily: 'var(--font-sans)',
           }}
         />
         <button
           onClick={() => void runCommand()}
           disabled={loading || command.length < 3}
           style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            padding: '10px 18px', borderRadius: 8, border: 'none',
-            background: 'var(--color-brand)', color: '#fff', fontSize: 13,
-            fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '10px 18px',
+            borderRadius: 8,
+            border: 'none',
+            background: 'var(--color-brand)',
+            color: '#fff',
+            fontSize: 13,
+            fontWeight: 700,
+            cursor: loading ? 'not-allowed' : 'pointer',
             opacity: loading || command.length < 3 ? 0.6 : 1,
           }}
         >
@@ -149,18 +173,50 @@ export default function AiCommandSection({ authHeaders }: SectionProps) {
       </div>
 
       {err && (
-        <div style={{ padding: 12, background: '#2a1515', border: '1px solid #e05252', borderRadius: 8, color: '#e05252', fontSize: 13 }}>{err}</div>
+        <div
+          style={{
+            padding: 12,
+            background: '#2a1515',
+            border: '1px solid #e05252',
+            borderRadius: 8,
+            color: '#e05252',
+            fontSize: 13,
+          }}
+        >
+          {err}
+        </div>
       )}
 
       {/* Result */}
       {result && (
-        <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 10, padding: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div
+          style={{
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 10,
+            padding: 18,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 14,
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text)' }}>{result.plan?.intent}</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text)' }}>
+              {result.plan?.intent}
+            </span>
             <span style={{ fontSize: 11, color: confColor, fontWeight: 700 }}>
               {Math.round(confidence * 100)}% confident
             </span>
-            <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--color-text-muted)', background: 'var(--color-bg)', padding: '2px 8px', borderRadius: 4 }}>
+            <span
+              style={{
+                marginLeft: 'auto',
+                fontSize: 11,
+                color: 'var(--color-text-muted)',
+                background: 'var(--color-bg)',
+                padding: '2px 8px',
+                borderRadius: 4,
+              }}
+            >
               via {result.provider}
             </span>
           </div>
@@ -169,8 +225,25 @@ export default function AiCommandSection({ authHeaders }: SectionProps) {
 
           {result.plan?.parameters && Object.keys(result.plan.parameters).length > 0 && (
             <div style={{ background: 'var(--color-bg)', borderRadius: 6, padding: 10 }}>
-              <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Parameters</div>
-              <pre style={{ margin: 0, fontSize: 11, color: 'var(--color-text)', fontFamily: 'monospace' }}>
+              <div
+                style={{
+                  fontSize: 11,
+                  color: 'var(--color-text-muted)',
+                  marginBottom: 6,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                }}
+              >
+                Parameters
+              </div>
+              <pre
+                style={{
+                  margin: 0,
+                  fontSize: 11,
+                  color: 'var(--color-text)',
+                  fontFamily: 'monospace',
+                }}
+              >
                 {JSON.stringify(result.plan.parameters, null, 2)}
               </pre>
             </div>
@@ -178,8 +251,27 @@ export default function AiCommandSection({ authHeaders }: SectionProps) {
 
           {result.preview && result.preview.length > 0 && (
             <div style={{ background: 'var(--color-bg)', borderRadius: 6, padding: 10 }}>
-              <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Preview ({result.preview.length})</div>
-              <pre style={{ margin: 0, fontSize: 11, color: 'var(--color-text)', fontFamily: 'monospace', maxHeight: 200, overflow: 'auto' }}>
+              <div
+                style={{
+                  fontSize: 11,
+                  color: 'var(--color-text-muted)',
+                  marginBottom: 6,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                }}
+              >
+                Preview ({result.preview.length})
+              </div>
+              <pre
+                style={{
+                  margin: 0,
+                  fontSize: 11,
+                  color: 'var(--color-text)',
+                  fontFamily: 'monospace',
+                  maxHeight: 200,
+                  overflow: 'auto',
+                }}
+              >
                 {JSON.stringify(result.preview, null, 2)}
               </pre>
             </div>
@@ -187,33 +279,68 @@ export default function AiCommandSection({ authHeaders }: SectionProps) {
 
           {result.requiresConfirmation ? (
             <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-              <AlertTriangle size={14} color='#e0b852' />
-              <span style={{ fontSize: 12, color: '#e0b852', flex: 1 }}>This action requires confirmation before executing</span>
+              <AlertTriangle size={14} color="#e0b852" />
+              <span style={{ fontSize: 12, color: '#e0b852', flex: 1 }}>
+                This action requires confirmation before executing
+              </span>
               <button
                 onClick={() => setResult(null)}
-                style={{ padding: '7px 14px', borderRadius: 6, border: '1px solid var(--color-border)', background: 'none', color: 'var(--color-text-muted)', fontSize: 12, cursor: 'pointer' }}
+                style={{
+                  padding: '7px 14px',
+                  borderRadius: 6,
+                  border: '1px solid var(--color-border)',
+                  background: 'none',
+                  color: 'var(--color-text-muted)',
+                  fontSize: 12,
+                  cursor: 'pointer',
+                }}
               >
                 Cancel
               </button>
               <button
                 onClick={executeConfirmed}
                 disabled={executing}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px', borderRadius: 6, border: 'none', background: 'var(--color-brand)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '7px 16px',
+                  borderRadius: 6,
+                  border: 'none',
+                  background: 'var(--color-brand)',
+                  color: '#fff',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
               >
                 {executing ? <Loader size={12} /> : <CheckCircle size={12} />}
                 {executing ? 'Executing...' : 'Confirm & Execute'}
               </button>
             </div>
           ) : (
-            <div style={{ fontSize: 12, color: '#52c97a' }}>✓ Read-only — no confirmation needed</div>
+            <div style={{ fontSize: 12, color: '#52c97a' }}>
+              ✓ Read-only — no confirmation needed
+            </div>
           )}
         </div>
       )}
 
       {executed && (
-        <div style={{ padding: 14, background: '#1a3a25', border: '1px solid #52c97a', borderRadius: 8 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#52c97a', marginBottom: 8 }}>✓ Executed</div>
-          <pre style={{ margin: 0, fontSize: 11, color: 'var(--color-text)', fontFamily: 'monospace' }}>
+        <div
+          style={{
+            padding: 14,
+            background: '#1a3a25',
+            border: '1px solid #52c97a',
+            borderRadius: 8,
+          }}
+        >
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#52c97a', marginBottom: 8 }}>
+            ✓ Executed
+          </div>
+          <pre
+            style={{ margin: 0, fontSize: 11, color: 'var(--color-text)', fontFamily: 'monospace' }}
+          >
             {JSON.stringify(executed, null, 2)}
           </pre>
         </div>
@@ -222,13 +349,32 @@ export default function AiCommandSection({ authHeaders }: SectionProps) {
       {/* History */}
       {history.length > 0 && (
         <div>
-          <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Recent Commands</div>
+          <div
+            style={{
+              fontSize: 11,
+              color: 'var(--color-text-muted)',
+              marginBottom: 6,
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+            }}
+          >
+            Recent Commands
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {history.map((h, i) => (
               <button
                 key={i}
                 onClick={() => setCommand(h)}
-                style={{ textAlign: 'left', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 6, padding: '6px 10px', fontSize: 12, color: 'var(--color-text-muted)', cursor: 'pointer' }}
+                style={{
+                  textAlign: 'left',
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 6,
+                  padding: '6px 10px',
+                  fontSize: 12,
+                  color: 'var(--color-text-muted)',
+                  cursor: 'pointer',
+                }}
               >
                 {h}
               </button>

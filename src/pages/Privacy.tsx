@@ -31,32 +31,38 @@ export default function Privacy() {
       </p>
 
       <div style={{ fontSize: 15, color: 'var(--color-text)', lineHeight: 1.75 }}>
-
         <Section title="1. Who we are">
-          TraydBook is a professional network for the construction industry, operated by TraydBook Inc.
-          ("TraydBook", "we", "us"). This Privacy Policy explains how we collect, use, and protect
-          information about you when you use our platform at traydbook.com and related services.
+          TraydBook is a professional network for the construction industry, operated by TraydBook
+          Inc. ("TraydBook", "we", "us"). This Privacy Policy explains how we collect, use, and
+          protect information about you when you use our platform at traydbook.com and related
+          services.
         </Section>
 
         <Section title="2. Information we collect">
           <strong>Information you provide:</strong>
           <ul style={{ marginTop: 8, paddingLeft: 20, lineHeight: 2 }}>
             <li>Account registration details (name, email, phone number)</li>
-            <li>Professional profile information (trade, license numbers, company name, location)</li>
+            <li>
+              Professional profile information (trade, license numbers, company name, location)
+            </li>
             <li>Content you post (project updates, bids, job listings, messages)</li>
-            <li>Payment information (processed securely by Stripe — we do not store card numbers)</li>
+            <li>
+              Payment information (processed securely by Stripe — we do not store card numbers)
+            </li>
             <li>Verification documents submitted for the Verified Badge program</li>
           </ul>
-          <strong style={{ display: 'block', marginTop: 12 }}>Information collected automatically:</strong>
+          <strong style={{ display: 'block', marginTop: 12 }}>
+            Information collected automatically:
+          </strong>
           <ul style={{ marginTop: 8, paddingLeft: 20, lineHeight: 2 }}>
             <li>Device and browser type, IP address</li>
             <li>Pages visited, features used, and time spent on the platform</li>
             <li>Authentication logs and session data</li>
           </ul>
           <p style={{ marginTop: 12 }}>
-            <strong>License information:</strong> Contractor license numbers entered on TraydBook are
-            publicly accessible information by nature (issued by government licensing boards). We display
-            them on your public profile to establish trust with project owners.
+            <strong>License information:</strong> Contractor license numbers entered on TraydBook
+            are publicly accessible information by nature (issued by government licensing boards).
+            We display them on your public profile to establish trust with project owners.
           </p>
         </Section>
 
@@ -75,26 +81,47 @@ export default function Privacy() {
         </Section>
 
         <Section title="4. How we share your information">
-          <p>Your public profile information (name, handle, trade, location, license numbers, reviews) is
-          visible to other TraydBook users. You can make your profile private in Settings → Privacy.</p>
+          <p>
+            Your public profile information (name, handle, trade, location, license numbers,
+            reviews) is visible to other TraydBook users. You can make your profile private in
+            Settings → Privacy.
+          </p>
           <p style={{ marginTop: 10 }}>We share information with:</p>
           <ul style={{ paddingLeft: 20, lineHeight: 2 }}>
-            <li><strong>Supabase</strong> — database and authentication infrastructure</li>
-            <li><strong>Stripe</strong> — payment processing</li>
-            <li><strong>Telnyx</strong> — SMS notifications (only if you subscribe)</li>
+            <li>
+              <strong>Supabase</strong> — database and authentication infrastructure
+            </li>
+            <li>
+              <strong>Stripe</strong> — payment processing
+            </li>
+            <li>
+              <strong>Telnyx</strong> — SMS notifications (only if you subscribe)
+            </li>
           </ul>
           <p style={{ marginTop: 10 }}>
-            We may disclose information if required by law, court order, or to protect the rights and
-            safety of our users or the public.
+            We may disclose information if required by law, court order, or to protect the rights
+            and safety of our users or the public.
           </p>
         </Section>
 
         <Section title="5. Data retention">
           <ul style={{ paddingLeft: 20, lineHeight: 2 }}>
-            <li><strong>Active accounts:</strong> Data is retained while your account is active</li>
-            <li><strong>Frozen accounts:</strong> Data is retained for up to 6 months from the freeze date, then permanently deleted</li>
-            <li><strong>Deleted accounts:</strong> Core account data is removed within 30 days. Anonymized activity records (e.g., bid history without personal identifiers) may be retained for up to 12 months for platform integrity purposes</li>
-            <li><strong>Payment records:</strong> Retained for 7 years as required by financial regulations</li>
+            <li>
+              <strong>Active accounts:</strong> Data is retained while your account is active
+            </li>
+            <li>
+              <strong>Frozen accounts:</strong> Data is retained for up to 6 months from the freeze
+              date, then permanently deleted
+            </li>
+            <li>
+              <strong>Deleted accounts:</strong> Core account data is removed within 30 days.
+              Anonymized activity records (e.g., bid history without personal identifiers) may be
+              retained for up to 12 months for platform integrity purposes
+            </li>
+            <li>
+              <strong>Payment records:</strong> Retained for 7 years as required by financial
+              regulations
+            </li>
           </ul>
         </Section>
 
@@ -109,16 +136,17 @@ export default function Privacy() {
             <li>Make your profile private (Settings → Privacy)</li>
           </ul>
           <p style={{ marginTop: 10 }}>
-            California residents have additional rights under CCPA. EU/EEA residents have rights under
-            GDPR. Contact us at <strong>privacy@traydbook.com</strong> to exercise any of these rights.
+            California residents have additional rights under CCPA. EU/EEA residents have rights
+            under GDPR. Contact us at <strong>privacy@traydbook.com</strong> to exercise any of
+            these rights.
           </p>
         </Section>
 
         <Section title="7. Security">
-          All data is transmitted over TLS/HTTPS. Passwords are hashed and never stored in plain text.
-          Access to production systems is restricted and logged. Payment data is handled exclusively
-          by Stripe and never touches our servers. We conduct regular security reviews and maintain
-          access controls to protect your information.
+          All data is transmitted over TLS/HTTPS. Passwords are hashed and never stored in plain
+          text. Access to production systems is restricted and logged. Payment data is handled
+          exclusively by Stripe and never touches our servers. We conduct regular security reviews
+          and maintain access controls to protect your information.
         </Section>
 
         <Section title="8. Cookies">
@@ -142,11 +170,11 @@ export default function Privacy() {
         <Section title="11. Contact">
           <p>For privacy questions or data requests:</p>
           <p style={{ marginTop: 8 }}>
-            <strong>Email:</strong> privacy@traydbook.com<br />
+            <strong>Email:</strong> privacy@traydbook.com
+            <br />
             <strong>TraydBook Inc.</strong>
           </p>
         </Section>
-
       </div>
     </div>
   )
@@ -169,9 +197,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       >
         {title}
       </h2>
-      <div style={{ fontSize: 14, color: 'var(--color-text)', lineHeight: 1.75 }}>
-        {children}
-      </div>
+      <div style={{ fontSize: 14, color: 'var(--color-text)', lineHeight: 1.75 }}>{children}</div>
     </div>
   )
 }

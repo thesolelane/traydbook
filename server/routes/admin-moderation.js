@@ -43,10 +43,17 @@ router.post('/:id/resolve', async (req, res) => {
     if (decision === 'reject') {
       await supabaseAdmin
         .from(item.content_table)
-        .update({ status: 'rejected', rejected_at: new Date().toISOString(), rejected_reason: admin_notes })
+        .update({
+          status: 'rejected',
+          rejected_at: new Date().toISOString(),
+          rejected_reason: admin_notes,
+        })
         .eq('id', item.content_id)
     } else if (decision === 'approve') {
-      await supabaseAdmin.from(item.content_table).update({ status: 'active' }).eq('id', item.content_id)
+      await supabaseAdmin
+        .from(item.content_table)
+        .update({ status: 'active' })
+        .eq('id', item.content_id)
     }
   }
 

@@ -26,7 +26,9 @@ export default function ModerationQueueSection({ authHeaders }: SectionProps) {
     setLoading(true)
     setErr('')
     try {
-      const res = await fetch(`/api/admin/moderation/queue?status=${filter}`, { headers: authHeaders() })
+      const res = await fetch(`/api/admin/moderation/queue?status=${filter}`, {
+        headers: authHeaders(),
+      })
       if (!res.ok) throw new Error('Failed to load queue')
       const data = await res.json()
       setItems(data.items || [])
@@ -37,7 +39,9 @@ export default function ModerationQueueSection({ authHeaders }: SectionProps) {
     }
   }, [filter])
 
-  useEffect(() => { void load() }, [load])
+  useEffect(() => {
+    void load()
+  }, [load])
 
   async function resolve(id: string, decision: 'approve' | 'reject' | 'escalate') {
     setResolving(id)
@@ -71,11 +75,16 @@ export default function ModerationQueueSection({ authHeaders }: SectionProps) {
             key={s}
             onClick={() => setFilter(s)}
             style={{
-              padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600,
-              border: filter === s ? '1px solid var(--color-brand)' : '1px solid var(--color-border)',
+              padding: '5px 12px',
+              borderRadius: 20,
+              fontSize: 12,
+              fontWeight: 600,
+              border:
+                filter === s ? '1px solid var(--color-brand)' : '1px solid var(--color-border)',
               background: filter === s ? 'rgba(226,114,42,0.15)' : 'var(--color-surface)',
               color: filter === s ? 'var(--color-brand)' : 'var(--color-text-muted)',
-              cursor: 'pointer', textTransform: 'capitalize',
+              cursor: 'pointer',
+              textTransform: 'capitalize',
             }}
           >
             {s.replace('_', ' ')}
@@ -84,10 +93,17 @@ export default function ModerationQueueSection({ authHeaders }: SectionProps) {
         <button
           onClick={() => void load()}
           style={{
-            marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6,
-            background: 'var(--color-surface)', border: '1px solid var(--color-border)',
-            borderRadius: 6, color: 'var(--color-text-muted)', padding: '5px 12px',
-            fontSize: 12, cursor: 'pointer',
+            marginLeft: 'auto',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 6,
+            color: 'var(--color-text-muted)',
+            padding: '5px 12px',
+            fontSize: 12,
+            cursor: 'pointer',
           }}
         >
           <RefreshCw size={12} /> Refresh
@@ -95,32 +111,74 @@ export default function ModerationQueueSection({ authHeaders }: SectionProps) {
       </div>
 
       {err && (
-        <div style={{ padding: 12, background: '#2a1515', border: '1px solid #e05252', borderRadius: 8, color: '#e05252', fontSize: 13 }}>{err}</div>
+        <div
+          style={{
+            padding: 12,
+            background: '#2a1515',
+            border: '1px solid #e05252',
+            borderRadius: 8,
+            color: '#e05252',
+            fontSize: 13,
+          }}
+        >
+          {err}
+        </div>
       )}
 
       {loading ? (
         <div style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>Loading...</div>
       ) : items.length === 0 ? (
-        <div style={{ color: 'var(--color-text-muted)', fontSize: 13, textAlign: 'center', padding: 40 }}>
+        <div
+          style={{
+            color: 'var(--color-text-muted)',
+            fontSize: 13,
+            textAlign: 'center',
+            padding: 40,
+          }}
+        >
           No {filter.replace('_', ' ')} items
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {items.map(item => (
-            <div key={item.id} style={{
-              background: 'var(--color-surface)', border: '1px solid var(--color-border)',
-              borderRadius: 8, padding: 16,
-            }}>
+            <div
+              key={item.id}
+              style={{
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 8,
+                padding: 16,
+              }}
+            >
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-                <span style={{
-                  padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 700,
-                  background: (STATUS_COLOR[item.status] || '#888') + '22',
-                  color: STATUS_COLOR[item.status] || '#888',
-                  textTransform: 'uppercase',
-                }}>{item.status}</span>
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text)' }}>{item.content_type}</span>
-                <span style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--color-text-muted)' }}>{item.content_id}</span>
-                <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--color-text-muted)' }}>
+                <span
+                  style={{
+                    padding: '2px 8px',
+                    borderRadius: 4,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    background: (STATUS_COLOR[item.status] || '#888') + '22',
+                    color: STATUS_COLOR[item.status] || '#888',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {item.status}
+                </span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text)' }}>
+                  {item.content_type}
+                </span>
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontFamily: 'monospace',
+                    color: 'var(--color-text-muted)',
+                  }}
+                >
+                  {item.content_id}
+                </span>
+                <span
+                  style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--color-text-muted)' }}
+                >
                   {new Date(item.created_at).toLocaleString()}
                 </span>
               </div>
@@ -132,28 +190,69 @@ export default function ModerationQueueSection({ authHeaders }: SectionProps) {
                     value={noteMap[item.id] || ''}
                     onChange={e => setNoteMap(m => ({ ...m, [item.id]: e.target.value }))}
                     style={{
-                      flex: 1, background: 'var(--color-bg)', border: '1px solid var(--color-border)',
-                      borderRadius: 6, color: 'var(--color-text)', padding: '6px 10px', fontSize: 12,
+                      flex: 1,
+                      background: 'var(--color-bg)',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: 6,
+                      color: 'var(--color-text)',
+                      padding: '6px 10px',
+                      fontSize: 12,
                     }}
                   />
                   <button
                     onClick={() => resolve(item.id, 'approve')}
                     disabled={resolving === item.id}
-                    style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 6, border: 'none', background: '#1a3a25', color: '#52c97a', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      padding: '6px 12px',
+                      borderRadius: 6,
+                      border: 'none',
+                      background: '#1a3a25',
+                      color: '#52c97a',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
                   >
                     <CheckCircle size={13} /> Approve
                   </button>
                   <button
                     onClick={() => resolve(item.id, 'reject')}
                     disabled={resolving === item.id}
-                    style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 6, border: 'none', background: '#2a1515', color: '#e05252', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      padding: '6px 12px',
+                      borderRadius: 6,
+                      border: 'none',
+                      background: '#2a1515',
+                      color: '#e05252',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
                   >
                     <XCircle size={13} /> Reject
                   </button>
                   <button
                     onClick={() => resolve(item.id, 'escalate')}
                     disabled={resolving === item.id}
-                    style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 6, border: 'none', background: '#2a1a0a', color: '#e07c52', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      padding: '6px 12px',
+                      borderRadius: 6,
+                      border: 'none',
+                      background: '#2a1a0a',
+                      color: '#e07c52',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
                   >
                     <AlertTriangle size={13} /> Escalate
                   </button>

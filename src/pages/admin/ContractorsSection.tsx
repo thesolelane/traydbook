@@ -1,5 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Search, RefreshCw, TrendingUp, Layers, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react'
+import {
+  Search,
+  RefreshCw,
+  TrendingUp,
+  Layers,
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
+} from 'lucide-react'
 import {
   SectionProps,
   SectionCard,
@@ -97,25 +105,39 @@ export default function ContractorsSection({ authHeaders }: SectionProps) {
     }
   }, [page, search])
 
-  useEffect(() => { void loadContractors() }, [loadContractors])
+  useEffect(() => {
+    void loadContractors()
+  }, [loadContractors])
 
   async function expandLedger(userId: string) {
-    if (expandedId === userId) { setExpandedId(null); return }
+    if (expandedId === userId) {
+      setExpandedId(null)
+      return
+    }
     setExpandedId(userId)
     setLedgerLoading(true)
     try {
-      const res = await fetch(`/api/admin/contractors/${userId}/lead-bank/ledger`, { headers: authHeaders() })
+      const res = await fetch(`/api/admin/contractors/${userId}/lead-bank/ledger`, {
+        headers: authHeaders(),
+      })
       if (!res.ok) throw new Error()
       const data = await res.json()
       setLedger(data.ledger ?? [])
-    } catch { setLedger([]) }
+    } catch {
+      setLedger([])
+    }
     setLedgerLoading(false)
   }
 
   async function handleAdjust(e: React.FormEvent) {
     e.preventDefault()
-    if (!adjustId || !adjustDelta || !adjustReason) { setAdjustErr('All fields required'); return }
-    setAdjusting(true); setAdjustMsg(''); setAdjustErr('')
+    if (!adjustId || !adjustDelta || !adjustReason) {
+      setAdjustErr('All fields required')
+      return
+    }
+    setAdjusting(true)
+    setAdjustMsg('')
+    setAdjustErr('')
     try {
       const res = await fetch(`/api/admin/contractors/${adjustId}/lead-bank/adjust`, {
         method: 'POST',
@@ -125,15 +147,20 @@ export default function ContractorsSection({ authHeaders }: SectionProps) {
       if (!res.ok) throw new Error((await res.json()).error ?? 'Failed')
       const data = await res.json()
       setAdjustMsg(`Done — new balance: ${data.new_balance} leads`)
-      setAdjustDelta(''); setAdjustReason('')
+      setAdjustDelta('')
+      setAdjustReason('')
       void loadContractors()
     } catch (e) {
       setAdjustErr(e instanceof Error ? e.message : 'Failed')
-    } finally { setAdjusting(false) }
+    } finally {
+      setAdjusting(false)
+    }
   }
 
   async function handleRecalc(userId: string) {
-    setRecalcId(userId); setRecalcMsg(''); setRecalcErr('')
+    setRecalcId(userId)
+    setRecalcMsg('')
+    setRecalcErr('')
     try {
       const res = await fetch(`/api/admin/contractors/${userId}/trust-score/recalc`, {
         method: 'POST',
@@ -145,7 +172,9 @@ export default function ContractorsSection({ authHeaders }: SectionProps) {
       void loadContractors()
     } catch (e) {
       setRecalcErr(e instanceof Error ? e.message : 'Failed to recalculate')
-    } finally { setRecalcId(null) }
+    } finally {
+      setRecalcId(null)
+    }
   }
 
   const totalTrustAvg = contractors.length
@@ -158,25 +187,66 @@ export default function ContractorsSection({ authHeaders }: SectionProps) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Stats strip */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
-        <StatCard label="Avg Trust Score" value={totalTrustAvg} icon={<TrendingUp size={18} />} color="#10B981" />
-        <StatCard label="Total Lead Bank" value={totalLeads} sub="leads across all contractors" icon={<Layers size={18} />} color="#6366F1" />
-        <StatCard label="Badged Contractors" value={badged} sub={`of ${contractors.length} loaded`} icon={<TrendingUp size={18} />} color="#F59E0B" />
+        <StatCard
+          label="Avg Trust Score"
+          value={totalTrustAvg}
+          icon={<TrendingUp size={18} />}
+          color="#10B981"
+        />
+        <StatCard
+          label="Total Lead Bank"
+          value={totalLeads}
+          sub="leads across all contractors"
+          icon={<Layers size={18} />}
+          color="#6366F1"
+        />
+        <StatCard
+          label="Badged Contractors"
+          value={badged}
+          sub={`of ${contractors.length} loaded`}
+          icon={<TrendingUp size={18} />}
+          color="#F59E0B"
+        />
       </div>
 
       {/* Lead Bank Adjust */}
       <SectionCard title="Adjust Lead Bank Balance">
-        <form onSubmit={handleAdjust} style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'flex-end' }}>
+        <form
+          onSubmit={handleAdjust}
+          style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'flex-end' }}
+        >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <label style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: 600 }}>User ID</label>
-            <AdminInput value={adjustId} onChange={setAdjustId} placeholder="paste user_id" style={{ width: 280 }} />
+            <label style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: 600 }}>
+              User ID
+            </label>
+            <AdminInput
+              value={adjustId}
+              onChange={setAdjustId}
+              placeholder="paste user_id"
+              style={{ width: 280 }}
+            />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <label style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: 600 }}>Delta (+ or −)</label>
-            <AdminInput value={adjustDelta} onChange={setAdjustDelta} placeholder="e.g. 10 or -3" style={{ width: 100 }} />
+            <label style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: 600 }}>
+              Delta (+ or −)
+            </label>
+            <AdminInput
+              value={adjustDelta}
+              onChange={setAdjustDelta}
+              placeholder="e.g. 10 or -3"
+              style={{ width: 100 }}
+            />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <label style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: 600 }}>Reason</label>
-            <AdminInput value={adjustReason} onChange={setAdjustReason} placeholder="manual_grant / admin_adjustment / …" style={{ width: 240 }} />
+            <label style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: 600 }}>
+              Reason
+            </label>
+            <AdminInput
+              value={adjustReason}
+              onChange={setAdjustReason}
+              placeholder="manual_grant / admin_adjustment / …"
+              style={{ width: 240 }}
+            />
           </div>
           <button
             type="submit"
@@ -197,11 +267,25 @@ export default function ContractorsSection({ authHeaders }: SectionProps) {
         action={
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <Search size={14} color="var(--color-text-muted)" />
-            <AdminInput value={search} onChange={v => { setSearch(v); setPage(0) }} placeholder="name, handle, trade…" style={{ width: 200 }} />
+            <AdminInput
+              value={search}
+              onChange={v => {
+                setSearch(v)
+                setPage(0)
+              }}
+              placeholder="name, handle, trade…"
+              style={{ width: 200 }}
+            />
             <button
               onClick={loadContractors}
               className="btn btn-secondary"
-              style={{ fontSize: 12, padding: '6px 10px', display: 'flex', alignItems: 'center', gap: 4 }}
+              style={{
+                fontSize: 12,
+                padding: '6px 10px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+              }}
             >
               <RefreshCw size={12} /> Refresh
             </button>
@@ -220,134 +304,264 @@ export default function ContractorsSection({ authHeaders }: SectionProps) {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                {['Contractor', 'Trade', 'Badge', 'Trust Score', 'Lead Bank', 'Reviews', 'Actions'].map(h => (
-                  <th key={h} style={tableHeaderStyle}>{h}</th>
+                {[
+                  'Contractor',
+                  'Trade',
+                  'Badge',
+                  'Trust Score',
+                  'Lead Bank',
+                  'Reviews',
+                  'Actions',
+                ].map(h => (
+                  <th key={h} style={tableHeaderStyle}>
+                    {h}
+                  </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {loading
-                ? Array.from({ length: 8 }).map((_, i) => <LoadingRow key={i} cols={7} />)
-                : contractors.length === 0
-                  ? (
-                    <tr>
-                      <td colSpan={7} style={{ ...tableCellStyle, textAlign: 'center', color: 'var(--color-text-muted)' }}>
-                        No contractors found
+              {loading ? (
+                Array.from({ length: 8 }).map((_, i) => <LoadingRow key={i} cols={7} />)
+              ) : contractors.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={7}
+                    style={{
+                      ...tableCellStyle,
+                      textAlign: 'center',
+                      color: 'var(--color-text-muted)',
+                    }}
+                  >
+                    No contractors found
+                  </td>
+                </tr>
+              ) : (
+                contractors.map(c => (
+                  <>
+                    <tr key={c.user_id} style={{ opacity: c.deleted_at ? 0.45 : 1 }}>
+                      <td style={tableCellStyle}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          {c.avatar_url ? (
+                            <img
+                              src={c.avatar_url}
+                              style={{
+                                width: 28,
+                                height: 28,
+                                borderRadius: '50%',
+                                objectFit: 'cover',
+                              }}
+                            />
+                          ) : (
+                            <div
+                              style={{
+                                width: 28,
+                                height: 28,
+                                borderRadius: '50%',
+                                background: 'var(--color-border)',
+                              }}
+                            />
+                          )}
+                          <div>
+                            <div style={{ fontWeight: 600, fontSize: 13 }}>{c.display_name}</div>
+                            <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
+                              @{c.handle}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td style={tableCellStyle}>{c.primary_trade}</td>
+                      <td style={tableCellStyle}>
+                        {c.badge_tier ? (
+                          <span
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 700,
+                              color: BADGE_COLORS[c.badge_tier] ?? '#888',
+                              background: `${BADGE_COLORS[c.badge_tier] ?? '#888'}18`,
+                              padding: '2px 7px',
+                              borderRadius: 10,
+                            }}
+                          >
+                            {c.badge_tier}
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>—</span>
+                        )}
+                      </td>
+                      <td style={{ ...tableCellStyle, minWidth: 120 }}>
+                        <TrustBar score={c.trust_score} />
+                      </td>
+                      <td style={tableCellStyle}>
+                        <button
+                          onClick={() => expandLedger(c.user_id)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            fontSize: 13,
+                            color: 'var(--color-text)',
+                            fontWeight: 600,
+                          }}
+                        >
+                          <Layers size={12} color="#6366F1" />
+                          {c.lead_bank_balance}
+                          {expandedId === c.user_id ? (
+                            <ChevronUp size={11} />
+                          ) : (
+                            <ChevronDown size={11} />
+                          )}
+                        </button>
+                      </td>
+                      <td style={tableCellStyle}>
+                        {c.rating_count > 0 ? (
+                          `${c.rating_avg.toFixed(1)} (${c.rating_count})`
+                        ) : (
+                          <span style={{ color: 'var(--color-text-muted)' }}>—</span>
+                        )}
+                      </td>
+                      <td style={tableCellStyle}>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button
+                            onClick={() => handleRecalc(c.user_id)}
+                            disabled={recalcId === c.user_id}
+                            className="btn btn-secondary"
+                            style={{
+                              fontSize: 11,
+                              padding: '4px 8px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 3,
+                            }}
+                            title="Recalculate trust score"
+                          >
+                            <RefreshCw size={10} />
+                            {recalcId === c.user_id ? '…' : 'Recalc'}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setAdjustId(c.user_id)
+                              setAdjustDelta('')
+                              setAdjustReason('')
+                            }}
+                            className="btn btn-secondary"
+                            style={{
+                              fontSize: 11,
+                              padding: '4px 8px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 3,
+                            }}
+                            title="Adjust lead bank"
+                          >
+                            <Layers size={10} /> Adjust
+                          </button>
+                          <a
+                            href={`/u/${c.handle}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-ghost"
+                            style={{
+                              fontSize: 11,
+                              padding: '4px 8px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 3,
+                            }}
+                          >
+                            <ExternalLink size={10} /> Profile
+                          </a>
+                        </div>
                       </td>
                     </tr>
-                  )
-                  : contractors.map(c => (
-                    <>
-                      <tr key={c.user_id} style={{ opacity: c.deleted_at ? 0.45 : 1 }}>
-                        <td style={tableCellStyle}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            {c.avatar_url
-                              ? <img src={c.avatar_url} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} />
-                              : <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--color-border)' }} />}
-                            <div>
-                              <div style={{ fontWeight: 600, fontSize: 13 }}>{c.display_name}</div>
-                              <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>@{c.handle}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td style={tableCellStyle}>{c.primary_trade}</td>
-                        <td style={tableCellStyle}>
-                          {c.badge_tier
-                            ? <span style={{ fontSize: 11, fontWeight: 700, color: BADGE_COLORS[c.badge_tier] ?? '#888', background: `${BADGE_COLORS[c.badge_tier] ?? '#888'}18`, padding: '2px 7px', borderRadius: 10 }}>{c.badge_tier}</span>
-                            : <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>—</span>}
-                        </td>
-                        <td style={{ ...tableCellStyle, minWidth: 120 }}>
-                          <TrustBar score={c.trust_score} />
-                        </td>
-                        <td style={tableCellStyle}>
-                          <button
-                            onClick={() => expandLedger(c.user_id)}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, color: 'var(--color-text)', fontWeight: 600 }}
+
+                    {/* Inline ledger expansion */}
+                    {expandedId === c.user_id && (
+                      <tr key={`${c.user_id}-ledger`}>
+                        <td
+                          colSpan={7}
+                          style={{
+                            background: 'var(--color-bg)',
+                            padding: '12px 20px',
+                            borderBottom: '1px solid var(--color-border)',
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 700,
+                              textTransform: 'uppercase',
+                              color: 'var(--color-text-muted)',
+                              letterSpacing: '0.5px',
+                              marginBottom: 8,
+                            }}
                           >
-                            <Layers size={12} color="#6366F1" />
-                            {c.lead_bank_balance}
-                            {expandedId === c.user_id ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-                          </button>
-                        </td>
-                        <td style={tableCellStyle}>
-                          {c.rating_count > 0
-                            ? `${c.rating_avg.toFixed(1)} (${c.rating_count})`
-                            : <span style={{ color: 'var(--color-text-muted)' }}>—</span>}
-                        </td>
-                        <td style={tableCellStyle}>
-                          <div style={{ display: 'flex', gap: 6 }}>
-                            <button
-                              onClick={() => handleRecalc(c.user_id)}
-                              disabled={recalcId === c.user_id}
-                              className="btn btn-secondary"
-                              style={{ fontSize: 11, padding: '4px 8px', display: 'flex', alignItems: 'center', gap: 3 }}
-                              title="Recalculate trust score"
-                            >
-                              <RefreshCw size={10} />
-                              {recalcId === c.user_id ? '…' : 'Recalc'}
-                            </button>
-                            <button
-                              onClick={() => { setAdjustId(c.user_id); setAdjustDelta(''); setAdjustReason('') }}
-                              className="btn btn-secondary"
-                              style={{ fontSize: 11, padding: '4px 8px', display: 'flex', alignItems: 'center', gap: 3 }}
-                              title="Adjust lead bank"
-                            >
-                              <Layers size={10} /> Adjust
-                            </button>
-                            <a
-                              href={`/u/${c.handle}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="btn btn-ghost"
-                              style={{ fontSize: 11, padding: '4px 8px', display: 'flex', alignItems: 'center', gap: 3 }}
-                            >
-                              <ExternalLink size={10} /> Profile
-                            </a>
+                            Lead Bank Ledger
                           </div>
+                          {ledgerLoading ? (
+                            <p style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+                              Loading…
+                            </p>
+                          ) : ledger.length === 0 ? (
+                            <p style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+                              No transactions yet
+                            </p>
+                          ) : (
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                              <thead>
+                                <tr>
+                                  {['Date', 'Delta', 'Balance After', 'Reason'].map(h => (
+                                    <th key={h} style={{ ...tableHeaderStyle, fontSize: 10 }}>
+                                      {h}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {ledger.map((entry: Record<string, unknown>) => (
+                                  <tr key={entry.id as string}>
+                                    <td style={{ ...tableCellStyle, fontSize: 12 }}>
+                                      {new Date(entry.created_at as string).toLocaleDateString(
+                                        'en-US',
+                                        { month: 'short', day: 'numeric', year: 'numeric' }
+                                      )}
+                                    </td>
+                                    <td
+                                      style={{
+                                        ...tableCellStyle,
+                                        fontSize: 12,
+                                        fontWeight: 700,
+                                        color: (entry.delta as number) >= 0 ? '#10B981' : '#EF4444',
+                                      }}
+                                    >
+                                      {(entry.delta as number) >= 0 ? '+' : ''}
+                                      {entry.delta as number}
+                                    </td>
+                                    <td style={{ ...tableCellStyle, fontSize: 12 }}>
+                                      {entry.balance_after as number}
+                                    </td>
+                                    <td
+                                      style={{
+                                        ...tableCellStyle,
+                                        fontSize: 12,
+                                        color: 'var(--color-text-muted)',
+                                      }}
+                                    >
+                                      {(entry.reason as string).replace(/_/g, ' ')}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          )}
                         </td>
                       </tr>
-
-                      {/* Inline ledger expansion */}
-                      {expandedId === c.user_id && (
-                        <tr key={`${c.user_id}-ledger`}>
-                          <td colSpan={7} style={{ background: 'var(--color-bg)', padding: '12px 20px', borderBottom: '1px solid var(--color-border)' }}>
-                            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted)', letterSpacing: '0.5px', marginBottom: 8 }}>
-                              Lead Bank Ledger
-                            </div>
-                            {ledgerLoading
-                              ? <p style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Loading…</p>
-                              : ledger.length === 0
-                                ? <p style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>No transactions yet</p>
-                                : (
-                                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                    <thead>
-                                      <tr>
-                                        {['Date', 'Delta', 'Balance After', 'Reason'].map(h => (
-                                          <th key={h} style={{ ...tableHeaderStyle, fontSize: 10 }}>{h}</th>
-                                        ))}
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {ledger.map((entry: Record<string, unknown>) => (
-                                        <tr key={entry.id as string}>
-                                          <td style={{ ...tableCellStyle, fontSize: 12 }}>
-                                            {new Date(entry.created_at as string).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                          </td>
-                                          <td style={{ ...tableCellStyle, fontSize: 12, fontWeight: 700, color: (entry.delta as number) >= 0 ? '#10B981' : '#EF4444' }}>
-                                            {(entry.delta as number) >= 0 ? '+' : ''}{entry.delta as number}
-                                          </td>
-                                          <td style={{ ...tableCellStyle, fontSize: 12 }}>{entry.balance_after as number}</td>
-                                          <td style={{ ...tableCellStyle, fontSize: 12, color: 'var(--color-text-muted)' }}>{(entry.reason as string).replace(/_/g, ' ')}</td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                )}
-                          </td>
-                        </tr>
-                      )}
-                    </>
-                  ))}
+                    )}
+                  </>
+                ))
+              )}
             </tbody>
           </table>
         </div>

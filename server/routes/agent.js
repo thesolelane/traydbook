@@ -58,15 +58,15 @@ async function requireServiceKey(scopes = []) {
 // POST /api/agent/log  → 201 Created
 router.post('/api/agent/log', await requireServiceKey(['agent:log']), async (req, res) => {
   const {
-    agent_name   = 'bob',
+    agent_name = 'bob',
     action,
-    status       = 'success',
+    status = 'success',
     target_type,
     target_id,
     contractor_id,
     message,
-    metadata     = {},
-    payload,          // legacy alias for metadata
+    metadata = {},
+    payload, // legacy alias for metadata
     duration_ms,
     ai_provider,
   } = req.body ?? {}
@@ -79,13 +79,13 @@ router.post('/api/agent/log', await requireServiceKey(['agent:log']), async (req
       agent_name,
       action,
       status,
-      target_type:   target_type  || null,
-      target_id:     target_id    ? String(target_id) : null,
+      target_type: target_type || null,
+      target_id: target_id ? String(target_id) : null,
       contractor_id: contractor_id || null,
-      message:       message      || null,
-      metadata:      metadata || payload || {},
-      duration_ms:   duration_ms  || null,
-      ai_provider:   ai_provider  || null,
+      message: message || null,
+      metadata: metadata || payload || {},
+      duration_ms: duration_ms || null,
+      ai_provider: ai_provider || null,
     })
     .select('id, created_at')
     .single()
@@ -98,14 +98,8 @@ router.post('/api/agent/log', await requireServiceKey(['agent:log']), async (req
 
 // POST /api/leads — Bob delivers a lead to a contractor
 router.post('/api/leads', await requireServiceKey(['leads:write']), async (req, res) => {
-  const {
-    rfq_id,
-    contractor_id,
-    expires_at,
-    queue_position,
-    trust_score_at_delivery,
-    notes,
-  } = req.body ?? {}
+  const { rfq_id, contractor_id, expires_at, queue_position, trust_score_at_delivery, notes } =
+    req.body ?? {}
 
   if (!contractor_id) return res.status(400).json({ error: 'contractor_id is required' })
 
@@ -183,85 +177,99 @@ router.post('/api/leads/:id/pass', await requireServiceKey(['leads:write']), asy
 // ── Contractor profile endpoints ──────────────────────────────────────────────
 
 // GET /api/contractor/:id/profile
-router.get('/api/contractor/:id/profile', await requireServiceKey(['contractor:read']), async (req, res) => {
-  const { id } = req.params
+router.get(
+  '/api/contractor/:id/profile',
+  await requireServiceKey(['contractor:read']),
+  async (req, res) => {
+    const { id } = req.params
 
-  const [userRes, cpRes] = await Promise.all([
-    supabaseAdmin
-      .from('users')
-      .select('id, display_name, handle, avatar_url, account_type, location_city, location_state, created_at')
-      .eq('id', id)
-      .is('deleted_at', null)
-      .maybeSingle(),
-    supabaseAdmin
-      .from('contractor_profiles')
-      .select('primary_trade, secondary_trades, years_experience, bio, service_radius_miles, badge_tier, trust_score, lead_bank_balance, rating_avg, rating_count, projects_completed, availability_status')
-      .eq('user_id', id)
-      .maybeSingle(),
-  ])
+    const [userRes, cpRes] = await Promise.all([
+      supabaseAdmin
+        .from('users')
+        .select(
+          'id, display_name, handle, avatar_url, account_type, location_city, location_state, created_at'
+        )
+        .eq('id', id)
+        .is('deleted_at', null)
+        .maybeSingle(),
+      supabaseAdmin
+        .from('contractor_profiles')
+        .select(
+          'primary_trade, secondary_trades, years_experience, bio, service_radius_miles, badge_tier, trust_score, lead_bank_balance, rating_avg, rating_count, projects_completed, availability_status'
+        )
+        .eq('user_id', id)
+        .maybeSingle(),
+    ])
 
-  if (!userRes.data) return res.status(404).json({ error: 'Contractor not found' })
-  res.json({ user: userRes.data, profile: cpRes.data ?? null })
-})
+    if (!userRes.data) return res.status(404).json({ error: 'Contractor not found' })
+    res.json({ user: userRes.data, profile: cpRes.data ?? null })
+  }
+)
 
 // GET /api/contractor/:id/lead-bank
-router.get('/api/contractor/:id/lead-bank', await requireServiceKey(['contractor:read']), async (req, res) => {
-  const { id } = req.params
+router.get(
+  '/api/contractor/:id/lead-bank',
+  await requireServiceKey(['contractor:read']),
+  async (req, res) => {
+    const { id } = req.params
 
-  const [cpRes, ledgerRes] = await Promise.all([
-    supabaseAdmin
-      .from('contractor_profiles')
-      .select('lead_bank_balance')
-      .eq('user_id', id)
-      .maybeSingle(),
-    supabaseAdmin
-      .from('lead_bank_ledger')
-      .select('id, delta, balance_after, reason, created_at')
-      .eq('user_id', id)
-      .order('created_at', { ascending: false })
-      .limit(20),
-  ])
+    const [cpRes, ledgerRes] = await Promise.all([
+      supabaseAdmin
+        .from('contractor_profiles')
+        .select('lead_bank_balance')
+        .eq('user_id', id)
+        .maybeSingle(),
+      supabaseAdmin
+        .from('lead_bank_ledger')
+        .select('id, delta, balance_after, reason, created_at')
+        .eq('user_id', id)
+        .order('created_at', { ascending: false })
+        .limit(20),
+    ])
 
-  if (!cpRes.data) return res.status(404).json({ error: 'Contractor not found' })
-  res.json({ balance: cpRes.data.lead_bank_balance, ledger: ledgerRes.data ?? [] })
-})
+    if (!cpRes.data) return res.status(404).json({ error: 'Contractor not found' })
+    res.json({ balance: cpRes.data.lead_bank_balance, ledger: ledgerRes.data ?? [] })
+  }
+)
 
 // PATCH /api/contractor/:id/lead-bank
-router.patch('/api/contractor/:id/lead-bank', await requireServiceKey(['lead-bank:write']), async (req, res) => {
-  const { id } = req.params
-  const { delta, reason } = req.body ?? {}
+router.patch(
+  '/api/contractor/:id/lead-bank',
+  await requireServiceKey(['lead-bank:write']),
+  async (req, res) => {
+    const { id } = req.params
+    const { delta, reason } = req.body ?? {}
 
-  if (delta === undefined || !reason) {
-    return res.status(400).json({ error: 'delta and reason are required' })
+    if (delta === undefined || !reason) {
+      return res.status(400).json({ error: 'delta and reason are required' })
+    }
+
+    const { data, error } = await supabaseAdmin.rpc('adjust_lead_bank', {
+      p_user_id: id,
+      p_delta: delta,
+      p_reason: reason,
+      p_by: null,
+    })
+
+    if (error) return res.status(500).json({ error: error.message })
+    res.json({ ok: true, new_balance: data })
   }
-
-  const { data, error } = await supabaseAdmin.rpc('adjust_lead_bank', {
-    p_user_id: id,
-    p_delta: delta,
-    p_reason: reason,
-    p_by: null,
-  })
-
-  if (error) return res.status(500).json({ error: error.message })
-  res.json({ ok: true, new_balance: data })
-})
+)
 
 // ── Bob Control State (Bob reads its flags each cycle) ────────────────────────
 
 // GET /api/bob/control
 router.get('/api/bob/control', await requireServiceKey(['agent:read']), async (req, res) => {
-  const { data, error } = await supabaseAdmin
-    .from('bob_control')
-    .select('key, value')
+  const { data, error } = await supabaseAdmin.from('bob_control').select('key, value')
 
   if (error) return res.status(500).json({ error: error.message })
 
   const controls = Object.fromEntries((data ?? []).map(r => [r.key, r.value]))
   res.json({
-    paused:                controls.paused === 'true',
-    ai_provider_override:  controls.ai_provider_override || null,
-    lead_refresh_force:    controls.lead_refresh_force === 'true',
-    max_leads_per_cycle:   parseInt(controls.max_leads_per_cycle ?? '10', 10),
+    paused: controls.paused === 'true',
+    ai_provider_override: controls.ai_provider_override || null,
+    lead_refresh_force: controls.lead_refresh_force === 'true',
+    max_leads_per_cycle: parseInt(controls.max_leads_per_cycle ?? '10', 10),
   })
 })
 

@@ -31,7 +31,6 @@ export default function Terms() {
       </p>
 
       <div style={{ fontSize: 15, color: 'var(--color-text)', lineHeight: 1.75 }}>
-
         <Section title="1. Acceptance of terms">
           By creating an account or using TraydBook, you agree to these Terms of Service and our
           Privacy Policy. If you do not agree, do not use the platform. TraydBook is intended for
@@ -68,11 +67,19 @@ export default function Terms() {
 
         <Section title="4. Credits and payments">
           <ul style={{ paddingLeft: 20, lineHeight: 2 }}>
-            <li>Credits are purchased through Stripe and used to access platform features (posting RFQs, messaging, boosting listings)</li>
+            <li>
+              Credits are purchased through Stripe and used to access platform features (posting
+              RFQs, messaging, boosting listings)
+            </li>
             <li>Credits are non-refundable except where required by applicable law</li>
             <li>Credits have no cash value and cannot be transferred between accounts</li>
-            <li>TraydBook may change credit pricing or the cost of actions with reasonable notice</li>
-            <li>SMS notification subscriptions are billed monthly and can be cancelled at any time from Settings</li>
+            <li>
+              TraydBook may change credit pricing or the cost of actions with reasonable notice
+            </li>
+            <li>
+              SMS notification subscriptions are billed monthly and can be cancelled at any time
+              from Settings
+            </li>
           </ul>
         </Section>
 
@@ -91,14 +98,15 @@ export default function Terms() {
         <Section title="6. Verified badges and credentials">
           <p>
             TraydBook's verification system (Pro Verified, Licensed, Vouched badges) is designed to
-            help establish trust, but <strong>we do not guarantee the accuracy of any credential</strong> displayed
-            on the platform. License verification relies on publicly available records and
-            user-submitted documents. Always perform your own due diligence before hiring or
-            contracting with any individual through TraydBook.
+            help establish trust, but{' '}
+            <strong>we do not guarantee the accuracy of any credential</strong> displayed on the
+            platform. License verification relies on publicly available records and user-submitted
+            documents. Always perform your own due diligence before hiring or contracting with any
+            individual through TraydBook.
           </p>
           <p style={{ marginTop: 10 }}>
-            Submitting false credentials for verification is a violation of these terms and may result
-            in immediate account termination and referral to relevant licensing authorities.
+            Submitting false credentials for verification is a violation of these terms and may
+            result in immediate account termination and referral to relevant licensing authorities.
           </p>
         </Section>
 
@@ -111,10 +119,16 @@ export default function Terms() {
 
         <Section title="8. Account termination">
           <ul style={{ paddingLeft: 20, lineHeight: 2 }}>
-            <li>You may freeze your account (data held for 6 months) or delete it at any time in Settings → Danger Zone</li>
+            <li>
+              You may freeze your account (data held for 6 months) or delete it at any time in
+              Settings → Danger Zone
+            </li>
             <li>TraydBook may suspend or terminate your account for violations of these terms</li>
             <li>Upon termination, your right to access the platform ceases immediately</li>
-            <li>Sections of these terms that should survive termination (liability, disputes) will do so</li>
+            <li>
+              Sections of these terms that should survive termination (liability, disputes) will do
+              so
+            </li>
           </ul>
         </Section>
 
@@ -128,14 +142,14 @@ export default function Terms() {
           To the maximum extent permitted by law, TraydBook shall not be liable for any indirect,
           incidental, special, or consequential damages arising from your use of the platform,
           including lost profits, loss of data, or damages resulting from interactions with other
-          users. Our total liability to you for any claim shall not exceed the amount you paid
-          us in the 12 months preceding the claim.
+          users. Our total liability to you for any claim shall not exceed the amount you paid us in
+          the 12 months preceding the claim.
         </Section>
 
         <Section title="11. Governing law">
           These terms are governed by the laws of the State of [State], United States, without
-          regard to conflict of law principles. Any disputes shall be resolved in the courts
-          located in [State].
+          regard to conflict of law principles. Any disputes shall be resolved in the courts located
+          in [State].
         </Section>
 
         <Section title="12. Changes to these terms">
@@ -147,11 +161,11 @@ export default function Terms() {
         <Section title="13. Contact">
           <p>Questions about these terms:</p>
           <p style={{ marginTop: 8 }}>
-            <strong>Email:</strong> legal@traydbook.com<br />
+            <strong>Email:</strong> legal@traydbook.com
+            <br />
             <strong>TraydBook Inc.</strong>
           </p>
         </Section>
-
       </div>
     </div>
   )
@@ -174,9 +188,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       >
         {title}
       </h2>
-      <div style={{ fontSize: 14, color: 'var(--color-text)', lineHeight: 1.75 }}>
-        {children}
-      </div>
+      <div style={{ fontSize: 14, color: 'var(--color-text)', lineHeight: 1.75 }}>{children}</div>
     </div>
   )
 }

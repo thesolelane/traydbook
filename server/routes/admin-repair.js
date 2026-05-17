@@ -23,7 +23,9 @@ router.post('/execute', async (req, res) => {
   }
 
   const tableMatches = sql.match(/FROM\s+(\w+)|UPDATE\s+(\w+)|INSERT\s+INTO\s+(\w+)/gi) || []
-  const tables = [...new Set(tableMatches.map(m => m.split(/\s+/).pop()?.toLowerCase()).filter(Boolean))]
+  const tables = [
+    ...new Set(tableMatches.map(m => m.split(/\s+/).pop()?.toLowerCase()).filter(Boolean)),
+  ]
   const unauthorized = tables.filter(t => !ALLOWED_TABLES.includes(t))
   if (unauthorized.length > 0) {
     return res.status(403).json({ error: `Unauthorized tables: ${unauthorized.join(', ')}` })
@@ -72,7 +74,8 @@ router.post('/approve', async (req, res) => {
     .eq('status', 'pending')
     .single()
 
-  if (!request) return res.status(404).json({ error: 'Approval request not found or already processed' })
+  if (!request)
+    return res.status(404).json({ error: 'Approval request not found or already processed' })
 
   await supabaseAdmin
     .from('repair_approvals')

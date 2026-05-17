@@ -915,9 +915,7 @@ export default function Profile() {
               {isContractor && cp && cp.badge_tier && (
                 <VerifiedBadge tier={cp.badge_tier} size="md" />
               )}
-              {isContractor && user && (
-                <TrustScoreBadge userId={user.id} isOwn={isOwn} size="sm" />
-              )}
+              {isContractor && user && <TrustScoreBadge userId={user.id} isOwn={isOwn} size="sm" />}
               {isContractor && cp && (
                 <span className="badge badge-brand" style={{ fontSize: 12 }}>
                   {cp.primary_trade}
@@ -940,7 +938,15 @@ export default function Profile() {
 
             {/* Queue position + Lead Bank — own contractor profile only */}
             {isOwn && isContractor && user && (
-              <div style={{ marginTop: 12, marginBottom: 4, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <div
+                style={{
+                  marginTop: 12,
+                  marginBottom: 4,
+                  display: 'flex',
+                  gap: 12,
+                  flexWrap: 'wrap',
+                }}
+              >
                 <QueuePositionBadge userId={user.id} />
                 <LeadBankBalance userId={user.id} />
               </div>
@@ -1706,11 +1712,7 @@ export default function Profile() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {/* Profile Completeness — own contractor view only */}
             {isOwn && isContractor && user && cp && (
-              <ProfileCompletenessCard
-                user={user}
-                cp={cp}
-                credentials={credentials}
-              />
+              <ProfileCompletenessCard user={user} cp={cp} credentials={credentials} />
             )}
 
             {isContractor && cp && (

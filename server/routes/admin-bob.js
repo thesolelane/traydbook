@@ -15,16 +15,16 @@ const router = Router()
 // Bob's contract: Authorization: Bearer <BOB_ADMIN_KEY>
 // Endpoint paths follow Bob's spec: /bob/admin/*
 async function pushToBob(path, body = {}) {
-  const endpoint = process.env.BOB_AGENT_ENDPOINT       // e.g. https://bob.traydbook.com
-  const token    = process.env.ADMIN_TO_BOB_TOKEN       // the BOB_ADMIN_KEY value
-  if (!endpoint || !token) return   // not configured — Bob will pick it up on next poll
+  const endpoint = process.env.BOB_AGENT_ENDPOINT // e.g. https://bob.traydbook.com
+  const token = process.env.ADMIN_TO_BOB_TOKEN // the BOB_ADMIN_KEY value
+  if (!endpoint || !token) return // not configured — Bob will pick it up on next poll
 
   try {
     await fetch(`${endpoint.replace(/\/$/, '')}/bob/admin${path}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(5000),
@@ -36,8 +36,8 @@ async function pushToBob(path, body = {}) {
 
 // GET /api/admin/bob/logs
 router.get('/logs', async (req, res) => {
-  const limit  = Math.min(parseInt(req.query.limit) || 50, 200)
-  const agent  = req.query.agent  || null
+  const limit = Math.min(parseInt(req.query.limit) || 50, 200)
+  const agent = req.query.agent || null
   const status = req.query.status || null
   const action = req.query.action || null
 
@@ -47,7 +47,7 @@ router.get('/logs', async (req, res) => {
     .order('created_at', { ascending: false })
     .limit(limit)
 
-  if (agent)  q = q.eq('agent_name', agent)
+  if (agent) q = q.eq('agent_name', agent)
   if (status) q = q.eq('status', status)
   if (action) q = q.eq('action', action)
 
@@ -58,9 +58,7 @@ router.get('/logs', async (req, res) => {
 
 // GET /api/admin/bob/control
 router.get('/control', async (req, res) => {
-  const { data, error } = await supabaseAdmin
-    .from('bob_control')
-    .select('key, value')
+  const { data, error } = await supabaseAdmin.from('bob_control').select('key, value')
 
   if (error) return res.status(500).json({ error: error.message })
 
@@ -80,7 +78,12 @@ router.patch('/control', async (req, res) => {
     return res.status(400).json({ error: 'key and value required' })
   }
 
-  const ALLOWED_KEYS = ['paused', 'ai_provider_override', 'lead_refresh_force', 'max_leads_per_cycle']
+  const ALLOWED_KEYS = [
+    'paused',
+    'ai_provider_override',
+    'lead_refresh_force',
+    'max_leads_per_cycle',
+  ]
   if (!ALLOWED_KEYS.includes(key)) {
     return res.status(400).json({ error: `Unknown control key: ${key}` })
   }
@@ -100,9 +103,7 @@ router.patch('/control', async (req, res) => {
 
 // GET /api/admin/bob/lead-stats — lead counts by status
 router.get('/lead-stats', async (req, res) => {
-  const { data, error } = await supabaseAdmin
-    .from('leads')
-    .select('status')
+  const { data, error } = await supabaseAdmin.from('leads').select('status')
 
   if (error) return res.status(500).json({ error: error.message })
 
