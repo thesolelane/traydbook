@@ -123,7 +123,7 @@ router.get('/ping', async (req, res) => {
     return res.json({ reachable: false, reason: 'BOB_AGENT_ENDPOINT not set' })
   }
   const token = process.env.ADMIN_TO_BOB_TOKEN
-  const url = `${endpoint.replace(/\/$/, '')}/bob/ping`
+  const url = `${endpoint.replace(/\/$/, '')}/bob/healthz`
   try {
     const r = await fetch(url, {
       method: 'GET',
