@@ -13,14 +13,14 @@ const router = Router()
 
 // ── Helper: push a command directly to Bob's server (fire-and-forget) ─────────
 // Bob's contract: Authorization: Bearer <BOB_ADMIN_KEY>
-// Endpoint paths follow Bob's spec: /bob/admin/*
+// Endpoint paths follow Bob's spec: /bob/*
 async function pushToBob(path, body = {}) {
   const endpoint = process.env.BOB_AGENT_ENDPOINT // e.g. https://bob.traydbook.com
   const token = process.env.ADMIN_TO_BOB_TOKEN // the BOB_ADMIN_KEY value
   if (!endpoint || !token) return // not configured — Bob will pick it up on next poll
 
   try {
-    await fetch(`${endpoint.replace(/\/$/, '')}/bob/admin${path}`, {
+    await fetch(`${endpoint.replace(/\/$/, '')}/bob${path}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -96,7 +96,7 @@ router.patch('/control', async (req, res) => {
   if (error) return res.status(500).json({ error: error.message })
 
   // Push instantly to Bob if his endpoint is configured
-  void pushToBob('/admin/control', { key, value })
+  void pushToBob('/control', { key, value })
 
   res.json({ ok: true, key, value })
 })
@@ -123,7 +123,7 @@ router.get('/ping', async (req, res) => {
     return res.json({ reachable: false, reason: 'BOB_AGENT_ENDPOINT not set' })
   }
   const token = process.env.ADMIN_TO_BOB_TOKEN
-  const url = `${endpoint.replace(/\/$/, '')}/bob/admin/ping`
+  const url = `${endpoint.replace(/\/$/, '')}/bob/ping`
   try {
     const r = await fetch(url, {
       method: 'GET',
