@@ -119,7 +119,8 @@ router.get('/domains', async (_req, res) => {
       }
     })
   )
-  res.json({ domains: results, checkedAt: new Date().toISOString() })
+  const isDevEnv = !!(process.env.REPLIT_DEV_DOMAIN)
+  res.json({ domains: results, checkedAt: new Date().toISOString(), devEnv: isDevEnv })
 })
 
 export default router

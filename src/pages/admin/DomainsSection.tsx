@@ -40,6 +40,7 @@ export default function DomainsSection({ authHeaders }: SectionProps) {
   const [checkedAt, setCheckedAt] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
+  const [devEnv, setDevEnv] = useState(false)
 
   const check = useCallback(async () => {
     setLoading(true)
@@ -51,6 +52,7 @@ export default function DomainsSection({ authHeaders }: SectionProps) {
       if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`)
       setDomains(data.domains || [])
       setCheckedAt(data.checkedAt || null)
+      setDevEnv(!!data.devEnv)
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Failed to ping domains')
     } finally {
@@ -110,6 +112,12 @@ export default function DomainsSection({ authHeaders }: SectionProps) {
           </span>
         )}
       </div>
+
+      {devEnv && !loading && (
+        <div style={{ padding: '10px 14px', background: 'rgba(37,99,235,0.07)', border: '1px solid rgba(37,99,235,0.2)', borderRadius: 8, fontSize: 12, color: '#2563EB' }}>
+          Running in dev — Replit's network sandbox may block outbound pings to some domains. Results will be accurate on the deployed admin server.
+        </div>
+      )}
 
       {err && (
         <div style={{ padding: 12, background: '#2a1515', border: '1px solid #e05252', borderRadius: 8, color: '#e05252', fontSize: 13 }}>
