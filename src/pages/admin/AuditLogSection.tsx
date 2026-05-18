@@ -40,8 +40,8 @@ export default function AuditLogSection({ authHeaders }: SectionProps) {
       const params = new URLSearchParams({ limit: '100' })
       if (actionFilter) params.set('action', actionFilter)
       const res = await fetch(`/api/admin/monitor/audit?${params}`, { headers: authHeaders() })
-      if (!res.ok) throw new Error('Failed to load audit log')
-      const data = await res.json()
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status} — failed to load audit log`)
       setEntries(data.entries || [])
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Failed to load')
