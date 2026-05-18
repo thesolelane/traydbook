@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { supabaseAdmin } from '../lib/clients.js'
+import { pushToBob } from '../lib/bob-push.js'
 import {
   requireAuth,
   requireSuperAdmin,
@@ -295,6 +296,7 @@ router.patch(
     console.log(
       `[admin/suspend] User ${id} ${suspend ? 'suspended' : 'reinstated'} by ${req.user.id}`
     )
+    void pushToBob('/user/suspend', { user_id: id, suspended: suspend ?? false })
     res.json({ ok: true })
   }
 )

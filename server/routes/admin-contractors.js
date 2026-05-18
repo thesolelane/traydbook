@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { supabaseAdmin } from '../lib/clients.js'
 import { requireAuth, requireAdminLevel } from '../lib/auth.js'
+import { pushToBob } from '../lib/bob-push.js'
 
 const router = Router()
 
@@ -95,6 +96,7 @@ router.post(
     })
 
     if (error) return res.status(500).json({ error: error.message })
+    void pushToBob('/contractor/lead-bank', { contractor_id: userId, new_balance: data, delta })
     res.json({ ok: true, new_balance: data })
   }
 )
@@ -113,6 +115,7 @@ router.post(
     })
 
     if (error) return res.status(500).json({ error: error.message })
+    void pushToBob('/contractor/trust-update', { contractor_id: userId, new_score: data })
     res.json({ ok: true, new_score: data })
   }
 )

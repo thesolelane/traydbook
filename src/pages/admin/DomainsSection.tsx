@@ -23,6 +23,13 @@ const DOMAINS = [
     status: 'operational',
     note: 'Supabase auth and API endpoint. Managed by Supabase.',
   },
+  {
+    domain: 'bob.traydbook.com',
+    label: 'Bob (AI Agent)',
+    env: 'Production',
+    status: 'operational',
+    note: 'Autonomous AI agent. Deployed on Coolify. Ping via Bob Monitor tab.',
+  },
 ]
 
 const ENV_LABELS = [

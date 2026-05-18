@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { supabaseAdmin } from '../lib/clients.js'
+import { pushToBob } from '../lib/bob-push.js'
 
 const router = Router()
 
@@ -78,6 +79,13 @@ router.post('/:id/resolve', async (req, res) => {
     timestamp: new Date().toISOString(),
   })
 
+  if (decision === 'reject') {
+    void pushToBob('/content/removed', {
+      content_id: item.content_id,
+      content_type: item.content_type,
+      reason: admin_notes || 'admin_rejected',
+    })
+  }
   res.json({ success: true, id, decision })
 })
 

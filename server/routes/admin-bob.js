@@ -8,31 +8,9 @@
  */
 import { Router } from 'express'
 import { supabaseAdmin } from '../lib/clients.js'
+import { pushToBob } from '../lib/bob-push.js'
 
 const router = Router()
-
-// ── Helper: push a command directly to Bob's server (fire-and-forget) ─────────
-// Bob's contract: Authorization: Bearer <BOB_ADMIN_KEY>
-// Endpoint paths follow Bob's spec: /bob/*
-async function pushToBob(path, body = {}) {
-  const endpoint = process.env.BOB_AGENT_ENDPOINT // e.g. https://bob.traydbook.com
-  const token = process.env.ADMIN_TO_BOB_TOKEN // the BOB_ADMIN_KEY value
-  if (!endpoint || !token) return // not configured — Bob will pick it up on next poll
-
-  try {
-    await fetch(`${endpoint.replace(/\/$/, '')}/bob${path}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(5000),
-    })
-  } catch {
-    // Non-fatal — DB is source of truth, Bob will sync on next poll
-  }
-}
 
 // GET /api/admin/bob/logs
 router.get('/logs', async (req, res) => {
@@ -134,6 +112,28 @@ router.get('/ping', async (req, res) => {
   } catch (e) {
     res.json({ reachable: false, reason: e instanceof Error ? e.message : 'unreachable', endpoint: url })
   }
+})
+
+// POST /api/admin/bob/command — forward a raw command to Bob's /bob/command endpoint
+router.post('/command', async (req, res) => {
+  const { command, args } = req.body ?? {}
+  if (!command) return res.status(400).json({ error: 'command is required' })
+  const endpoint = process.env.BOB_AGENT_ENDPOINT
+  if (!endpoint) return res.status(503).json({ error: 'BOB_AGENT_ENDPOINT not set' })
+  await pushToBob('/command', { command, args: args ?? {} })
+  res.json({ ok: true, command })
+})
+
+// POST /api/admin/bob/suggestion/:id/approve — mark a suggestion as approved and notify Bob
+router.post('/suggestion/:id/approve', async (req, res) => {
+  const { id } = req.params
+  const { error } = await supabaseAdmin
+    .from('agent_logs')
+    .update({ status: 'approved' })
+    .eq('id', id)
+  if (error) return res.status(500).json({ error: error.message })
+  void pushToBob('/suggestion/approved', { suggestion_id: id })
+  res.json({ ok: true, suggestion_id: id })
 })
 
 export default router

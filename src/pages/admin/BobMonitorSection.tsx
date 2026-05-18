@@ -185,6 +185,14 @@ export default function BobMonitorSection({ authHeaders }: SectionProps) {
     return () => clearInterval(t)
   }, [autoRefresh, load])
 
+  async function approveSuggestion(id: string) {
+    await fetch(`/api/admin/bob/suggestion/${id}/approve`, {
+      method: 'POST',
+      headers: authHeaders(),
+    })
+    dismiss(id)
+  }
+
   function dismiss(id: string) {
     const next = new Set(dismissed)
     next.add(id)
@@ -376,20 +384,37 @@ export default function BobMonitorSection({ authHeaders }: SectionProps) {
                     {s.agent_name} · {timeAgo(s.created_at)}
                   </span>
                 </div>
-                <button
-                  onClick={() => dismiss(s.id)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: 2,
-                    color: 'var(--color-text-muted)',
-                    flexShrink: 0,
-                  }}
-                  title="Dismiss"
-                >
-                  <X size={14} />
-                </button>
+                <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                  <button
+                    onClick={() => approveSuggestion(s.id)}
+                    style={{
+                      background: 'rgba(16,185,129,0.1)',
+                      border: '1px solid rgba(16,185,129,0.3)',
+                      borderRadius: 4,
+                      cursor: 'pointer',
+                      padding: '2px 8px',
+                      color: '#10B981',
+                      fontSize: 11,
+                      fontWeight: 600,
+                    }}
+                    title="Approve — notify Bob"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => dismiss(s.id)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: 2,
+                      color: 'var(--color-text-muted)',
+                    }}
+                    title="Dismiss"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
