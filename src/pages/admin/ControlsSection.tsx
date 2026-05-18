@@ -3,6 +3,10 @@ import { Megaphone, AlertTriangle } from 'lucide-react'
 import StaffPanel from '../../components/StaffPanel'
 import { SectionCard, SectionProps } from './shared'
 
+interface ControlsSectionProps extends SectionProps {
+  currentUserRole?: string
+}
+
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
   constructor(props: { children: ReactNode }) {
     super(props)
@@ -37,7 +41,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: string |
   }
 }
 
-export default function ControlsSection({ authHeaders }: SectionProps) {
+export default function ControlsSection({ authHeaders, currentUserRole }: ControlsSectionProps) {
   const [announcement, setAnnouncement] = useState('')
   const [announcementMsg, setAnnouncementMsg] = useState('')
 
@@ -54,7 +58,7 @@ export default function ControlsSection({ authHeaders }: SectionProps) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         <SectionCard title="Staff & Role Invites">
           <ErrorBoundary>
-            <StaffPanel authHeaders={authHeaders} />
+            <StaffPanel authHeaders={authHeaders} currentUserRole={currentUserRole} />
           </ErrorBoundary>
         </SectionCard>
 

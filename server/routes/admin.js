@@ -5,9 +5,11 @@ import {
   requireAuth,
   requireSuperAdmin,
   requireAdminLevel,
+  requireAnyStaff,
   blockProtectedAdmin,
   blockServiceKeys,
   ALL_INVITE_ROLES,
+  getAllowedInviteRoles,
 } from '../lib/auth.js'
 import { logError, getErrorLog, clearErrorLog } from '../lib/errorLog.js'
 import fs from 'fs'
@@ -67,10 +69,17 @@ const router = Router()
 
 // ── Admin Invites ─────────────────────────────────────────────────────────────
 
-router.post('/api/admin/invite', requireAuth, requireSuperAdmin, async (req, res) => {
+router.post('/api/admin/invite', requireAuth, requireAnyStaff, async (req, res) => {
   const { email, role } = req.body ?? {}
   if (!email || !role) return res.status(400).json({ error: 'email and role are required' })
   if (!ALL_INVITE_ROLES.includes(role)) return res.status(400).json({ error: 'Invalid role' })
+
+  const allowed = getAllowedInviteRoles(req.adminUser.account_type)
+  if (!allowed.includes(role)) {
+    return res.status(403).json({
+      error: `Your role (${req.adminUser.account_type}) is not permitted to invite someone as ${role}`,
+    })
+  }
 
   const { data: invite, error: insertErr } = await supabaseAdmin
     .from('admin_invites')
@@ -109,7 +118,7 @@ router.get('/api/admin/invite/:token', async (req, res) => {
   res.json({ invite })
 })
 
-router.get('/api/admin/invites', requireAuth, requireSuperAdmin, async (req, res) => {
+router.get('/api/admin/invites', requireAuth, requireAnyStaff, async (req, res) => {
   const { data, error } = await supabaseAdmin
     .from('admin_invites')
     .select('id, email, role, expires_at, used_at, created_at, users!invited_by (display_name)')
@@ -120,7 +129,7 @@ router.get('/api/admin/invites', requireAuth, requireSuperAdmin, async (req, res
   res.json({ invites: data ?? [] })
 })
 
-router.delete('/api/admin/invite/:id', requireAuth, requireSuperAdmin, async (req, res) => {
+router.delete('/api/admin/invite/:id', requireAuth, requireAnyStaff, async (req, res) => {
   const { id } = req.params
   const { error } = await supabaseAdmin
     .from('admin_invites')

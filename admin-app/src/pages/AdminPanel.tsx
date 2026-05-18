@@ -1,4 +1,4 @@
-import { useState, Component, ReactNode } from 'react'
+import { useState, useEffect, Component, ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 
 class SectionErrorBoundary extends Component<
@@ -145,6 +145,18 @@ interface Props {
 
 export default function AdminPanel({ session }: Props) {
   const [section, setSection] = useState<Section>('overview')
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null)
+
+  useEffect(() => {
+    supabase
+      .from('users')
+      .select('account_type')
+      .eq('id', session.user.id)
+      .single()
+      .then(({ data }) => {
+        if (data?.account_type) setCurrentUserRole(data.account_type)
+      })
+  }, [session.user.id])
 
   function authHeaders(): Record<string, string> {
     return { Authorization: `Bearer ${session.access_token}` }
@@ -354,7 +366,7 @@ export default function AdminPanel({ session }: Props) {
             {section === 'audit-log'        && <AuditLogSection authHeaders={authHeaders} />}
             {section === 'domains'          && <DomainsSection authHeaders={authHeaders} />}
             {section === 'secrets'          && <SecretsSection authHeaders={authHeaders} />}
-            {section === 'controls'         && <ControlsSection authHeaders={authHeaders} />}
+            {section === 'controls'         && <ControlsSection authHeaders={authHeaders} currentUserRole={currentUserRole ?? undefined} />}
           </SectionErrorBoundary>
         </main>
       </div>

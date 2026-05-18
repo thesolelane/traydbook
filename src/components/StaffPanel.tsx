@@ -2,6 +2,30 @@ import { useState, useEffect } from 'react'
 import { Copy, Check, Trash2, UserPlus, Clock, CheckCircle, Shield } from 'lucide-react'
 import { ALL_INVITE_ROLES, STAFF_ROLES, getRoleLabel } from '../lib/roles'
 
+const ROLE_RANK: Record<string, number> = {
+  admin: 5,
+  admin_2: 4,
+  hired_dev: 3,
+  moderator: 2,
+  contractor: 1,
+  project_owner: 1,
+  agent: 1,
+  homeowner: 1,
+}
+
+function getAllowedRoles(callerRole: string) {
+  if (callerRole === 'admin') return ALL_INVITE_ROLES
+  const myRank = ROLE_RANK[callerRole] ?? 0
+  return ALL_INVITE_ROLES.filter(r => (ROLE_RANK[r.value] ?? 0) < myRank)
+}
+
+const ROLE_PERMISSION_LABEL: Record<string, string> = {
+  admin:       'You can invite any role including other Admins.',
+  admin_2:     'You can invite Hired Dev, Moderator, and platform users. Not Admin 1 or Admin 2.',
+  hired_dev:   'You can invite Moderator and platform users only.',
+  moderator:   'You can invite platform users (Contractor, Project Owner, Agent, Homeowner) only.',
+}
+
 interface AdminInvite {
   id: string
   email: string
@@ -19,12 +43,21 @@ function formatDate(iso: string) {
   })
 }
 
-export default function StaffPanel({ authHeaders }: { authHeaders: () => Record<string, string> }) {
+export default function StaffPanel({
+  authHeaders,
+  currentUserRole,
+}: {
+  authHeaders: () => Record<string, string>
+  currentUserRole?: string
+}) {
+  const allowedRoles = currentUserRole ? getAllowedRoles(currentUserRole) : ALL_INVITE_ROLES
+  const allowedStaffRoles = allowedRoles.filter(r => STAFF_ROLES.find(s => s.value === r.value))
+  const allowedPlatformRoles = allowedRoles.filter(r => !STAFF_ROLES.find(s => s.value === r.value))
   const [invites, setInvites] = useState<AdminInvite[]>([])
   const [loading, setLoading] = useState(true)
 
   const [email, setEmail] = useState('')
-  const [role, setRole] = useState<string>(STAFF_ROLES[1].value)
+  const [role, setRole] = useState<string>(() => allowedRoles[0]?.value ?? '')
   const [sending, setSending] = useState(false)
   const [sendErr, setSendErr] = useState('')
   const [result, setResult] = useState<{ joinUrl: string; email: string; role: string } | null>(
@@ -134,6 +167,24 @@ export default function StaffPanel({ authHeaders }: { authHeaders: () => Record<
           automatically.
         </p>
       </div>
+
+      {currentUserRole && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 8,
+          padding: '10px 14px',
+          borderRadius: 8,
+          background: 'rgba(232,93,4,0.06)',
+          border: '1px solid rgba(232,93,4,0.2)',
+          marginBottom: 20,
+          fontSize: 12,
+          color: 'var(--color-text-muted)',
+        }}>
+          <Shield size={13} style={{ flexShrink: 0, marginTop: 1, color: 'var(--color-brand)' }} />
+          <span>{ROLE_PERMISSION_LABEL[currentUserRole] ?? 'Contact Admin 1 for invite permissions.'}</span>
+        </div>
+      )}
 
       {/* Role hierarchy info */}
       <div
@@ -299,22 +350,24 @@ export default function StaffPanel({ authHeaders }: { authHeaders: () => Record<
                 color: 'var(--color-text)',
               }}
             >
-              <optgroup label="Staff Roles">
-                {STAFF_ROLES.map(r => (
-                  <option key={r.value} value={r.value}>
-                    {r.label}
-                  </option>
-                ))}
-              </optgroup>
-              <optgroup label="Platform Users">
-                {ALL_INVITE_ROLES.filter(r => !STAFF_ROLES.find(s => s.value === r.value)).map(
-                  r => (
+              {allowedStaffRoles.length > 0 && (
+                <optgroup label="Staff Roles">
+                  {allowedStaffRoles.map(r => (
+                    <option key={r.value} value={r.value}>
+                      {r.label}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              {allowedPlatformRoles.length > 0 && (
+                <optgroup label="Platform Users">
+                  {allowedPlatformRoles.map(r => (
                     <option key={r.value} value={r.value}>
                       {getRoleLabel(r.value)}
                     </option>
-                  )
-                )}
-              </optgroup>
+                  ))}
+                </optgroup>
+              )}
             </select>
             <button
               type="submit"
