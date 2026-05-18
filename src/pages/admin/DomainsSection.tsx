@@ -173,14 +173,16 @@ export default function DomainsSection({ authHeaders }: SectionProps) {
                 )}
               </p>
             </div>
-            <a
-              href={`https://${d.domain}`}
-              target="_blank"
-              rel="noreferrer"
-              style={{ color: 'var(--color-text-muted)', flexShrink: 0 }}
-            >
-              <ExternalLink size={14} />
-            </a>
+            {d.domain !== 'admin.traydbook.com' && (
+              <a
+                href={`https://${d.domain}`}
+                target="_blank"
+                rel="noreferrer"
+                style={{ color: 'var(--color-text-muted)', flexShrink: 0 }}
+              >
+                <ExternalLink size={14} />
+              </a>
+            )}
           </div>
         )
       })}
