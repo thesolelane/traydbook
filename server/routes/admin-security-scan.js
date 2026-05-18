@@ -203,21 +203,33 @@ function signRecord(record) {
   return { payload, sig }
 }
 
+// Sentinel returned when the file exists but fails the integrity check.
+// Distinct from null (file missing) so callers always surface tamper errors.
+const TAMPERED = Symbol('TAMPERED')
+
 function verifyRecord(raw) {
   let parsed
   try {
     parsed = JSON.parse(raw)
   } catch {
-    return null
+    return TAMPERED
   }
   const { sig, ...record } = parsed
-  if (!sig) return null
-  const expected = crypto
-    .createHmac('sha256', getSnapshotSecret())
-    .update(JSON.stringify(record))
-    .digest('hex')
-  if (!crypto.timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expected, 'hex'))) return null
-  return record
+  if (!sig) return TAMPERED
+  try {
+    const expected = crypto
+      .createHmac('sha256', getSnapshotSecret())
+      .update(JSON.stringify(record))
+      .digest('hex')
+    // timingSafeEqual requires equal-length buffers; unequal length means tampered
+    const sigBuf = Buffer.from(sig, 'hex')
+    const expBuf = Buffer.from(expected, 'hex')
+    if (sigBuf.length !== expBuf.length) return TAMPERED
+    if (!crypto.timingSafeEqual(sigBuf, expBuf)) return TAMPERED
+    return record
+  } catch {
+    return TAMPERED
+  }
 }
 
 function hashFile(filePath) {
@@ -276,13 +288,14 @@ router.get('/snapshot', requireAuth, requireSuperAdmin, async (req, res) => {
   let baseline
   try {
     const raw = fs.readFileSync(SNAPSHOT_FILE, 'utf8')
-    baseline = verifyRecord(raw)
-    if (!baseline) {
+    const result = verifyRecord(raw)
+    if (result === TAMPERED) {
       return res.status(500).json({
         error: 'SNAPSHOT_TAMPERED',
         message: 'Snapshot file signature is invalid — the file may have been modified on disk.',
       })
     }
+    baseline = result
   } catch {
     return res.json({ baseline: null, comparison: null })
   }

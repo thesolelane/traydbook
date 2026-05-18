@@ -13,6 +13,26 @@ const HARD_BLOCKED = ['DROP', 'TRUNCATE', 'ALTER TABLE', 'CREATE TABLE', 'GRANT 
 // These require a second distinct admin to approve
 const REQUIRES_APPROVAL = ['DELETE', 'UPDATE']
 
+// Approval codes expire after 1 hour
+const APPROVAL_TTL_MS = 60 * 60 * 1000
+
+/**
+ * Produce a stable, comment-stripped canonical form of the SQL for hashing.
+ * This ensures the approval is bound to the exact statement that was reviewed.
+ */
+function canonicalSql(sql) {
+  return sql
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/--[^\n]*/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toUpperCase()
+}
+
+function hashSql(sql) {
+  return crypto.createHash('sha256').update(canonicalSql(sql)).digest('hex')
+}
+
 // POST /api/admin/repair/execute
 router.post('/execute', requireAuth, requireSuperAdmin, async (req, res) => {
   const { sql, description, approval_code } = req.body
@@ -21,11 +41,7 @@ router.post('/execute', requireAuth, requireSuperAdmin, async (req, res) => {
     return res.status(400).json({ error: 'sql and description required' })
   }
 
-  // Normalise to catch comment-obfuscated keywords (strip /* */ and -- comments)
-  const stripped = sql
-    .replace(/\/\*[\s\S]*?\*\//g, ' ')
-    .replace(/--[^\n]*/g, ' ')
-    .toUpperCase()
+  const stripped = canonicalSql(sql)
 
   for (const keyword of HARD_BLOCKED) {
     if (stripped.includes(keyword)) {
@@ -46,24 +62,28 @@ router.post('/execute', requireAuth, requireSuperAdmin, async (req, res) => {
 
   if (isDestructive && !approval_code) {
     const approvalCode = crypto.randomBytes(24).toString('hex')
+    const expiresAt = new Date(Date.now() + APPROVAL_TTL_MS).toISOString()
     await supabaseAdmin.from('repair_approvals').insert({
       requester: req.user.id,
       sql_preview: sql.substring(0, 500),
+      sql_hash: hashSql(sql),
       description,
       approval_code: approvalCode,
       status: 'pending',
+      expires_at: expiresAt,
       created_at: new Date().toISOString(),
     })
-    // Do NOT return the approval_code — a second admin must retrieve and supply it
+    // Approval code is NOT returned to the requester — a second super-admin
+    // must open the approvals list, verify the SQL, and then approve it.
     return res.status(202).json({
       pending_approval: true,
       message:
-        'Destructive operation queued. A second super-admin must retrieve and approve the code from the approvals list.',
+        'Destructive operation queued. A second super-admin must open the approvals list, review the SQL, and approve it before it can be executed.',
     })
   }
 
   if (isDestructive && approval_code) {
-    // Verify the approval code was created by a DIFFERENT super-admin
+    // Look up the approval — must be in 'approved' state (not pending, used, or expired)
     const { data: approval } = await supabaseAdmin
       .from('repair_approvals')
       .select('*')
@@ -74,10 +94,42 @@ router.post('/execute', requireAuth, requireSuperAdmin, async (req, res) => {
     if (!approval) {
       return res.status(403).json({ error: 'Valid approved code required for destructive SQL' })
     }
+
+    // Enforce two-person rule
     if (approval.requester === req.user.id) {
-      return res
-        .status(403)
-        .json({ error: 'You cannot approve your own repair request — requires a second admin' })
+      return res.status(403).json({
+        error: 'You cannot execute your own repair request — a second admin must approve it',
+      })
+    }
+
+    // Verify the approval is bound to this exact SQL (prevents code reuse on different queries)
+    if (approval.sql_hash !== hashSql(sql)) {
+      return res.status(403).json({
+        error: 'Approval code was issued for a different SQL statement — request a new approval',
+      })
+    }
+
+    // Enforce expiry
+    if (approval.expires_at && new Date(approval.expires_at) < new Date()) {
+      await supabaseAdmin
+        .from('repair_approvals')
+        .update({ status: 'expired' })
+        .eq('id', approval.id)
+      return res.status(403).json({ error: 'Approval code has expired — request a new approval' })
+    }
+
+    // Atomically consume the approval code — prevents replay/reuse
+    const { count } = await supabaseAdmin
+      .from('repair_approvals')
+      .update({ status: 'used', used_at: new Date().toISOString(), used_by: req.user.id })
+      .eq('id', approval.id)
+      .eq('status', 'approved') // guard: only transitions from approved → used
+      .select('id', { count: 'exact', head: true })
+
+    if (!count || count < 1) {
+      return res.status(409).json({
+        error: 'Approval code was already consumed — it cannot be reused',
+      })
     }
   }
 
@@ -115,9 +167,15 @@ router.post('/approve', requireAuth, requireSuperAdmin, async (req, res) => {
 
   // Enforce two-person rule — approver must differ from requester
   if (request.requester === req.user.id) {
-    return res
-      .status(403)
-      .json({ error: 'You cannot approve your own repair request — requires a second admin' })
+    return res.status(403).json({
+      error: 'You cannot approve your own repair request — requires a second admin',
+    })
+  }
+
+  // Reject expired requests
+  if (request.expires_at && new Date(request.expires_at) < new Date()) {
+    await supabaseAdmin.from('repair_approvals').update({ status: 'expired' }).eq('id', request.id)
+    return res.status(410).json({ error: 'This approval request has expired' })
   }
 
   await supabaseAdmin
@@ -138,7 +196,9 @@ router.post('/approve', requireAuth, requireSuperAdmin, async (req, res) => {
 router.get('/approvals', requireAuth, requireSuperAdmin, async (req, res) => {
   const { data, error } = await supabaseAdmin
     .from('repair_approvals')
-    .select('id, requester, sql_preview, description, status, created_at, approved_at, approver')
+    .select(
+      'id, requester, sql_preview, description, status, created_at, approved_at, approver, expires_at'
+    )
     .order('created_at', { ascending: false })
     .limit(50)
 
