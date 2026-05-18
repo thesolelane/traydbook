@@ -341,7 +341,7 @@ router.get('/api/admin/purchases', requireAuth, requireAdminLevel, async (req, r
     let q = supabaseAdmin
       .from('purchases')
       .select(
-        'id, user_id, credits, amount_cents, status, created_at, users!user_id(display_name, handle)'
+        'id, user_id, credits_purchased, amount_usd, status, created_at, users!user_id(display_name, handle)'
       )
       .order('created_at', { ascending: false })
       .limit(100)
@@ -351,15 +351,21 @@ router.get('/api/admin/purchases', requireAuth, requireAdminLevel, async (req, r
 
     const { data: allPurchases } = await supabaseAdmin
       .from('purchases')
-      .select('status, amount_cents')
+      .select('status, amount_usd')
     const all = allPurchases ?? []
     const totals = {
       completed: all.filter(r => r.status === 'completed').length,
       failed: all.filter(r => r.status === 'failed').length,
-      totalCents: all.filter(r => r.status === 'completed').reduce((s, r) => s + r.amount_cents, 0),
+      totalCents: all.filter(r => r.status === 'completed').reduce((s, r) => s + Math.round((r.amount_usd ?? 0) * 100), 0),
     }
 
-    res.json({ purchases: data ?? [], totals })
+    const purchases = (data ?? []).map(p => ({
+      ...p,
+      credits: p.credits_purchased,
+      amount_cents: Math.round((p.amount_usd ?? 0) * 100),
+    }))
+
+    res.json({ purchases, totals })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
