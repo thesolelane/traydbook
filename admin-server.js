@@ -1,6 +1,7 @@
 import express from 'express'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { rateLimit } from 'express-rate-limit'
 import { supabaseAdmin } from './server/lib/clients.js'
 import adminRoutes from './server/routes/admin.js'
 import { logError, loadLogFromDisk } from './server/lib/errorLog.js'
@@ -52,6 +53,71 @@ function ipRestriction(req, res, next) {
   return res.status(403).send('Forbidden')
 }
 
+// ── Rate Limiters ─────────────────────────────────────────────────────────────
+// Four tiers, ordered from most to least restrictive.
+// All use the in-memory store (single-instance admin server) and respond with
+// a JSON body so the frontend can surface the retry-after time cleanly.
+
+// Tier 1 — Security scan endpoints (npm audit + full FS code scan are expensive)
+// 5 requests per hour per IP
+const scanRateLimit = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: req => (req.ip ?? 'unknown').replace(/^::ffff:/, ''),
+  handler: (_req, res) =>
+    res.status(429).json({
+      error: 'TOO_MANY_REQUESTS',
+      message: 'Scan rate limit exceeded — maximum 5 scans per hour.',
+    }),
+})
+
+// Tier 2 — Destructive/write operations (SQL execution, revocation, secret writes,
+//           moderation actions, user suspension).  10 requests per 15 minutes per IP.
+const destructiveRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: req => (req.ip ?? 'unknown').replace(/^::ffff:/, ''),
+  handler: (_req, res) =>
+    res.status(429).json({
+      error: 'TOO_MANY_REQUESTS',
+      message: 'Action rate limit exceeded — maximum 10 destructive operations per 15 minutes.',
+    }),
+})
+
+// Tier 3 — Bob AI / command-bar endpoint (LLM inference may be slow/costly).
+// 20 requests per 15 minutes per IP.
+const bobRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: req => (req.ip ?? 'unknown').replace(/^::ffff:/, ''),
+  handler: (_req, res) =>
+    res.status(429).json({
+      error: 'TOO_MANY_REQUESTS',
+      message: 'AI command rate limit exceeded — maximum 20 requests per 15 minutes.',
+    }),
+})
+
+// Tier 4 — General admin API (read-heavy: lists, dashboards, monitor, contractors).
+// 120 requests per 15 minutes per IP.
+const generalRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: req => (req.ip ?? 'unknown').replace(/^::ffff:/, ''),
+  handler: (_req, res) =>
+    res.status(429).json({
+      error: 'TOO_MANY_REQUESTS',
+      message: 'Rate limit exceeded — please slow down.',
+    }),
+})
+
 // Health check — before IP restriction so Coolify can reach it.
 // Does NOT expose safe_mode_reason to avoid leaking internal error details
 // to unauthenticated callers on the public internet.
@@ -87,32 +153,40 @@ app.use(express.json())
 app.use(modeAwareMiddleware)
 
 // ── Existing Admin API Routes ─────────────────────────────────────────────────
-app.use(adminRoutes)
+app.use(generalRateLimit, adminRoutes)
 
 // ── Security: Monitor, Threats, Quarantine, Audit ────────────────────────────
-app.use('/api/admin/monitor', monitorRoutes)
+app.use('/api/admin/monitor', generalRateLimit, monitorRoutes)
 
 // ── Security: Enhanced User Controls ─────────────────────────────────────────
-app.use('/api/admin/users/security', userSecurityRoutes)
+// Suspension / unsuspension / force-logout are destructive; reads fall through
+// to generalRateLimit but the destructive limiter is applied at the router level
+// via explicit route middleware — here we set the tighter cap on the whole prefix.
+app.use('/api/admin/users/security', destructiveRateLimit, userSecurityRoutes)
 
 // ── Security: Content Moderation ─────────────────────────────────────────────
-app.use('/api/admin/moderation', moderationRoutes)
+app.use('/api/admin/moderation', destructiveRateLimit, moderationRoutes)
 
 // ── Security: SQL Repair + Approvals ─────────────────────────────────────────
-app.use('/api/admin/repair', repairRoutes)
+// All repair routes (request, approve, execute) are destructive.
+app.use('/api/admin/repair', destructiveRateLimit, repairRoutes)
 
 // ── Security: Session Revocation ─────────────────────────────────────────────
-app.use('/api/admin/revoke', revokeRoutes)
+app.use('/api/admin/revoke', destructiveRateLimit, revokeRoutes)
 
 // ── Security: AI Command Bar (BOB/OpenAI) ────────────────────────────────────
-app.use('/api/admin/ai', aiCommandRoutes)
+app.use('/api/admin/ai', bobRateLimit, aiCommandRoutes)
 
 // ── Contractor Trust Score / Lead Bank ───────────────────────────────────────
-app.use(contractorsRoutes)
-app.use(apiKeysRoutes)
-app.use(webhookRoutes)
-app.use('/api/admin/bob', bobRoutes)
-app.use('/api/admin/security', securityScanRoutes)
+app.use(generalRateLimit, contractorsRoutes)
+app.use(generalRateLimit, apiKeysRoutes)
+app.use(destructiveRateLimit, webhookRoutes)
+
+// ── Bob agent push commands ───────────────────────────────────────────────────
+app.use('/api/admin/bob', bobRateLimit, bobRoutes)
+
+// ── Code Security Scanner (expensive — shell + FS scan) ──────────────────────
+app.use('/api/admin/security', scanRateLimit, securityScanRoutes)
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/api/admin-health', (_req, res) =>
