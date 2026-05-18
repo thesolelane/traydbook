@@ -226,7 +226,7 @@ export default function Admin() {
         {section === 'users' && <UsersSection authHeaders={authHeaders} />}
         {section === 'wallets' && <WalletsSection authHeaders={authHeaders} />}
         {section === 'feed' && <FeedSection authHeaders={authHeaders} />}
-        {section === 'controls' && <ControlsSection />}
+        {section === 'controls' && <ControlsSection authHeaders={authHeaders} />}
         {section === 'payments' && <PaymentsSection authHeaders={authHeaders} />}
         {section === 'domains' && <DomainsSection authHeaders={authHeaders} />}
         {section === 'secrets' && <SecretsSection authHeaders={authHeaders} />}

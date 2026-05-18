@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { Megaphone } from 'lucide-react'
 import StaffPanel from '../../components/StaffPanel'
-import { SectionCard } from './shared'
+import { SectionCard, SectionProps } from './shared'
 
-export default function ControlsSection() {
+export default function ControlsSection({ authHeaders }: SectionProps) {
   const [announcement, setAnnouncement] = useState('')
   const [announcementMsg, setAnnouncementMsg] = useState('')
 
@@ -18,7 +18,7 @@ export default function ControlsSection() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <SectionCard title="Staff & Role Invites">
-        <StaffPanel />
+        <StaffPanel authHeaders={authHeaders} />
       </SectionCard>
 
       <SectionCard

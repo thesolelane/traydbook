@@ -44,7 +44,7 @@ interface TabDef {
 }
 
 export default function Settings() {
-  const { profile } = useAuth()
+  const { profile, session } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const isContractor = profile?.account_type === 'contractor'
   const isSuperAdminUser = isSuperAdmin(profile?.account_type)
@@ -225,7 +225,7 @@ export default function Settings() {
                 >
                   Staff
                 </h2>
-                <StaffPanel />
+                <StaffPanel authHeaders={() => ({ Authorization: `Bearer ${session?.access_token ?? ''}` })} />
               </div>
             )}
             {activeTab === 'danger' && <DangerTab />}

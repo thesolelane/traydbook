@@ -311,7 +311,7 @@ export default function AdminPanel({ session }: Props) {
           {section === 'audit-log'        && <AuditLogSection authHeaders={authHeaders} />}
           {section === 'domains'          && <DomainsSection authHeaders={authHeaders} />}
           {section === 'secrets'          && <SecretsSection authHeaders={authHeaders} />}
-          {section === 'controls'         && <ControlsSection />}
+          {section === 'controls'         && <ControlsSection authHeaders={authHeaders} />}
         </main>
       </div>
     </AdminAuthProvider>

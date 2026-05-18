@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { Copy, Check, Trash2, UserPlus, Clock, CheckCircle, Shield } from 'lucide-react'
-import { useAuth } from '../context/AuthContext'
 import { ALL_INVITE_ROLES, STAFF_ROLES, getRoleLabel } from '../lib/roles'
 
 interface AdminInvite {
@@ -20,9 +19,7 @@ function formatDate(iso: string) {
   })
 }
 
-export default function StaffPanel() {
-  const { session } = useAuth()
-
+export default function StaffPanel({ authHeaders }: { authHeaders: () => Record<string, string> }) {
   const [invites, setInvites] = useState<AdminInvite[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -40,7 +37,7 @@ export default function StaffPanel() {
     setLoading(true)
     try {
       const res = await fetch('/api/admin/invites', {
-        headers: { Authorization: `Bearer ${session?.access_token}` },
+        headers: authHeaders(),
       })
       if (res.ok) {
         const data = await res.json()
@@ -68,7 +65,7 @@ export default function StaffPanel() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.access_token}`,
+          ...authHeaders(),
         },
         body: JSON.stringify({ email: email.trim(), role }),
       })
@@ -89,7 +86,7 @@ export default function StaffPanel() {
     try {
       await fetch(`/api/admin/invite/${id}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${session?.access_token}` },
+        headers: authHeaders(),
       })
       setInvites(prev => prev.filter(i => i.id !== id))
     } finally {
