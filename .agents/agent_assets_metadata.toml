@@ -60,3 +60,9 @@ id = "R1D1TektvD0vREZiTiKyn"
 uri = "file://docs/agent-api-gap-analysis.md"
 type = "text"
 title = "Agent API Gap Analysis"
+
+[[outputs]]
+id = "tdjDR_m1CGHTA2UWKLRe4"
+uri = "file://docs/bob-api-contract.md"
+type = "text"
+title = "Bob API Contract"
