@@ -80,12 +80,12 @@ router.post('/api/internal/run-sim', (req, res) => {
     env: {
       ...process.env,
       NODE_TLS_REJECT_UNAUTHORIZED: '0',
-      SIM_SB_URL: process.env.BETA_SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? '',
+      SIM_SB_URL: process.env.BETA_SUPABASE_URL || process.env.VITE_SUPABASE_URL || '',
       SIM_SB_ANON_KEY:
-        process.env.BETA_SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY ?? '',
+        process.env.BETA_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '',
       SIM_SB_SERVICE_KEY:
-        process.env.BETA_SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY ?? '',
-      SIM_APP_URL: process.env.BETA_APP_URL ?? 'https://dev.traydbook.com',
+        process.env.BETA_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+      SIM_APP_URL: process.env.BETA_APP_URL || 'https://dev.traydbook.com',
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   })
