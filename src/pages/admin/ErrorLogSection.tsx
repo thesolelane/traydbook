@@ -31,6 +31,7 @@ export default function ErrorLogSection({ authHeaders }: SectionProps) {
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [clearing, setClearing] = useState(false)
+  const [confirmClear, setConfirmClear] = useState(false)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [filter, setFilter] = useState<string>('all')
 
@@ -54,12 +55,12 @@ export default function ErrorLogSection({ authHeaders }: SectionProps) {
   }, [load])
 
   async function handleClear() {
-    if (!confirm('Clear all error logs? This cannot be undone.')) return
     setClearing(true)
     await fetch('/api/admin/error-log', { method: 'DELETE', headers: authHeaders() })
     setEntries([])
     setTotal(0)
     setClearing(false)
+    setConfirmClear(false)
   }
 
   function toggleExpand(id: string) {
@@ -97,26 +98,48 @@ export default function ErrorLogSection({ authHeaders }: SectionProps) {
             >
               <RefreshCw size={13} /> Refresh
             </button>
-            <button
-              onClick={() => void handleClear()}
-              disabled={clearing || entries.length === 0}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '6px 12px',
-                fontSize: 12,
-                fontWeight: 600,
-                background: entries.length === 0 ? 'var(--color-bg)' : '#e0525220',
-                border: `1px solid ${entries.length === 0 ? 'var(--color-border)' : '#e05252'}`,
-                borderRadius: 6,
-                cursor: entries.length === 0 ? 'not-allowed' : 'pointer',
-                color: entries.length === 0 ? 'var(--color-text-muted)' : '#e05252',
-                opacity: clearing ? 0.6 : 1,
-              }}
-            >
-              <Trash2 size={13} /> Clear All
-            </button>
+            {confirmClear ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Clear all logs?</span>
+                <button
+                  onClick={() => void handleClear()}
+                  disabled={clearing}
+                  style={{
+                    padding: '4px 10px', fontSize: 12, fontWeight: 600,
+                    background: '#e05252', border: 'none', borderRadius: 6,
+                    cursor: 'pointer', color: '#fff', opacity: clearing ? 0.6 : 1,
+                  }}
+                >
+                  {clearing ? 'Clearing…' : 'Yes, clear'}
+                </button>
+                <button
+                  onClick={() => setConfirmClear(false)}
+                  disabled={clearing}
+                  style={{
+                    padding: '4px 10px', fontSize: 12, fontWeight: 600,
+                    background: 'var(--color-bg)', border: '1px solid var(--color-border)',
+                    borderRadius: 6, cursor: 'pointer', color: 'var(--color-text)',
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmClear(true)}
+                disabled={entries.length === 0}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '6px 12px', fontSize: 12, fontWeight: 600,
+                  background: entries.length === 0 ? 'var(--color-bg)' : '#e0525220',
+                  border: `1px solid ${entries.length === 0 ? 'var(--color-border)' : '#e05252'}`,
+                  borderRadius: 6, cursor: entries.length === 0 ? 'not-allowed' : 'pointer',
+                  color: entries.length === 0 ? 'var(--color-text-muted)' : '#e05252',
+                }}
+              >
+                <Trash2 size={13} /> Clear All
+              </button>
+            )}
           </div>
         }
       >
