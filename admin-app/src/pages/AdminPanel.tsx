@@ -309,7 +309,7 @@ export default function AdminPanel({ session }: Props) {
           {section === 'ai-command'       && <AiCommandSection authHeaders={authHeaders} />}
           {section === 'threat-monitor'   && <ThreatMonitorSection authHeaders={authHeaders} />}
           {section === 'audit-log'        && <AuditLogSection authHeaders={authHeaders} />}
-          {section === 'domains'          && <DomainsSection />}
+          {section === 'domains'          && <DomainsSection authHeaders={authHeaders} />}
           {section === 'secrets'          && <SecretsSection authHeaders={authHeaders} />}
           {section === 'controls'         && <ControlsSection />}
         </main>

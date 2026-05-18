@@ -82,4 +82,44 @@ router.get('/audit', async (req, res) => {
   res.json({ entries: data || [], count: data?.length || 0 })
 })
 
+// GET /api/admin/monitor/domains
+const PING_TARGETS = [
+  { domain: 'traydbook.com',       label: 'Marketing Site', url: 'https://traydbook.com',            note: 'Public-facing landing page.' },
+  { domain: 'app.traydbook.com',   label: 'Web App',        url: 'https://app.traydbook.com',         note: 'Main application. React + Supabase.' },
+  { domain: 'admin.traydbook.com', label: 'Admin Panel',    url: 'https://admin.traydbook.com/healthz', note: 'Admin control center. Deployed on Coolify.' },
+  { domain: 'bob.traydbook.com',   label: 'Bob (AI Agent)', url: 'https://bob.traydbook.com',         note: 'Autonomous AI agent. Deployed on Coolify.' },
+  { domain: 'secure.traydbook.com',label: 'Auth / API',     url: 'https://secure.traydbook.com',      note: 'Supabase auth and API endpoint.' },
+]
+
+router.get('/domains', async (_req, res) => {
+  const results = await Promise.all(
+    PING_TARGETS.map(async t => {
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), 6000)
+      const start = Date.now()
+      try {
+        const r = await fetch(t.url, {
+          method: 'HEAD',
+          signal: controller.signal,
+          redirect: 'follow',
+        })
+        clearTimeout(timer)
+        const latency = Date.now() - start
+        const status = r.status >= 500 ? 'down' : latency > 3000 ? 'degraded' : 'operational'
+        return { ...t, status, latency, httpStatus: r.status }
+      } catch (e) {
+        clearTimeout(timer)
+        return {
+          ...t,
+          status: 'down',
+          latency: null,
+          httpStatus: null,
+          error: e.name === 'AbortError' ? 'timeout' : e.message,
+        }
+      }
+    })
+  )
+  res.json({ domains: results, checkedAt: new Date().toISOString() })
+})
+
 export default router

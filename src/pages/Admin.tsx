@@ -228,7 +228,7 @@ export default function Admin() {
         {section === 'feed' && <FeedSection authHeaders={authHeaders} />}
         {section === 'controls' && <ControlsSection />}
         {section === 'payments' && <PaymentsSection authHeaders={authHeaders} />}
-        {section === 'domains' && <DomainsSection />}
+        {section === 'domains' && <DomainsSection authHeaders={authHeaders} />}
         {section === 'secrets' && <SecretsSection authHeaders={authHeaders} />}
         {section === 'errors' && <ErrorLogSection authHeaders={authHeaders} />}
         {section === 'threats' && <ThreatMonitorSection authHeaders={authHeaders} />}
