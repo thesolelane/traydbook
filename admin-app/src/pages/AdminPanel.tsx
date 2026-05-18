@@ -1,5 +1,47 @@
-import { useState } from 'react'
+import { useState, Component, ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
+
+class SectionErrorBoundary extends Component<
+  { children: ReactNode; section: string },
+  { error: string | null }
+> {
+  constructor(props: { children: ReactNode; section: string }) {
+    super(props)
+    this.state = { error: null }
+  }
+  static getDerivedStateFromError(e: Error) {
+    return { error: e.message }
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{
+          margin: 24,
+          padding: '20px 24px',
+          background: '#2a1515',
+          border: '1px solid #e05252',
+          borderRadius: 10,
+          color: '#e05252',
+          fontSize: 13,
+          display: 'flex',
+          gap: 10,
+          alignItems: 'flex-start',
+        }}>
+          <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: 1 }} />
+          <div>
+            <div style={{ fontWeight: 700, marginBottom: 4 }}>
+              Error in "{this.props.section}" section
+            </div>
+            <code style={{ fontSize: 11, opacity: 0.85, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+              {this.state.error}
+            </code>
+          </div>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 import {
   BarChart2,
@@ -296,22 +338,24 @@ export default function AdminPanel({ session }: Props) {
             </p>
           </div>
 
-          {section === 'overview'         && <OverviewSection authHeaders={authHeaders} />}
-          {section === 'users'            && <UsersSection authHeaders={authHeaders} />}
-          {section === 'wallets'          && <WalletsSection authHeaders={authHeaders} />}
-          {section === 'contractors'      && <ContractorsSection authHeaders={authHeaders} />}
-          {section === 'feed'             && <FeedSection authHeaders={authHeaders} />}
-          {section === 'payments'         && <PaymentsSection authHeaders={authHeaders} />}
-          {section === 'errors'           && <ErrorLogSection authHeaders={authHeaders} />}
-          {section === 'bob-monitor'      && <BobMonitorSection authHeaders={authHeaders} />}
-          {section === 'moderation-queue' && <ModerationQueueSection authHeaders={authHeaders} />}
-          {section === 'session-revoke'   && <SessionRevokeSection authHeaders={authHeaders} />}
-          {section === 'ai-command'       && <AiCommandSection authHeaders={authHeaders} />}
-          {section === 'threat-monitor'   && <ThreatMonitorSection authHeaders={authHeaders} />}
-          {section === 'audit-log'        && <AuditLogSection authHeaders={authHeaders} />}
-          {section === 'domains'          && <DomainsSection authHeaders={authHeaders} />}
-          {section === 'secrets'          && <SecretsSection authHeaders={authHeaders} />}
-          {section === 'controls'         && <ControlsSection authHeaders={authHeaders} />}
+          <SectionErrorBoundary section={NAV_ITEMS.find(n => n.id === section)?.label ?? section}>
+            {section === 'overview'         && <OverviewSection authHeaders={authHeaders} />}
+            {section === 'users'            && <UsersSection authHeaders={authHeaders} />}
+            {section === 'wallets'          && <WalletsSection authHeaders={authHeaders} />}
+            {section === 'contractors'      && <ContractorsSection authHeaders={authHeaders} />}
+            {section === 'feed'             && <FeedSection authHeaders={authHeaders} />}
+            {section === 'payments'         && <PaymentsSection authHeaders={authHeaders} />}
+            {section === 'errors'           && <ErrorLogSection authHeaders={authHeaders} />}
+            {section === 'bob-monitor'      && <BobMonitorSection authHeaders={authHeaders} />}
+            {section === 'moderation-queue' && <ModerationQueueSection authHeaders={authHeaders} />}
+            {section === 'session-revoke'   && <SessionRevokeSection authHeaders={authHeaders} />}
+            {section === 'ai-command'       && <AiCommandSection authHeaders={authHeaders} />}
+            {section === 'threat-monitor'   && <ThreatMonitorSection authHeaders={authHeaders} />}
+            {section === 'audit-log'        && <AuditLogSection authHeaders={authHeaders} />}
+            {section === 'domains'          && <DomainsSection authHeaders={authHeaders} />}
+            {section === 'secrets'          && <SecretsSection authHeaders={authHeaders} />}
+            {section === 'controls'         && <ControlsSection authHeaders={authHeaders} />}
+          </SectionErrorBoundary>
         </main>
       </div>
     </AdminAuthProvider>
