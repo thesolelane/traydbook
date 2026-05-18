@@ -16,6 +16,8 @@ CREATE TABLE IF NOT EXISTS admin_audit_log (
   user_agent TEXT,
   timestamp TIMESTAMPTZ DEFAULT NOW()
 );
+GRANT ALL ON TABLE public.admin_audit_log TO service_role;
+GRANT ALL ON TABLE public.admin_audit_log TO postgres;
 
 -- Security events
 CREATE TABLE IF NOT EXISTS security_events (
