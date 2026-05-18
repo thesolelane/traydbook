@@ -86,7 +86,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { id: 'domains', label: 'Domain Status', icon: <Globe size={16} /> },
       { id: 'secrets', label: 'Secrets & Env', icon: <KeyRound size={16} /> },
       { id: 'controls', label: 'Platform Controls', icon: <Settings size={16} /> },
-      { id: 'code-scan', label: 'Code Security', icon: <Bug size={16} />, superOnly: true },
+      { id: 'code-scan', label: 'Code Security', icon: <Bug size={16} /> },
     ],
   },
 ]
