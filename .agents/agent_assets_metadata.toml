@@ -66,3 +66,9 @@ id = "tdjDR_m1CGHTA2UWKLRe4"
 uri = "file://docs/bob-api-contract.md"
 type = "text"
 title = "Bob API Contract"
+
+[[outputs]]
+id = "GC4_GMZZ-GwKqMdkvIG1G"
+uri = "file://docs/bob-briefing.md"
+type = "text"
+title = "Bob Agent — Admin API Briefing"
