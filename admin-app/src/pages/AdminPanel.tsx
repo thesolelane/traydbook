@@ -62,6 +62,7 @@ import {
   LogIn,
   Flag,
   Terminal,
+  Bug,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { AdminAuthProvider } from '../context/AuthContext'
@@ -81,6 +82,7 @@ import ThreatMonitorSection from '@main/pages/admin/ThreatMonitorSection'
 import SessionRevokeSection from '@main/pages/admin/SessionRevokeSection'
 import ModerationQueueSection from '@main/pages/admin/ModerationQueueSection'
 import BobMonitorSection from '@main/pages/admin/BobMonitorSection'
+import SecurityScanSection from '@main/pages/admin/SecurityScanSection'
 
 const SUPABASE_ENV = (import.meta.env.VITE_SUPABASE_ENV as string) || 'production'
 const isBeta = SUPABASE_ENV === 'beta'
@@ -102,6 +104,7 @@ type Section =
   | 'domains'
   | 'secrets'
   | 'controls'
+  | 'code-scan'
 
 const NAV_GROUPS: { label: string; items: { id: Section; label: string; icon: React.ReactNode }[] }[] = [
   {
@@ -133,6 +136,7 @@ const NAV_GROUPS: { label: string; items: { id: Section; label: string; icon: Re
       { id: 'domains',        label: 'Domain Status',    icon: <Globe size={16} /> },
       { id: 'secrets',        label: 'Secrets & Env',    icon: <KeyRound size={16} /> },
       { id: 'controls',       label: 'Platform Controls',icon: <Settings size={16} /> },
+      { id: 'code-scan',      label: 'Code Security',    icon: <Bug size={16} /> },
     ],
   },
 ]
@@ -367,6 +371,7 @@ export default function AdminPanel({ session }: Props) {
             {section === 'domains'          && <DomainsSection authHeaders={authHeaders} />}
             {section === 'secrets'          && <SecretsSection authHeaders={authHeaders} />}
             {section === 'controls'         && <ControlsSection authHeaders={authHeaders} currentUserRole={currentUserRole ?? undefined} />}
+            {section === 'code-scan'        && <SecurityScanSection authHeaders={authHeaders} />}
           </SectionErrorBoundary>
         </main>
       </div>

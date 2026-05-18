@@ -21,6 +21,7 @@ import contractorsRoutes from './server/routes/admin-contractors.js'
 import apiKeysRoutes from './server/routes/admin-api-keys.js'
 import webhookRoutes from './server/routes/webhook-dispatch.js'
 import bobRoutes from './server/routes/admin-bob.js'
+import securityScanRoutes from './server/routes/admin-security-scan.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -104,6 +105,7 @@ app.use(contractorsRoutes)
 app.use(apiKeysRoutes)
 app.use(webhookRoutes)
 app.use('/api/admin/bob', bobRoutes)
+app.use('/api/admin/security', securityScanRoutes)
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/api/admin-health', (_req, res) =>
