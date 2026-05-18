@@ -28,6 +28,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
 const PORT = process.env.PORT ?? process.env.ADMIN_PORT ?? 4000
 
+// Trust exactly one reverse-proxy hop (Coolify/Traefik) so req.ip reflects
+// the real client IP rather than the proxy's address.  Without this, the
+// X-Forwarded-For header is read raw, which lets any client spoof their IP by
+// prepending a whitelisted address to the header value.
+app.set('trust proxy', 1)
+
 // ── IP Allowlist ──────────────────────────────────────────────────────────────
 const rawIps = process.env.ADMIN_ALLOWED_IPS ?? ''
 const ALLOWED_IPS = rawIps
@@ -37,21 +43,22 @@ const ALLOWED_IPS = rawIps
 
 function ipRestriction(req, res, next) {
   if (ALLOWED_IPS.length === 0) return next()
-  const forwarded = req.headers['x-forwarded-for']
-  const clientIp = (forwarded ? forwarded.split(',')[0] : (req.socket.remoteAddress ?? '')).trim()
-  const isLoopback =
-    clientIp === '::1' || clientIp === '127.0.0.1' || clientIp === '::ffff:127.0.0.1'
+  // Use req.ip — Express resolves this correctly when trust proxy is set,
+  // making it impossible for a client to spoof via X-Forwarded-For injection.
+  const clientIp = (req.ip ?? '').replace(/^::ffff:/, '')
+  const isLoopback = clientIp === '::1' || clientIp === '127.0.0.1'
   if (isLoopback || ALLOWED_IPS.includes(clientIp)) return next()
   console.warn(`[admin] Blocked IP: ${clientIp}`)
   return res.status(403).send('Forbidden')
 }
 
-// Health check — before IP restriction so Coolify can reach it
+// Health check — before IP restriction so Coolify can reach it.
+// Does NOT expose safe_mode_reason to avoid leaking internal error details
+// to unauthenticated callers on the public internet.
 app.get('/healthz', (_req, res) =>
   res.json({
     ok: true,
     safe_mode: isSafeMode(),
-    safe_mode_reason: getSafeModeReason() || null,
   })
 )
 

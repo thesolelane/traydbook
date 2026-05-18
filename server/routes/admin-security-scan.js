@@ -109,18 +109,30 @@ function walkDir(target) {
   const results = []
   if (!fs.existsSync(target)) return results
   let stat
-  try { stat = fs.statSync(target) } catch { return results }
+  try {
+    stat = fs.statSync(target)
+  } catch {
+    return results
+  }
   if (stat.isFile()) {
     if (SCAN_EXTS.has(path.extname(target))) results.push(target)
     return results
   }
   let entries
-  try { entries = fs.readdirSync(target) } catch { return results }
+  try {
+    entries = fs.readdirSync(target)
+  } catch {
+    return results
+  }
   for (const entry of entries) {
     if (['node_modules', '.git', 'admin-dist', 'dist'].includes(entry)) continue
     const full = path.join(target, entry)
     let s
-    try { s = fs.statSync(full) } catch { continue }
+    try {
+      s = fs.statSync(full)
+    } catch {
+      continue
+    }
     if (s.isDirectory()) {
       results.push(...walkDir(full))
     } else if (SCAN_EXTS.has(path.extname(full))) {
@@ -133,7 +145,11 @@ function walkDir(target) {
 function scanFile(filePath, relPath) {
   const findings = []
   let content
-  try { content = fs.readFileSync(filePath, 'utf8') } catch { return findings }
+  try {
+    content = fs.readFileSync(filePath, 'utf8')
+  } catch {
+    return findings
+  }
   const lines = content.split('\n')
   for (const pat of PATTERNS) {
     pat.re.lastIndex = 0
@@ -170,6 +186,39 @@ router.get('/codescan', requireAuth, requireSuperAdmin, async (req, res) => {
 })
 
 // ── File Integrity Snapshot ───────────────────────────────────────────────────
+// The snapshot file is HMAC-signed with SNAPSHOT_HMAC_SECRET (falls back to
+// SUPABASE_SERVICE_ROLE_KEY so no extra env var is required in most deploys).
+// If the file is tampered with on disk the signature check will fail and the
+// comparison will be blocked rather than silently showing a clean baseline.
+
+function getSnapshotSecret() {
+  const s = process.env.SNAPSHOT_HMAC_SECRET ?? process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
+  if (!s) throw new Error('No HMAC secret available for snapshot signing')
+  return s
+}
+
+function signRecord(record) {
+  const payload = JSON.stringify(record)
+  const sig = crypto.createHmac('sha256', getSnapshotSecret()).update(payload).digest('hex')
+  return { payload, sig }
+}
+
+function verifyRecord(raw) {
+  let parsed
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    return null
+  }
+  const { sig, ...record } = parsed
+  if (!sig) return null
+  const expected = crypto
+    .createHmac('sha256', getSnapshotSecret())
+    .update(JSON.stringify(record))
+    .digest('hex')
+  if (!crypto.timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expected, 'hex'))) return null
+  return record
+}
 
 function hashFile(filePath) {
   try {
@@ -203,8 +252,18 @@ router.post('/snapshot', requireAuth, requireSuperAdmin, async (req, res) => {
     hashes,
   }
   try {
-    fs.writeFileSync(SNAPSHOT_FILE, JSON.stringify(record, null, 2), 'utf8')
-    res.json({ ok: true, label: record.label, fileCount: record.fileCount, createdAt: record.createdAt })
+    const { payload, sig } = signRecord(record)
+    fs.writeFileSync(
+      SNAPSHOT_FILE,
+      JSON.stringify({ ...JSON.parse(payload), sig }, null, 2),
+      'utf8'
+    )
+    res.json({
+      ok: true,
+      label: record.label,
+      fileCount: record.fileCount,
+      createdAt: record.createdAt,
+    })
   } catch (err) {
     res.status(500).json({ error: 'Failed to write snapshot', detail: String(err.message) })
   }
@@ -216,7 +275,14 @@ router.get('/snapshot', requireAuth, requireSuperAdmin, async (req, res) => {
   }
   let baseline
   try {
-    baseline = JSON.parse(fs.readFileSync(SNAPSHOT_FILE, 'utf8'))
+    const raw = fs.readFileSync(SNAPSHOT_FILE, 'utf8')
+    baseline = verifyRecord(raw)
+    if (!baseline) {
+      return res.status(500).json({
+        error: 'SNAPSHOT_TAMPERED',
+        message: 'Snapshot file signature is invalid — the file may have been modified on disk.',
+      })
+    }
   } catch {
     return res.json({ baseline: null, comparison: null })
   }

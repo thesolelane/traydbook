@@ -9,11 +9,12 @@
 import { Router } from 'express'
 import { supabaseAdmin } from '../lib/clients.js'
 import { pushToBob } from '../lib/bob-push.js'
+import { requireAuth, requireAnyStaff, requireAdminLevel } from '../lib/auth.js'
 
 const router = Router()
 
 // GET /api/admin/bob/logs
-router.get('/logs', async (req, res) => {
+router.get('/logs', requireAuth, requireAnyStaff, async (req, res) => {
   const limit = Math.min(parseInt(req.query.limit) || 50, 200)
   const agent = req.query.agent || null
   const status = req.query.status || null
@@ -35,7 +36,7 @@ router.get('/logs', async (req, res) => {
 })
 
 // GET /api/admin/bob/control
-router.get('/control', async (req, res) => {
+router.get('/control', requireAuth, requireAnyStaff, async (req, res) => {
   const { data, error } = await supabaseAdmin.from('bob_control').select('key, value')
 
   if (error) return res.status(500).json({ error: error.message })
@@ -49,8 +50,8 @@ router.get('/control', async (req, res) => {
   })
 })
 
-// PATCH /api/admin/bob/control — update a single control flag
-router.patch('/control', async (req, res) => {
+// PATCH /api/admin/bob/control — update a single control flag (admin-level only)
+router.patch('/control', requireAuth, requireAdminLevel, async (req, res) => {
   const { key, value } = req.body ?? {}
   if (!key || value === undefined) {
     return res.status(400).json({ error: 'key and value required' })
@@ -73,14 +74,13 @@ router.patch('/control', async (req, res) => {
 
   if (error) return res.status(500).json({ error: error.message })
 
-  // Push instantly to Bob if his endpoint is configured
   void pushToBob('/control', { key, value })
 
   res.json({ ok: true, key, value })
 })
 
 // GET /api/admin/bob/lead-stats — lead counts by status
-router.get('/lead-stats', async (req, res) => {
+router.get('/lead-stats', requireAuth, requireAnyStaff, async (req, res) => {
   const { data, error } = await supabaseAdmin.from('leads').select('status')
 
   if (error) return res.status(500).json({ error: error.message })
@@ -95,7 +95,7 @@ router.get('/lead-stats', async (req, res) => {
 })
 
 // GET /api/admin/bob/ping — test connectivity to Bob's server
-router.get('/ping', async (req, res) => {
+router.get('/ping', requireAuth, requireAnyStaff, async (req, res) => {
   const endpoint = process.env.BOB_AGENT_ENDPOINT
   if (!endpoint) {
     return res.json({ reachable: false, reason: 'BOB_AGENT_ENDPOINT not set' })
@@ -110,12 +110,16 @@ router.get('/ping', async (req, res) => {
     })
     res.json({ reachable: r.ok, status: r.status, endpoint: url })
   } catch (e) {
-    res.json({ reachable: false, reason: e instanceof Error ? e.message : 'unreachable', endpoint: url })
+    res.json({
+      reachable: false,
+      reason: e instanceof Error ? e.message : 'unreachable',
+      endpoint: url,
+    })
   }
 })
 
 // POST /api/admin/bob/command — forward a raw command to Bob's /bob/command endpoint
-router.post('/command', async (req, res) => {
+router.post('/command', requireAuth, requireAdminLevel, async (req, res) => {
   const { command, args } = req.body ?? {}
   if (!command) return res.status(400).json({ error: 'command is required' })
   const endpoint = process.env.BOB_AGENT_ENDPOINT
@@ -124,8 +128,8 @@ router.post('/command', async (req, res) => {
   res.json({ ok: true, command })
 })
 
-// POST /api/admin/bob/suggestion/:id/approve — mark a suggestion as approved and notify Bob
-router.post('/suggestion/:id/approve', async (req, res) => {
+// POST /api/admin/bob/suggestion/:id/approve
+router.post('/suggestion/:id/approve', requireAuth, requireAdminLevel, async (req, res) => {
   const { id } = req.params
   const { error } = await supabaseAdmin
     .from('agent_logs')
