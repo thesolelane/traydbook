@@ -122,6 +122,21 @@ const bobRateLimit = rateLimit({
     }),
 })
 
+// Tier 3b — Bob monitor reads (control, logs, ping).
+// Monitor polls 3 endpoints every 15s = ~180 req/15 min; give headroom.
+const bobMonitorRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 400,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: rateLimitKey,
+  handler: (_req, res) =>
+    res.status(429).json({
+      error: 'TOO_MANY_REQUESTS',
+      message: 'Bob monitor rate limit exceeded.',
+    }),
+})
+
 // Tier 4 — General admin API (read-heavy: lists, dashboards, monitor, contractors).
 // 120 requests per 15 minutes per IP.
 const generalRateLimit = rateLimit({
@@ -202,7 +217,12 @@ app.use(generalRateLimit, apiKeysRoutes)
 app.use(destructiveRateLimit, webhookRoutes)
 
 // ── Bob agent push commands ───────────────────────────────────────────────────
-app.use('/api/admin/bob', bobRateLimit, bobRoutes)
+// GET (ping, control, logs) → monitor limit (400/15 min).
+// POST (commands, approvals) → AI command limit (20/15 min).
+app.use('/api/admin/bob', (req, res, next) => {
+  const limiter = req.method === 'GET' ? bobMonitorRateLimit : bobRateLimit
+  limiter(req, res, next)
+}, bobRoutes)
 
 // ── Code Security Scanner (expensive — shell + FS scan) ──────────────────────
 app.use('/api/admin/security', scanRateLimit, securityScanRoutes)
