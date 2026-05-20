@@ -57,15 +57,34 @@ function ipRestriction(req, res, next) {
 // Four tiers, ordered from most to least restrictive.
 // All use the in-memory store (single-instance admin server) and respond with
 // a JSON body so the frontend can surface the retry-after time cleanly.
+//
+// Key strategy: authenticated admins are bucketed by their user ID (from the
+// JWT sub claim) so their legitimate work never competes with unauthenticated
+// traffic. Unauthenticated requests fall back to IP.
+// Note: the JWT is only decoded here (not verified) — this is intentional.
+// Rate limiting by user ID is purely a UX concern; auth verification still
+// happens inside each route handler via requireAuth.
+function rateLimitKey(req) {
+  const auth = req.headers.authorization
+  if (auth?.startsWith('Bearer ')) {
+    try {
+      const payload = JSON.parse(
+        Buffer.from(auth.slice(7).split('.')[1], 'base64url').toString()
+      )
+      if (payload?.sub) return `user:${payload.sub}`
+    } catch {}
+  }
+  return ipKeyGenerator(req)
+}
 
 // Tier 1 — Security scan endpoints (npm audit + full FS code scan are expensive)
-// 5 requests per hour per IP
+// 5 requests per hour per user/IP
 const scanRateLimit = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: req => ipKeyGenerator(req),
+  keyGenerator: rateLimitKey,
   handler: (_req, res) =>
     res.status(429).json({
       error: 'TOO_MANY_REQUESTS',
@@ -80,7 +99,7 @@ const destructiveRateLimit = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: req => ipKeyGenerator(req),
+  keyGenerator: rateLimitKey,
   handler: (_req, res) =>
     res.status(429).json({
       error: 'TOO_MANY_REQUESTS',
@@ -95,7 +114,7 @@ const bobRateLimit = rateLimit({
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: req => ipKeyGenerator(req),
+  keyGenerator: rateLimitKey,
   handler: (_req, res) =>
     res.status(429).json({
       error: 'TOO_MANY_REQUESTS',
@@ -110,7 +129,7 @@ const generalRateLimit = rateLimit({
   max: 120,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: req => ipKeyGenerator(req),
+  keyGenerator: rateLimitKey,
   handler: (_req, res) =>
     res.status(429).json({
       error: 'TOO_MANY_REQUESTS',
