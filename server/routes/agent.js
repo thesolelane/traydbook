@@ -270,6 +270,9 @@ router.get('/api/bob/control', await requireServiceKey(['agent:read']), async (r
     ai_provider_override: controls.ai_provider_override || null,
     lead_refresh_force: controls.lead_refresh_force === 'true',
     max_leads_per_cycle: parseInt(controls.max_leads_per_cycle ?? '10', 10),
+    // traydbook_url_override: lets Bob hot-swap which TraydBook URL it targets
+    // without a redeployment — null means use whatever Bob has configured locally
+    traydbook_url_override: controls.traydbook_url_override || null,
   })
 })
 

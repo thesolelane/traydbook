@@ -62,6 +62,7 @@ router.patch('/control', requireAuth, requireAdminLevel, async (req, res) => {
     'ai_provider_override',
     'lead_refresh_force',
     'max_leads_per_cycle',
+    'traydbook_url_override',
   ]
   if (!ALLOWED_KEYS.includes(key)) {
     return res.status(400).json({ error: `Unknown control key: ${key}` })
@@ -96,11 +97,11 @@ router.get('/lead-stats', requireAuth, requireAnyStaff, async (req, res) => {
 
 // GET /api/admin/bob/ping — test connectivity to Bob's server
 router.get('/ping', requireAuth, requireAnyStaff, async (req, res) => {
-  const endpoint = process.env.BOB_AGENT_ENDPOINT
+  const endpoint = process.env.BOB_URL || process.env.BOB_AGENT_ENDPOINT
   if (!endpoint) {
-    return res.json({ reachable: false, reason: 'BOB_AGENT_ENDPOINT not set' })
+    return res.json({ reachable: false, reason: 'BOB_URL not set' })
   }
-  const token = process.env.ADMIN_TO_BOB_TOKEN
+  const token = process.env.BOB_ADMIN_KEY || process.env.ADMIN_TO_BOB_TOKEN
   const url = `${endpoint.replace(/\/$/, '')}/bob/healthz`
   try {
     const r = await fetch(url, {
@@ -122,8 +123,8 @@ router.get('/ping', requireAuth, requireAnyStaff, async (req, res) => {
 router.post('/command', requireAuth, requireAdminLevel, async (req, res) => {
   const { command, args } = req.body ?? {}
   if (!command) return res.status(400).json({ error: 'command is required' })
-  const endpoint = process.env.BOB_AGENT_ENDPOINT
-  if (!endpoint) return res.status(503).json({ error: 'BOB_AGENT_ENDPOINT not set' })
+  const endpoint = process.env.BOB_URL || process.env.BOB_AGENT_ENDPOINT
+  if (!endpoint) return res.status(503).json({ error: 'BOB_URL not set' })
   await pushToBob('/command', { command, args: args ?? {} })
   res.json({ ok: true, command })
 })

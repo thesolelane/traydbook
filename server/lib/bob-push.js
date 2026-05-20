@@ -1,6 +1,9 @@
 async function pushToBob(path, body = {}, method = 'POST') {
-  const endpoint = process.env.BOB_AGENT_ENDPOINT
-  const token = process.env.ADMIN_TO_BOB_TOKEN
+  // Support both naming conventions:
+  // BOB_URL / BOB_ADMIN_KEY  — Bob's own handoff spec
+  // BOB_AGENT_ENDPOINT / ADMIN_TO_BOB_TOKEN — legacy TraydBook names
+  const endpoint = process.env.BOB_URL || process.env.BOB_AGENT_ENDPOINT
+  const token = process.env.BOB_ADMIN_KEY || process.env.ADMIN_TO_BOB_TOKEN
   if (!endpoint || !token) return
 
   try {

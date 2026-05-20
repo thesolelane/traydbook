@@ -83,8 +83,13 @@ SQL REPAIR (two-person workflow — all steps require super-admin)
 - listRepairApprovals(): List pending and recent repair approval requests.
 
 BOB AGENT CONTROL (requires admin-level role)
-- getBobStatus(): Read current Bob control flags (paused, ai_provider_override, lead_refresh_force, max_leads_per_cycle)
-- setBobControl(key, value): Update a single Bob control flag. Valid keys: paused (true/false), ai_provider_override (string|null), lead_refresh_force (true/false), max_leads_per_cycle (number)
+- getBobStatus(): Read current Bob control flags (paused, ai_provider_override, lead_refresh_force, max_leads_per_cycle, traydbook_url_override)
+- setBobControl(key, value): Update a single Bob control flag. Valid keys: paused (true/false), ai_provider_override (string|null), lead_refresh_force (true/false), max_leads_per_cycle (number), traydbook_url_override (string|null)
+- sendBobCommand(command, args): Send a direct command to Bob's agent server. Known commands:
+    pause_outreach — stops Bob's outreach scheduler (args: {})
+    resume_outreach — resumes outreach (args: {})
+    trigger_lead_search — queues a lead search on the next cycle (args: {})
+    switch_provider — overrides Bob's active AI provider (args: { provider: "openrouter"|"openai"|"anthropic"|"perplexity"|"groq"|"ollama"|null })
 - getBobLogs(agent, status, action, limit): Read Bob agent execution logs
 - pingBob(): Test connectivity to Bob's agent server
 
