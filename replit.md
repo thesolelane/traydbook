@@ -33,7 +33,7 @@ Stripe products need to be seeded using `scripts/seed-stripe-products.js`.
 - `PAGERDUTY_KEY` (optional — CRITICAL alert paging)
 - `BOB_ENDPOINT` (optional — Ollama endpoint for AI command bar, e.g. `http://bob:11434`)
 - `BOB_MODEL` (optional — Ollama model name, default `llama3`)
-- `BOB_URL` (optional — Bob's agent server URL, e.g. `http://192.168.1.21:8090` on LAN or `https://bob.traydbook.com` publicly; enables push commands from admin panel)
+- `BOB_URL` (optional — Bob's agent server URL, e.g. `https://bob.traydbook.com`; enables push commands from admin panel)
 - `BOB_ADMIN_KEY` (required if BOB_URL set — shared bearer token; admin sends as `Authorization: Bearer`, Bob verifies on inbound requests)
 - `BOB_AGENT_ENDPOINT` (legacy alias for BOB_URL — still accepted)
 - `ADMIN_TO_BOB_TOKEN` (legacy alias for BOB_ADMIN_KEY — still accepted)

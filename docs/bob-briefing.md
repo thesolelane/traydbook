@@ -24,9 +24,9 @@ Set these on both sides:
 - **TraydBook admin server** (Coolify — admin service): `BOB_URL`, `BOB_ADMIN_KEY`
 - **Bob's server**: `BOB_ADMIN_KEY` (same value — Bob verifies inbound requests with it)
 
-LAN example (t1 → t2):
+`bob.traydbook.com` DNS is now live on t1 (192.168.1.20). Use the public URL:
 ```
-BOB_URL=http://192.168.1.21:8090
+BOB_URL=https://bob.traydbook.com
 BOB_ADMIN_KEY=<shared_secret>
 ```
 
@@ -132,7 +132,7 @@ The detailed reason is only available at `GET /api/admin-health`, which is behin
 ## Summary checklist for Bob's operator
 
 **Env vars:**
-- [ ] Set `BOB_URL=http://192.168.1.21:8090` (or public URL once DNS/cert is set up) on the TraydBook admin service in Coolify
+- [ ] Set `BOB_URL=https://bob.traydbook.com` on the TraydBook admin service in Coolify (`bob.traydbook.com` DNS is live on t1)
 - [ ] Set `BOB_ADMIN_KEY=<shared_secret>` on the TraydBook admin service — must exactly match the value on Bob's side
 
 **Integration:**
