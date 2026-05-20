@@ -1,7 +1,7 @@
 import express from 'express'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { rateLimit } from 'express-rate-limit'
+import { rateLimit, ipKeyGenerator } from 'express-rate-limit'
 import { supabaseAdmin } from './server/lib/clients.js'
 import adminRoutes from './server/routes/admin.js'
 import { logError, loadLogFromDisk } from './server/lib/errorLog.js'
@@ -65,7 +65,7 @@ const scanRateLimit = rateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: req => (req.ip ?? 'unknown').replace(/^::ffff:/, ''),
+  keyGenerator: req => ipKeyGenerator(req),
   handler: (_req, res) =>
     res.status(429).json({
       error: 'TOO_MANY_REQUESTS',
@@ -80,7 +80,7 @@ const destructiveRateLimit = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: req => (req.ip ?? 'unknown').replace(/^::ffff:/, ''),
+  keyGenerator: req => ipKeyGenerator(req),
   handler: (_req, res) =>
     res.status(429).json({
       error: 'TOO_MANY_REQUESTS',
@@ -95,7 +95,7 @@ const bobRateLimit = rateLimit({
   max: 20,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: req => (req.ip ?? 'unknown').replace(/^::ffff:/, ''),
+  keyGenerator: req => ipKeyGenerator(req),
   handler: (_req, res) =>
     res.status(429).json({
       error: 'TOO_MANY_REQUESTS',
@@ -110,7 +110,7 @@ const generalRateLimit = rateLimit({
   max: 120,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: req => (req.ip ?? 'unknown').replace(/^::ffff:/, ''),
+  keyGenerator: req => ipKeyGenerator(req),
   handler: (_req, res) =>
     res.status(429).json({
       error: 'TOO_MANY_REQUESTS',
