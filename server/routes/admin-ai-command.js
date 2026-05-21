@@ -12,6 +12,13 @@ function getLLMConfig() {
       model: process.env.BOB_MODEL || 'llama3',
     }
   }
+  if (process.env.OPENROUTER_API_KEY) {
+    return {
+      type: 'openrouter',
+      apiKey: process.env.OPENROUTER_API_KEY,
+      model: process.env.OPENROUTER_MODEL || 'openai/gpt-4o',
+    }
+  }
   if (process.env.OPENAI_API_KEY) {
     return { type: 'openai', apiKey: process.env.OPENAI_API_KEY, model: 'gpt-4o' }
   }
@@ -39,6 +46,24 @@ async function callLLM(systemPrompt, userMessage) {
     if (!res.ok) throw new Error(`BOB (Ollama) error: ${res.statusText}`)
     const json = await res.json()
     return json.message?.content || '{}'
+  }
+
+  if (config.type === 'openrouter') {
+    const { default: OpenAI } = await import('openai')
+    const openai = new OpenAI({
+      apiKey: config.apiKey,
+      baseURL: 'https://openrouter.ai/api/v1',
+      defaultHeaders: { 'HTTP-Referer': 'https://admin.traydbook.com' },
+    })
+    const completion = await openai.chat.completions.create({
+      model: config.model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage },
+      ],
+      response_format: { type: 'json_object' },
+    })
+    return completion.choices[0].message.content
   }
 
   if (config.type === 'openai') {
