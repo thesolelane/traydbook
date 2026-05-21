@@ -109,7 +109,7 @@ router.get('/ping', requireAuth, requireAnyStaff, async (req, res) => {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       signal: AbortSignal.timeout(5000),
     })
-    res.json({ reachable: r.ok, status: r.status, endpoint: url })
+    res.json({ reachable: r.status < 500, status: r.status, endpoint: url })
   } catch (e) {
     res.json({
       reachable: false,
