@@ -12,6 +12,18 @@ uri = "file://public/logo-ai2.png"
 type = "image"
 title = "traydbook hammer B logo"
 
+[[generated]]
+id = "2JKzDHmVgGI65qcpd9eir"
+uri = "file://public/logo-ai3.png"
+type = "image"
+title = "traydbook TB monogram hammer book"
+
+[[generated]]
+id = "c9pkiKYsZobXg3D3UAG0n"
+uri = "file://public/logo-ai4.png"
+type = "image"
+title = "traydbook hammer T book B monogram"
+
 [[outputs]]
 id = "UHpKx-m6h3QnnnF1sI0kG"
 uri = "file://docs/traydbook-knowledge-base.md"
