@@ -24,6 +24,12 @@ uri = "file://public/logo-ai4.png"
 type = "image"
 title = "traydbook hammer T book B monogram"
 
+[[generated]]
+id = "7G20TrXJ5CxlKZbhpeHNB"
+uri = "file://public/logo-ai5.png"
+type = "image"
+title = "traydbook hammer book-B logo"
+
 [[outputs]]
 id = "UHpKx-m6h3QnnnF1sI0kG"
 uri = "file://docs/traydbook-knowledge-base.md"
@@ -119,3 +125,9 @@ id = "n1l5N2FL3aAAxovTjzd4l"
 uri = "file://public/logo-ai4.png"
 type = "image"
 title = "TraydBook Logo — TB monogram (hammer + book)"
+
+[[outputs]]
+id = "VWq7R-TW-RP_bpNnKNtoK"
+uri = "file://public/logo-ai5.png"
+type = "image"
+title = "TraydBook Logo — hammer + book B"
