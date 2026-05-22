@@ -16,6 +16,8 @@
 //         image upload · posts · comments · likes · fund owners ·
 //         RFQs · bids · bid award · wallet access · [optional cleanup]
 
+import { Keypair } from '@solana/web3.js'
+
 const SB      = process.env.SIM_SB_URL         || ''
 const AK      = process.env.SIM_SB_ANON_KEY    || ''
 const SK      = process.env.SIM_SB_SERVICE_KEY || ''
@@ -32,15 +34,6 @@ const PW = 'TraydSim2026!'
 
 // Minimal 1×1 transparent GIF (35 bytes) used for image upload tests
 const GIF1x1 = Buffer.from('R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==', 'base64')
-
-// Pre-generated valid Solana pubkeys (test wallets — no real funds)
-const SIM_PUBKEYS = [
-  'So11111111111111111111111111111112',
-  'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
-  'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
-  '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R',
-  'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf8Ss623VQ5DA',
-]
 
 const USERS = [
   { i:1,  type:'contractor',    trade:'Electrician', name:'Alex Sparks',    city:'Los Angeles',  state:'CA' },
@@ -192,12 +185,14 @@ for (const u of USERS) {
 }
 
 // 6. Wallet setup — contractors only (POST /api/wallet/save-pubkey)
-//    Real user generates keypair client-side on /wallet-setup page
+//    Real user generates keypair client-side on /wallet-setup page — we do the same here
 sep('Wallet Setup (contractors)')
 const contractors = USERS.filter(u => u.type === 'contractor')
-for (const [idx, u] of contractors.entries()) {
+for (const u of contractors) {
   if (!u.token) continue
-  const pubkey = SIM_PUBKEYS[idx % SIM_PUBKEYS.length]
+  const keypair = Keypair.generate()
+  const pubkey  = keypair.publicKey.toBase58()
+  u.solana_pubkey = pubkey
   const r = await req('POST', `${APP}/api/wallet/save-pubkey`, { pubkey }, u.token)
   r.s === 200
     ? ok(`Wallet #${u.i} ${u.name}`, pubkey.slice(0,12) + '...')
