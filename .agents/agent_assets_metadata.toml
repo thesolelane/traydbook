@@ -6,6 +6,12 @@ uri = "file://public/logo-ai.png"
 type = "image"
 title = "traydbook logo vector clean"
 
+[[generated]]
+id = "W48czDSk-52PrA8RPekTz"
+uri = "file://public/logo-ai2.png"
+type = "image"
+title = "traydbook hammer B logo"
+
 [[outputs]]
 id = "UHpKx-m6h3QnnnF1sI0kG"
 uri = "file://docs/traydbook-knowledge-base.md"
