@@ -131,3 +131,9 @@ id = "VWq7R-TW-RP_bpNnKNtoK"
 uri = "file://public/logo-ai5.png"
 type = "image"
 title = "TraydBook Logo — hammer + book B"
+
+[[outputs]]
+id = "4bB_4dYuZA6AKylUW_3hv"
+uri = "file://public/logo-clean.png"
+type = "image"
+title = "TraydBook Logo — clean, transparent, high-res"
