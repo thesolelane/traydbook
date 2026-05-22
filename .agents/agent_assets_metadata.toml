@@ -160,22 +160,28 @@ title = "Instagram — 1080x1080"
 id = "NgmsdMdqF-Is-ezARqKx_"
 uri = "file://public/logo-facebook.png"
 type = "image"
-title = "Facebook — 1080x1080"
+title = "Facebook — 1080x1080 PNG"
 
 [[outputs]]
 id = "DzA2RHjFIQTmdun1kTGs-"
 uri = "file://public/logo-twitter.png"
 type = "image"
-title = "Twitter/X — 400x400"
+title = "Twitter/X — 400x400 PNG"
 
 [[outputs]]
 id = "pFDAFs45N0L9K1CtfUhhA"
 uri = "file://public/traydbook-logos.zip"
 type = "unspecified"
-title = "TraydBook Logos — All Sizes (Instagram, Facebook, Twitter + Transparent)"
+title = "All Logos — ZIP (Instagram, Facebook, Twitter, Transparent)"
 
 [[outputs]]
 id = "_xEgXjUr141IDsBXVaPeq"
 uri = "file://public/logo-instagram.jpg"
 type = "image"
-title = "Instagram Logo — download me"
+title = "Instagram — 1080x1080 JPG"
+
+[[outputs]]
+id = "DzHUVTFpyMb94-ZkKzrIg"
+uri = "file://public/logo-v2-transparent.png"
+type = "image"
+title = "Logo — Transparent PNG"

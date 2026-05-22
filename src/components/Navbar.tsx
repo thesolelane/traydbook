@@ -25,7 +25,7 @@ function TraydBookLogo({ size = 'sm' }: { size?: 'sm' | 'md' }) {
   const imgSize = size === 'md' ? 44 : 36
   return (
     <img
-      src="/logo-clean.png"
+      src="/logo-v2-transparent.png"
       alt="TraydBook"
       style={{ width: imgSize, height: imgSize, objectFit: 'contain', flexShrink: 0 }}
     />
