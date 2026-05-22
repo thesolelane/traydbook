@@ -29,7 +29,7 @@ async function encryptPrivateKey(
     enc.encode(privkeyJson)
   )
 
-  const toB64 = (buf: ArrayBuffer) => btoa(String.fromCharCode(...new Uint8Array(buf)))
+  const toB64 = (buf: ArrayBuffer | Uint8Array) => btoa(String.fromCharCode(...new Uint8Array(buf instanceof Uint8Array ? buf.buffer : buf)))
   return {
     encryptedKey: toB64(encrypted),
     iv: toB64(ivBytes),
