@@ -173,3 +173,9 @@ id = "pFDAFs45N0L9K1CtfUhhA"
 uri = "file://public/traydbook-logos.zip"
 type = "unspecified"
 title = "TraydBook Logos — All Sizes (Instagram, Facebook, Twitter + Transparent)"
+
+[[outputs]]
+id = "_xEgXjUr141IDsBXVaPeq"
+uri = "file://public/logo-instagram.jpg"
+type = "image"
+title = "Instagram — 1080x1080 JPG"
