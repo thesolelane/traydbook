@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 380" width="300" height="380">
+
+  <!-- Circle background -->
+  <circle cx="150" cy="148" r="132" fill="#C04A22"/>
+
+  <!-- === ICON: Hammer + Book/T shape === -->
+
+  <!-- Shadow layer (offset down-right slightly) -->
+  <g fill="rgba(0,0,0,0.18)" transform="translate(5,5)">
+    <!-- T crossbar -->
+    <rect x="80" y="90" width="138" height="30" rx="6"/>
+    <!-- T vertical stem -->
+    <rect x="130" y="116" width="38" height="76" rx="4"/>
+    <!-- Book left page -->
+    <path d="M130 188 Q108 196 112 222 L148 222 L148 188 Z"/>
+    <!-- Book right page -->
+    <path d="M168 188 Q190 196 186 222 L150 222 L150 188 Z"/>
+    <!-- Book spine line -->
+    <rect x="147" y="188" width="4" height="34" rx="2"/>
+    <!-- Hammer head -->
+    <path d="M72 82 L122 82 Q130 82 130 90 L130 108 Q130 116 122 116 L72 116 Q64 116 64 108 L64 90 Q64 82 72 82 Z"/>
+    <!-- Hammer handle -->
+    <rect x="118" y="108" width="14" height="62" rx="5" transform="rotate(18,125,108)"/>
+  </g>
+
+  <!-- White icon layer -->
+  <g fill="white">
+    <!-- T crossbar -->
+    <rect x="78" y="88" width="138" height="30" rx="6"/>
+    <!-- T vertical stem -->
+    <rect x="128" y="114" width="38" height="76" rx="4"/>
+    <!-- Book left page -->
+    <path d="M128 186 Q106 194 110 220 L146 220 L146 186 Z"/>
+    <!-- Book right page -->
+    <path d="M166 186 Q188 194 184 220 L148 220 L148 186 Z"/>
+    <!-- Book spine line -->
+    <rect x="145" y="186" width="4" height="34" rx="2" fill="rgba(192,74,34,0.6)"/>
+    <!-- Hammer head -->
+    <path d="M70 80 L120 80 Q128 80 128 88 L128 106 Q128 114 120 114 L70 114 Q62 114 62 106 L62 88 Q62 80 70 80 Z"/>
+    <!-- Hammer handle -->
+    <rect x="116" y="106" width="14" height="62" rx="5" transform="rotate(18,123,106)"/>
+  </g>
+
+  <!-- TraydBook text -->
+  <text
+    x="150"
+    y="330"
+    text-anchor="middle"
+    fill="white"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="30"
+    font-weight="700"
+    letter-spacing="1.5"
+  >TraydBook</text>
+
+</svg>

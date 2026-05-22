@@ -1,5 +1,10 @@
 uploads = []
-generated = []
+
+[[generated]]
+id = "E_DJwpepAyut5zH_izpag"
+uri = "file://public/logo-ai.png"
+type = "image"
+title = "traydbook logo vector clean"
 
 [[outputs]]
 id = "UHpKx-m6h3QnnnF1sI0kG"
@@ -78,3 +83,15 @@ id = "rUu_7lCCniYOOV2egPUy4"
 uri = "file://public/logo-transparent.png"
 type = "image"
 title = "TraydBook Logo — softened edges"
+
+[[outputs]]
+id = "b2lt9Zg0WMj6B4YJypalo"
+uri = "file://public/logo-ai.png"
+type = "image"
+title = "TraydBook Logo — AI remake (white background)"
+
+[[outputs]]
+id = "Z8bi4CswQk14jJuOYMp9F"
+uri = "file://public/logo-ai-transparent.png"
+type = "image"
+title = "TraydBook Logo — AI remake (transparent)"
