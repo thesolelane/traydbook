@@ -137,3 +137,15 @@ id = "4bB_4dYuZA6AKylUW_3hv"
 uri = "file://public/logo-clean.png"
 type = "image"
 title = "TraydBook Logo — clean, transparent, high-res"
+
+[[outputs]]
+id = "eAq3NX5Lyo3UtkJCGty1Y"
+uri = "file://public/logo-social.png"
+type = "image"
+title = "Social Media — orange background"
+
+[[outputs]]
+id = "_n4KDWaXjFa42VZ7fV55y"
+uri = "file://public/logo-social-dark.png"
+type = "image"
+title = "Social Media — dark background"
