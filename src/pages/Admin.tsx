@@ -17,6 +17,7 @@ import {
   Terminal,
   Bot,
   Bug,
+  FileSpreadsheet,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { isSuperAdmin } from '../lib/roles'
@@ -36,6 +37,7 @@ import SessionRevokeSection from './admin/SessionRevokeSection'
 import AiCommandSection from './admin/AiCommandSection'
 import BobMonitorSection from './admin/BobMonitorSection'
 import SecurityScanSection from './admin/SecurityScanSection'
+import ProspectsSection from './admin/ProspectsSection'
 
 type Section =
   | 'overview'
@@ -53,6 +55,7 @@ type Section =
   | 'revoke'
   | 'ai'
   | 'bob'
+  | 'prospects'
   | 'code-scan'
 
 type NavItem = { id: Section; label: string; icon: React.ReactNode; superOnly?: boolean }
@@ -73,6 +76,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     label: 'Agent / Bob',
     items: [
       { id: 'bob', label: 'Bob Monitor', icon: <Bot size={16} /> },
+      { id: 'prospects', label: 'Outreach Prospects', icon: <FileSpreadsheet size={16} /> },
       { id: 'ai', label: 'AI Command Bar', icon: <Terminal size={16} />, superOnly: true },
     ],
   },
@@ -241,6 +245,7 @@ export default function Admin() {
         {section === 'revoke' && <SessionRevokeSection authHeaders={authHeaders} />}
         {section === 'ai' && <AiCommandSection authHeaders={authHeaders} />}
         {section === 'bob' && <BobMonitorSection authHeaders={authHeaders} />}
+        {section === 'prospects' && <ProspectsSection authHeaders={authHeaders} />}
         {section === 'code-scan' && <SecurityScanSection authHeaders={authHeaders} />}
       </main>
     </div>
