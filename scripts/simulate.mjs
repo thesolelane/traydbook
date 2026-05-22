@@ -2,45 +2,57 @@
 // TraydBook End-to-End Simulation — v3
 //
 // Manual run (on Coolify host):
-//   NODE_TLS_REJECT_UNAUTHORIZED=0 node /tmp/sim.mjs
+//   NODE_TLS_REJECT_UNAUTHORIZED=0 node scripts/simulate.mjs
 //
-// Env vars override hardcoded defaults — set these when running via webhook:
+// Env vars:
 //   SIM_SB_URL          Supabase project URL
 //   SIM_SB_ANON_KEY     Supabase anon key
 //   SIM_SB_SERVICE_KEY  Supabase service role key
 //   SIM_APP_URL         App base URL  (default: https://dev.traydbook.com)
+//   SIM_CLEANUP         Set to "1" or "true" to delete sim users after the run
+//                       Default: OFF — data persists so you can inspect it in admin
 //
-// Covers: health · auth guards · create/signin/onboard 10 users ·
+// Covers: health · auth guards · signup · onboarding · wallet setup (contractors) ·
 //         image upload · posts · comments · likes · fund owners ·
-//         RFQs · bids · bid award · wallet access · cleanup
+//         RFQs · bids · bid award · wallet access · [optional cleanup]
 
-const SB  = process.env.SIM_SB_URL         || ''
-const AK  = process.env.SIM_SB_ANON_KEY    || ''
-const SK  = process.env.SIM_SB_SERVICE_KEY || ''
-const APP = process.env.SIM_APP_URL        || 'https://dev.traydbook.com'
+const SB      = process.env.SIM_SB_URL         || ''
+const AK      = process.env.SIM_SB_ANON_KEY    || ''
+const SK      = process.env.SIM_SB_SERVICE_KEY || ''
+const APP     = process.env.SIM_APP_URL        || 'https://dev.traydbook.com'
+const CLEANUP = ['1', 'true'].includes((process.env.SIM_CLEANUP || '').toLowerCase())
 
 if (!SB || !AK || !SK) {
   console.error('[sim] Missing required env vars: SIM_SB_URL, SIM_SB_ANON_KEY, SIM_SB_SERVICE_KEY')
-  console.error('[sim] Set these before running. On the Coolify server they are injected automatically.')
   process.exit(1)
 }
-const TS  = Date.now()
-const PW  = 'TraydSim2026'
+
+const TS = Date.now()
+const PW = 'TraydSim2026!'
 
 // Minimal 1×1 transparent GIF (35 bytes) used for image upload tests
 const GIF1x1 = Buffer.from('R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==', 'base64')
 
+// Pre-generated valid Solana pubkeys (test wallets — no real funds)
+const SIM_PUBKEYS = [
+  'So11111111111111111111111111111112',
+  'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+  'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
+  '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R',
+  'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf8Ss623VQ5DA',
+]
+
 const USERS = [
-  { i:1,  type:'contractor',    trade:'Electrician', name:'Alex Sparks'    },
-  { i:2,  type:'contractor',    trade:'Plumber',     name:'Jordan Pipes'   },
-  { i:3,  type:'contractor',    trade:'HVAC Tech',   name:'Sam Coldair'    },
-  { i:4,  type:'contractor',    trade:'Carpenter',   name:'Casey Frame'    },
-  { i:5,  type:'contractor',    trade:'Painter',     name:'Riley Brush'    },
-  { i:6,  type:'project_owner', trade:null,          name:'Morgan Build'   },
-  { i:7,  type:'project_owner', trade:null,          name:'Taylor Develop' },
-  { i:8,  type:'project_owner', trade:null,          name:'Drew Construct' },
-  { i:9,  type:'project_owner', trade:null,          name:'Quinn Projects' },
-  { i:10, type:'project_owner', trade:null,          name:'Blake Estate'   },
+  { i:1,  type:'contractor',    trade:'Electrician', name:'Alex Sparks',    city:'Los Angeles',  state:'CA' },
+  { i:2,  type:'contractor',    trade:'Plumber',     name:'Jordan Pipes',   city:'Phoenix',      state:'AZ' },
+  { i:3,  type:'contractor',    trade:'HVAC Tech',   name:'Sam Coldair',    city:'Las Vegas',    state:'NV' },
+  { i:4,  type:'contractor',    trade:'Carpenter',   name:'Casey Frame',    city:'San Diego',    state:'CA' },
+  { i:5,  type:'contractor',    trade:'Painter',     name:'Riley Brush',    city:'Denver',       state:'CO' },
+  { i:6,  type:'project_owner', trade:null,          name:'Morgan Build',   city:'Los Angeles',  state:'CA' },
+  { i:7,  type:'project_owner', trade:null,          name:'Taylor Develop', city:'Austin',       state:'TX' },
+  { i:8,  type:'project_owner', trade:null,          name:'Drew Construct', city:'Seattle',      state:'WA' },
+  { i:9,  type:'project_owner', trade:null,          name:'Quinn Projects', city:'Chicago',      state:'IL' },
+  { i:10, type:'project_owner', trade:null,          name:'Blake Estate',   city:'Miami',        state:'FL' },
 ]
 
 let pass = 0, fail = 0
@@ -48,7 +60,7 @@ const ok  = (m, d='') => { console.log(`  ✅ ${m}${d ? ' — ' + d : ''}`); pas
 const no  = (m, d='') => { console.log(`  ❌ ${m}${d ? ' — ' + d : ''}`); fail++ }
 const sep = (t)        =>   console.log(`\n── ${t} ──`)
 
-// ── HTTP helpers ──────────────────────────────────────────────
+// ── HTTP helpers ────────────────────────────────────────────────────────────
 
 async function req(method, url, body, token, admin) {
   const h = { 'Content-Type': 'application/json' }
@@ -61,7 +73,6 @@ async function req(method, url, body, token, admin) {
   try { return { s: r.status, b: await r.json() } } catch { return { s: r.status, b: {} } }
 }
 
-// Call a Supabase RPC with a user JWT
 async function rpc(fn, args, token) {
   const h = {
     'Content-Type': 'application/json',
@@ -72,7 +83,6 @@ async function rpc(fn, args, token) {
   try { return { s: r.status, b: await r.json() } } catch { return { s: r.status, b: {} } }
 }
 
-// Insert a row into a Supabase table as an authenticated user
 async function sbInsert(table, row, token) {
   const h = {
     'Content-Type': 'application/json',
@@ -84,7 +94,6 @@ async function sbInsert(table, row, token) {
   try { return { s: r.status, b: await r.json() } } catch { return { s: r.status, b: {} } }
 }
 
-// Patch rows in a Supabase table using service role (admin)
 async function sbAdminPatch(table, match, update) {
   const qs = Object.entries(match).map(([k,v]) => `${k}=eq.${v}`).join('&')
   const h = {
@@ -97,7 +106,6 @@ async function sbAdminPatch(table, match, update) {
   try { return { s: r.status, b: await r.json() } } catch { return { s: r.status, b: {} } }
 }
 
-// Upload a 1×1 GIF via the Express multipart endpoint
 async function uploadImage(token) {
   const form = new FormData()
   form.append('files', new Blob([GIF1x1], { type: 'image/gif' }), 'sim-test.gif')
@@ -109,16 +117,20 @@ async function uploadImage(token) {
   try { return { s: r.status, b: await r.json() } } catch { return { s: r.status, b: {} } }
 }
 
-// ── Main simulation ───────────────────────────────────────────
+// ── Main simulation ─────────────────────────────────────────────────────────
 
-console.log(`\n${'═'.repeat(52)}\n  TraydBook Enhanced Simulation v2\n${'═'.repeat(52)}`)
+console.log(`\n${'═'.repeat(52)}`)
+console.log(`  TraydBook Simulation v3`)
+console.log(`  Cleanup: ${CLEANUP ? 'ON (data will be deleted)' : 'OFF (data will persist)'}`)
+console.log(`  Target:  ${APP}`)
+console.log(`${'═'.repeat(52)}`)
 
-// 1. Health
+// 1. Health check
 sep('Health')
 const hc = await req('GET', `${APP}/healthz`)
 hc.b?.ok ? ok('Health check', 'ok:true') : no('Health check', hc.s)
 
-// 2. Auth guards (including new routes)
+// 2. Auth guards — all protected routes must return 401 when unauthenticated
 sep('Auth Guards')
 for (const [m, p, b] of [
   ['GET',  '/api/wallet/status',       null],
@@ -133,22 +145,23 @@ for (const [m, p, b] of [
     : no(`Guard ${m} ${p}`, `got ${r.s}`)
 }
 
-// 3. Create 10 users
-sep('Create 10 Users')
+// 3. Create 10 users via Supabase admin API
+//    (equivalent to user submitting signup form + confirming email)
+sep('Create Users')
 for (const u of USERS) {
-  u.email = `sim_${u.type}_${u.i}_${TS}@traydbook.com`
+  u.email = `sim_${u.type}_${u.i}_${TS}@traydbook-sim.test`
   const r = await req('POST', `${SB}/auth/v1/admin/users`,
     { email: u.email, password: PW, email_confirm: true }, null, true)
   if (r.s === 200 && r.b.id) {
     u.id = r.b.id
-    ok(`Create #${u.i} ${u.name}`, u.id.slice(0,8) + '...')
+    ok(`Signup #${u.i} ${u.name}`, u.id.slice(0,8) + '...')
   } else {
-    no(`Create #${u.i} ${u.name}`, r.b?.message || r.s)
+    no(`Signup #${u.i} ${u.name}`, r.b?.message || r.s)
   }
 }
 
-// 4. Sign in all
-sep('Sign In All')
+// 4. Sign in — same token endpoint Supabase client uses
+sep('Sign In')
 for (const u of USERS) {
   if (!u.id) continue
   const r = await req('POST', `${SB}/auth/v1/token?grant_type=password`, { email: u.email, password: PW })
@@ -160,21 +173,40 @@ for (const u of USERS) {
   }
 }
 
-// 5. Onboard all
+// 5. Onboarding — POST /api/onboarding/complete (app endpoint)
+//    Creates row in users table + contractor_profiles for contractors
 sep('Onboarding')
 for (const u of USERS) {
   if (!u.token) continue
-  const body = { display_name: u.name, account_type: u.type }
+  const body = {
+    display_name:   u.name,
+    account_type:   u.type,
+    location_city:  u.city,
+    location_state: u.state,
+  }
   if (u.trade) body.trade = u.trade
   const r = await req('POST', `${APP}/api/onboarding/complete`, body, u.token)
   r.s === 200 || r.s === 409
-    ? ok(`Onboard #${u.i} ${u.type}`)
-    : no(`Onboard #${u.i} ${u.type}`, JSON.stringify(r.b).slice(0,80))
+    ? ok(`Onboard #${u.i} ${u.name}`, `${u.type}${u.city ? ' · ' + u.city : ''}`)
+    : no(`Onboard #${u.i} ${u.name}`, JSON.stringify(r.b).slice(0,80))
 }
 
-// 6. Image upload (contractors)
+// 6. Wallet setup — contractors only (POST /api/wallet/save-pubkey)
+//    Real user generates keypair client-side on /wallet-setup page
+sep('Wallet Setup (contractors)')
+const contractors = USERS.filter(u => u.type === 'contractor')
+for (const [idx, u] of contractors.entries()) {
+  if (!u.token) continue
+  const pubkey = SIM_PUBKEYS[idx % SIM_PUBKEYS.length]
+  const r = await req('POST', `${APP}/api/wallet/save-pubkey`, { pubkey }, u.token)
+  r.s === 200
+    ? ok(`Wallet #${u.i} ${u.name}`, pubkey.slice(0,12) + '...')
+    : no(`Wallet #${u.i} ${u.name}`, r.b?.error || r.s)
+}
+
+// 7. Image upload (contractors)
 sep('Image Upload')
-for (const u of USERS.filter(u => u.type === 'contractor')) {
+for (const u of contractors) {
   if (!u.token) continue
   const r = await uploadImage(u.token)
   if (r.s === 200 && Array.isArray(r.b.urls) && r.b.urls.length > 0) {
@@ -185,7 +217,7 @@ for (const u of USERS.filter(u => u.type === 'contractor')) {
   }
 }
 
-// 7. Posts (all 10 users — contractors with image, owners without)
+// 8. Posts — all 10 users create a post via POST /api/posts
 sep('Posts')
 const POST_TYPES = {
   contractor:    ['trade_tip', 'project_update', 'safety_alert'],
@@ -197,7 +229,7 @@ for (const u of USERS) {
   const postType = types[u.i % types.length]
   const body = {
     post_type: postType,
-    body:      `[SIM] ${u.name} — ${postType} #${u.i} posted at ${new Date(TS).toISOString()}`,
+    body:      `[SIM] ${u.name} — ${postType} posted at ${new Date(TS).toISOString()}`,
     hashtags:  ['TraydBook', 'SimTest'],
     ...(u.imageUrl ? { media_urls: [u.imageUrl] } : {}),
   }
@@ -210,13 +242,14 @@ for (const u of USERS) {
   }
 }
 
-// 8. Comments (cross-role: owners on contractor posts, contractors on owner posts)
+// 9. Comments — cross-role engagement
 sep('Comments')
-const contractors = USERS.filter(u => u.type === 'contractor'    && u.token && u.postId)
-const owners      = USERS.filter(u => u.type === 'project_owner' && u.token && u.postId)
+const owners = USERS.filter(u => u.type === 'project_owner')
+const contractorsWithPosts = contractors.filter(u => u.token && u.postId)
+const ownersWithPosts      = owners.filter(u => u.token && u.postId)
 
-for (const owner of owners.slice(0,3)) {
-  for (const contractor of contractors.slice(0,3)) {
+for (const owner of ownersWithPosts.slice(0,3)) {
+  for (const contractor of contractorsWithPosts.slice(0,3)) {
     const r = await rpc('post_comment', {
       p_post_id: contractor.postId,
       p_body:    `[SIM] ${owner.name} → ${contractor.name}: great work!`,
@@ -226,9 +259,8 @@ for (const owner of owners.slice(0,3)) {
       : no(`Comment: ${owner.name} → ${contractor.name}`, JSON.stringify(r.b).slice(0,60))
   }
 }
-
-for (const contractor of contractors.slice(0,3)) {
-  for (const owner of owners.slice(0,2)) {
+for (const contractor of contractorsWithPosts.slice(0,3)) {
+  for (const owner of ownersWithPosts.slice(0,2)) {
     const r = await rpc('post_comment', {
       p_post_id: owner.postId,
       p_body:    `[SIM] ${contractor.name} → ${owner.name}: interested in this project!`,
@@ -239,7 +271,7 @@ for (const contractor of contractors.slice(0,3)) {
   }
 }
 
-// 9. Likes (each user likes the next user's post via RPC)
+// 10. Likes — each user likes the next user's post
 sep('Likes')
 for (const u of USERS) {
   if (!u.token) continue
@@ -251,8 +283,8 @@ for (const u of USERS) {
     : no(`Like: ${u.name} → ${target.name}`, `${r.s} ${JSON.stringify(r.b).slice(0,40)}`)
 }
 
-// 10. Fund owners with 50 credits (RFQs cost 10 credits each for non-contractors)
-sep('Fund Owners (50 credits)')
+// 11. Fund owners (50 credits each — needed for posting RFQs)
+sep('Fund Owners (50 credits each)')
 for (const u of owners) {
   const r = await sbAdminPatch('users', { id: u.id }, { credit_balance: 50 })
   const row = Array.isArray(r.b) ? r.b[0] : r.b
@@ -261,7 +293,7 @@ for (const u of owners) {
     : no(`Fund ${u.name}`, JSON.stringify(r.b).slice(0,60))
 }
 
-// 11. Owners post RFQs (costs 10 credits each, deducted by the RPC)
+// 12. Post RFQs (each owner posts one, costs 10 credits via RPC)
 sep('Post RFQs')
 const TRADES_FOR_RFQ = ['Electrical', 'Plumbing', 'HVAC', 'Carpentry', 'Painting']
 const bidDeadline    = new Date(TS + 30 * 24 * 60 * 60 * 1000).toISOString()
@@ -273,7 +305,7 @@ for (const [idx, u] of owners.entries()) {
     p_title:             `[SIM] ${u.name} — ${trade} Project`,
     p_trade_needed:      trade,
     p_project_type:      'renovation',
-    p_scope_description: `Simulation RFQ posted by ${u.name}. Seeking ${trade} work for a 2,000 sqft commercial space.`,
+    p_scope_description: `Sim RFQ by ${u.name}. Seeking ${trade} work for a 2,000 sqft space in ${u.city}.`,
     p_budget_min:        5000,
     p_budget_max:        15000,
     p_sq_footage:        2000,
@@ -281,22 +313,22 @@ for (const [idx, u] of owners.entries()) {
     p_duration_weeks:    4,
     p_bid_deadline:      bidDeadline,
     p_location_zip:      `9000${u.i}`,
-    p_location_city:     'Los Angeles',
-    p_location_state:    'CA',
+    p_location_city:     u.city,
+    p_location_state:    u.state,
     p_requirements:      ['Licensed', 'Insured'],
     p_share_to_feed:     false,
   }, u.token)
   if (r.s === 200 && typeof r.b === 'string') {
     u.rfqId = r.b
-    ok(`RFQ #${u.i} ${u.name}`, `id: ${r.b.slice(0,8)}...`)
+    ok(`RFQ #${u.i} ${u.name}`, `${trade} · id: ${r.b.slice(0,8)}...`)
   } else {
     no(`RFQ #${u.i} ${u.name}`, JSON.stringify(r.b))
   }
 }
 
-// 12. All contractors bid on owner #6 (Morgan Build)'s RFQ
+// 13. All contractors bid on Morgan Build's RFQ
 sep('Submit Bids')
-const targetOwner = owners[0] // Morgan Build
+const targetOwner = owners[0]
 if (targetOwner?.rfqId) {
   for (const [idx, contractor] of contractors.entries()) {
     if (!contractor.token) continue
@@ -316,12 +348,12 @@ if (targetOwner?.rfqId) {
     }
   }
 } else {
-  no('Bid phase skipped', 'owner #6 RFQ not created')
+  no('Bids skipped', 'owner #6 RFQ not created')
 }
 
-// 13. Owner #6 awards contractor #1's bid
+// 14. Award Alex Sparks' bid
 sep('Award Bid')
-const winner = contractors[0] // Alex Sparks
+const winner = contractors[0]
 if (targetOwner?.rfqId && winner?.bidId) {
   const r = await rpc('award_bid', {
     p_bid_id: winner.bidId,
@@ -331,16 +363,16 @@ if (targetOwner?.rfqId && winner?.bidId) {
     ? ok(`Award: ${targetOwner.name} → ${winner.name}`, 'bid awarded')
     : no(`Award: ${targetOwner.name} → ${winner.name}`, JSON.stringify(r.b).slice(0,80))
 } else {
-  no('Award phase skipped', 'missing rfqId or bidId')
+  no('Award skipped', 'missing rfqId or bidId')
 }
 
-// 14. Wallet access (role enforcement)
+// 15. Wallet access — contractors should get 200, owners should get 403/404
 sep('Wallet Access')
 for (const u of USERS) {
   if (!u.token) continue
   const r = await req('GET', `${APP}/api/wallet/status`, null, u.token)
   if (u.type === 'contractor' && r.s === 200) {
-    ok(`Wallet #${u.i} contractor`, `pubkey: ${r.b.solana_pubkey || 'none'}`)
+    ok(`Wallet #${u.i} contractor`, `pubkey: ${r.b.solana_pubkey?.slice(0,12) || 'none'}...`)
   } else if (u.type === 'project_owner' && (r.s === 403 || r.s === 404)) {
     ok(`Wallet #${u.i} owner blocked`, `${r.s} correct`)
   } else {
@@ -348,19 +380,29 @@ for (const u of USERS) {
   }
 }
 
-// 15. Cleanup — delete all sim auth users (cascades to all DB rows)
+// 16. Cleanup — only if SIM_CLEANUP=1
 sep('Cleanup')
-for (const u of USERS) {
-  if (!u.id) continue
-  const r = await req('DELETE', `${SB}/auth/v1/admin/users/${u.id}`, null, null, true)
-  r.s === 200
-    ? ok(`Delete #${u.i} ${u.name}`)
-    : no(`Delete #${u.i}`, r.s)
+if (!CLEANUP) {
+  console.log(`  ⏭  Skipped — set SIM_CLEANUP=1 to delete sim users after the run`)
+  console.log(`  ℹ  ${USERS.filter(u => u.id).length} sim users are now visible in the admin panel`)
+  console.log(`  ℹ  Emails match: sim_*_*_${TS}@traydbook-sim.test`)
+} else {
+  for (const u of USERS) {
+    if (!u.id) continue
+    const r = await req('DELETE', `${SB}/auth/v1/admin/users/${u.id}`, null, null, true)
+    r.s === 200
+      ? ok(`Delete #${u.i} ${u.name}`)
+      : no(`Delete #${u.i}`, r.s)
+  }
 }
 
-// ── Summary ───────────────────────────────────────────────────
+// ── Summary ─────────────────────────────────────────────────────────────────
 console.log(`\n${'═'.repeat(52)}`)
 console.log(`  ✅ Passed: ${pass}`)
 console.log(`  ❌ Failed: ${fail}`)
 console.log(`  Total:    ${pass + fail}`)
+if (!CLEANUP) {
+  console.log(`\n  Sim users persist. To clean up later:`)
+  console.log(`  DELETE from auth.users where email like 'sim_%@traydbook-sim.test'`)
+}
 console.log(`${'═'.repeat(52)}\n`)
