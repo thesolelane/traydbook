@@ -113,3 +113,9 @@ id = "Z8bi4CswQk14jJuOYMp9F"
 uri = "file://public/logo-ai-transparent.png"
 type = "image"
 title = "TraydBook Logo — AI remake (transparent)"
+
+[[outputs]]
+id = "n1l5N2FL3aAAxovTjzd4l"
+uri = "file://public/logo-ai4.png"
+type = "image"
+title = "TraydBook Logo — TB monogram (hammer + book)"
