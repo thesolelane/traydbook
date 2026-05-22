@@ -28,6 +28,10 @@ const CLEANUP    = ['1', 'true'].includes((process.env.SIM_CLEANUP || '').toLowe
 // All wallet key emails land in this one inbox. Optional — skips email step if not set.
 const SIM_EMAIL  = process.env.SIM_EMAIL || ''
 const SIM_WALLET_PASSWORD = 'TraydSimWallet2026!'
+// SIM_NO_AUTO_CONFIRM=1 — skip admin email auto-confirm.
+// Use this when the sim has real email accounts and handles confirmation itself.
+// Default: auto-confirm ON (sim script confirms via admin API so no inbox click is needed)
+const NO_AUTO_CONFIRM = ['1', 'true'].includes((process.env.SIM_NO_AUTO_CONFIRM || '').toLowerCase())
 
 if (!SB || !AK || !SK) {
   console.error('[sim] Missing required env vars: SIM_SB_URL, SIM_SB_ANON_KEY, SIM_SB_SERVICE_KEY')
@@ -180,12 +184,16 @@ for (const u of USERS) {
   }
   u.id = signup.b.id
 
-  // Step 2 — auto-confirm email so the sim can sign in without clicking a link
-  const confirm = await req('PUT', `${SB}/auth/v1/admin/users/${u.id}`,
-    { email_confirm: true }, null, true)
-  confirm.s === 200
-    ? ok(`Signup #${u.i} ${u.name}`, u.id.slice(0,8) + '...')
-    : no(`Confirm #${u.i} ${u.name}`, confirm.b?.message || confirm.s)
+  // Step 2 — auto-confirm email (skip if SIM_NO_AUTO_CONFIRM=1 — sim handles it via real inbox)
+  if (NO_AUTO_CONFIRM) {
+    ok(`Signup #${u.i} ${u.name}`, `${u.id.slice(0,8)}... (awaiting real email confirm)`)
+  } else {
+    const confirm = await req('PUT', `${SB}/auth/v1/admin/users/${u.id}`,
+      { email_confirm: true }, null, true)
+    confirm.s === 200
+      ? ok(`Signup #${u.i} ${u.name}`, u.id.slice(0,8) + '...')
+      : no(`Confirm #${u.i} ${u.name}`, confirm.b?.message || confirm.s)
+  }
 }
 
 // 4. Sign in — same token endpoint Supabase client uses
