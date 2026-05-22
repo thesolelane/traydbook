@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Upload, RefreshCw, Users, Mail, CheckCircle, XCircle, Clock, SkipForward } from 'lucide-react'
+import { Upload, RefreshCw, Mail, CheckCircle, XCircle, Clock, SkipForward } from 'lucide-react'
 import { SectionProps } from './shared'
 
 interface Prospect {
