@@ -72,3 +72,9 @@ id = "GC4_GMZZ-GwKqMdkvIG1G"
 uri = "file://docs/bob-briefing.md"
 type = "text"
 title = "Bob Agent — Admin API Briefing"
+
+[[outputs]]
+id = "rUu_7lCCniYOOV2egPUy4"
+uri = "file://public/logo-transparent.png"
+type = "image"
+title = "TraydBook Logo (no background)"
