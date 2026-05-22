@@ -48,6 +48,12 @@ uri = "file://public/logo-wordmark3.png"
 type = "image"
 title = "traydbook wordmark no hammer book B"
 
+[[generated]]
+id = "VOYIjLlZKEBF0BGd109wD"
+uri = "file://public/logo-wordmark-premium.png"
+type = "image"
+title = "traydbook premium apple-style wordmark"
+
 [[outputs]]
 id = "UHpKx-m6h3QnnnF1sI0kG"
 uri = "file://docs/traydbook-knowledge-base.md"
@@ -215,3 +221,9 @@ id = "F2Lx1ryjNP03h9KENpJKV"
 uri = "file://public/logo-wordmark.png"
 type = "image"
 title = "TraydBook Wordmark"
+
+[[outputs]]
+id = "NkZXTX-GckyKpFxYEfp1D"
+uri = "file://public/logo-wordmark-premium.png"
+type = "image"
+title = "traydbook — Premium Wordmark"
