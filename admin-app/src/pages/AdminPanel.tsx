@@ -63,6 +63,7 @@ import {
   Flag,
   Terminal,
   Bug,
+  FileSpreadsheet,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { AdminAuthProvider } from '../context/AuthContext'
@@ -83,6 +84,7 @@ import SessionRevokeSection from '@main/pages/admin/SessionRevokeSection'
 import ModerationQueueSection from '@main/pages/admin/ModerationQueueSection'
 import BobMonitorSection from '@main/pages/admin/BobMonitorSection'
 import SecurityScanSection from '@main/pages/admin/SecurityScanSection'
+import ProspectsSection from '@main/pages/admin/ProspectsSection'
 
 const SUPABASE_ENV = (import.meta.env.VITE_SUPABASE_ENV as string) || 'production'
 const isBeta = SUPABASE_ENV === 'beta'
@@ -96,6 +98,7 @@ type Section =
   | 'payments'
   | 'errors'
   | 'bob-monitor'
+  | 'prospects'
   | 'moderation-queue'
   | 'session-revoke'
   | 'ai-command'
@@ -123,6 +126,7 @@ const NAV_GROUPS: { label: string; items: { id: Section; label: string; icon: Re
     label: 'Agent / Bob',
     items: [
       { id: 'bob-monitor',      label: 'Bob Monitor',       icon: <Bot size={16} /> },
+      { id: 'prospects',        label: 'Outreach Prospects', icon: <FileSpreadsheet size={16} /> },
       { id: 'moderation-queue', label: 'Moderation Queue',  icon: <Flag size={16} /> },
       { id: 'session-revoke',   label: 'Session Revoke',    icon: <LogIn size={16} /> },
       { id: 'ai-command',       label: 'AI Command Bar',    icon: <Terminal size={16} /> },
@@ -363,6 +367,7 @@ export default function AdminPanel({ session }: Props) {
             {section === 'payments'         && <PaymentsSection authHeaders={authHeaders} />}
             {section === 'errors'           && <ErrorLogSection authHeaders={authHeaders} />}
             {section === 'bob-monitor'      && <BobMonitorSection authHeaders={authHeaders} />}
+            {section === 'prospects'        && <ProspectsSection authHeaders={authHeaders} />}
             {section === 'moderation-queue' && <ModerationQueueSection authHeaders={authHeaders} />}
             {section === 'session-revoke'   && <SessionRevokeSection authHeaders={authHeaders} />}
             {section === 'ai-command'       && <AiCommandSection authHeaders={authHeaders} />}
