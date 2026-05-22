@@ -161,25 +161,31 @@ for (const [m, p, b] of [
     : no(`Guard ${m} ${p}`, `got ${r.s}`)
 }
 
-// 3. Create 10 users via Supabase admin API
-//    (equivalent to user submitting signup form + confirming email)
-sep('Create Users')
+// 3. Sign up via the real Supabase auth endpoint — same call the app's /signup page makes.
+//    Then auto-confirm via admin API so the sim can proceed without clicking an email link.
+sep('Signup (real flow)')
 for (const u of USERS) {
   if (SIM_EMAIL && u.type === 'contractor') {
-    // Use real + address so wallet key emails actually arrive
     const [local, domain] = SIM_EMAIL.split('@')
     u.email = `${local}+sim_${u.type}_${u.i}_${TS}@${domain}`
   } else {
     u.email = `sim_${u.type}_${u.i}_${TS}@traydbook-sim.test`
   }
-  const r = await req('POST', `${SB}/auth/v1/admin/users`,
-    { email: u.email, password: PW, email_confirm: true }, null, true)
-  if (r.s === 200 && r.b.id) {
-    u.id = r.b.id
-    ok(`Signup #${u.i} ${u.name}`, u.id.slice(0,8) + '...')
-  } else {
-    no(`Signup #${u.i} ${u.name}`, r.b?.message || r.s)
+
+  // Step 1 — real signup (same as supabase.auth.signUp() in the browser)
+  const signup = await req('POST', `${SB}/auth/v1/signup`, { email: u.email, password: PW })
+  if (!signup.b?.id) {
+    no(`Signup #${u.i} ${u.name}`, signup.b?.message || signup.b?.msg || signup.s)
+    continue
   }
+  u.id = signup.b.id
+
+  // Step 2 — auto-confirm email so the sim can sign in without clicking a link
+  const confirm = await req('PUT', `${SB}/auth/v1/admin/users/${u.id}`,
+    { email_confirm: true }, null, true)
+  confirm.s === 200
+    ? ok(`Signup #${u.i} ${u.name}`, u.id.slice(0,8) + '...')
+    : no(`Confirm #${u.i} ${u.name}`, confirm.b?.message || confirm.s)
 }
 
 // 4. Sign in — same token endpoint Supabase client uses
