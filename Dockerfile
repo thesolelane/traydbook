@@ -41,6 +41,9 @@ COPY --from=builder /app/dist ./dist
 # Copy server source (runs directly as ESM — no compile step needed)
 COPY server ./server
 
+# Copy simulation script (spawned by /api/internal/run-sim)
+COPY scripts ./scripts
+
 # Runtime secrets — supply via `docker run -e` or docker-compose
 ENV PORT=80
 ENV SUPABASE_SERVICE_ROLE_KEY=""
