@@ -149,3 +149,21 @@ id = "_n4KDWaXjFa42VZ7fV55y"
 uri = "file://public/logo-social-dark.png"
 type = "image"
 title = "TraydBook Social Media Logo — 1080x1080"
+
+[[outputs]]
+id = "mu6Xs6kMOsanyjNpuHnRo"
+uri = "file://public/logo-instagram.png"
+type = "image"
+title = "Instagram — 1080x1080"
+
+[[outputs]]
+id = "NgmsdMdqF-Is-ezARqKx_"
+uri = "file://public/logo-facebook.png"
+type = "image"
+title = "Facebook — 1080x1080"
+
+[[outputs]]
+id = "DzA2RHjFIQTmdun1kTGs-"
+uri = "file://public/logo-twitter.png"
+type = "image"
+title = "Twitter/X — 400x400"
