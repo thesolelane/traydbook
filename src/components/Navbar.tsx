@@ -22,59 +22,13 @@ import { supabase } from '../lib/supabase'
 import { isStaff } from '../lib/roles'
 
 function TraydBookLogo({ size = 'sm' }: { size?: 'sm' | 'md' }) {
-  const iconSize = size === 'md' ? 32 : 26
-  const fontSize = size === 'md' ? 28 : 22
+  const imgSize = size === 'md' ? 44 : 36
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: size === 'md' ? 10 : 8 }}>
-      <div
-        style={{
-          width: iconSize,
-          height: iconSize,
-          background: 'var(--color-brand)',
-          borderRadius: size === 'md' ? 7 : 5,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}
-      >
-        <svg viewBox="0 0 17 17" fill="none" width={iconSize * 0.6} height={iconSize * 0.6}>
-          <rect
-            x="2"
-            y="1.5"
-            width="9"
-            height="13"
-            rx="1.5"
-            fill="rgba(255,255,255,0.12)"
-            stroke="white"
-            strokeWidth="1.2"
-          />
-          <rect
-            x="5"
-            y="1.5"
-            width="9"
-            height="13"
-            rx="1.5"
-            fill="rgba(255,255,255,0.25)"
-            stroke="white"
-            strokeWidth="1.2"
-          />
-          <path d="M7 6h4M7 9h3M7 12h2" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
-        </svg>
-      </div>
-      <span
-        style={{
-          fontFamily: 'var(--font-condensed)',
-          fontSize,
-          fontWeight: 800,
-          letterSpacing: '-0.5px',
-          lineHeight: 1,
-        }}
-      >
-        <span style={{ color: 'var(--color-text)' }}>Trayd</span>
-        <span style={{ color: 'var(--color-brand)' }}>Book</span>
-      </span>
-    </div>
+    <img
+      src="/logo.png"
+      alt="TraydBook"
+      style={{ width: imgSize, height: imgSize, objectFit: 'contain', flexShrink: 0 }}
+    />
   )
 }
 
