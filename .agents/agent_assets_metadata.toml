@@ -36,6 +36,18 @@ uri = "file://public/logo-wordmark.png"
 type = "image"
 title = "traydbook wordmark book-B icon"
 
+[[generated]]
+id = "XfN0vnXAC-_HE88s85B0P"
+uri = "file://public/logo-wordmark2.png"
+type = "image"
+title = "traydbook wordmark B as book"
+
+[[generated]]
+id = "SKEncnQ9oUQxgs8XEy8DT"
+uri = "file://public/logo-wordmark3.png"
+type = "image"
+title = "traydbook wordmark no hammer book B"
+
 [[outputs]]
 id = "UHpKx-m6h3QnnnF1sI0kG"
 uri = "file://docs/traydbook-knowledge-base.md"
