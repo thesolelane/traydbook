@@ -40,6 +40,7 @@ Stripe products need to be seeded using `scripts/seed-stripe-products.js`.
 - `ENABLE_KEY_ROTATION` (`true` to activate 10-minute key rotation)
 - `SOLANA_TREASURY_PRIVATE_KEY` (for admin rewards)
 - `SIM_WEBHOOK_SECRET` (for internal simulation webhook)
+- `RESEND_API_KEY` (for wallet key emails via Resend — `POST /api/wallet/email-key`)
 
 ## Stack
 

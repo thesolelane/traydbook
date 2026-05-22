@@ -4,6 +4,39 @@ import { Keypair } from '@solana/web3.js'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
+async function encryptPrivateKey(
+  privkeyJson: string,
+  password: string
+): Promise<{ encryptedKey: string; iv: string; salt: string }> {
+  const enc = new TextEncoder()
+  const saltBytes = crypto.getRandomValues(new Uint8Array(16))
+  const ivBytes = crypto.getRandomValues(new Uint8Array(12))
+
+  const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, [
+    'deriveKey',
+  ])
+  const derivedKey = await crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt: saltBytes, iterations: 600000, hash: 'SHA-256' },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt']
+  )
+
+  const encrypted = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv: ivBytes },
+    derivedKey,
+    enc.encode(privkeyJson)
+  )
+
+  const toB64 = (buf: ArrayBuffer) => btoa(String.fromCharCode(...new Uint8Array(buf)))
+  return {
+    encryptedKey: toB64(encrypted),
+    iv: toB64(ivBytes),
+    salt: toB64(saltBytes),
+  }
+}
+
 function toBase58(arr: Uint8Array): string {
   const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
   let num = BigInt(0)
@@ -39,6 +72,11 @@ export default function WalletSetup() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState<string | null>(null)
+  const [emailPassword, setEmailPassword] = useState('')
+  const [emailPassword2, setEmailPassword2] = useState('')
+  const [emailSending, setEmailSending] = useState(false)
+  const [emailSent, setEmailSent] = useState(false)
+  const [emailError, setEmailError] = useState('')
 
   useEffect(() => {
     if (!profile) return
@@ -101,6 +139,44 @@ export default function WalletSetup() {
     window.addEventListener('beforeunload', handler)
     return () => window.removeEventListener('beforeunload', handler)
   }, [saved])
+
+  async function handleEmailKey() {
+    setEmailError('')
+    if (!emailPassword || emailPassword.length < 8) {
+      setEmailError('Password must be at least 8 characters')
+      return
+    }
+    if (emailPassword !== emailPassword2) {
+      setEmailError('Passwords do not match')
+      return
+    }
+    if (!privkeyJson || !pubkeyB58) return
+
+    setEmailSending(true)
+    try {
+      const { encryptedKey, iv, salt } = await encryptPrivateKey(privkeyJson, emailPassword)
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      const token = session?.access_token
+      if (!token) throw new Error('Not authenticated')
+
+      const res = await fetch('/api/wallet/email-key', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ encryptedKey, iv, salt, pubkey: pubkeyB58 }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Failed to send email')
+      setEmailSent(true)
+      setEmailPassword('')
+      setEmailPassword2('')
+    } catch (err) {
+      setEmailError(err instanceof Error ? err.message : 'Failed to send email')
+    } finally {
+      setEmailSending(false)
+    }
+  }
 
   const copyToClipboard = useCallback(async (text: string, key: string) => {
     try {
@@ -289,7 +365,7 @@ export default function WalletSetup() {
             gap: 8,
             width: '100%',
             marginTop: 8,
-            marginBottom: 24,
+            marginBottom: 16,
             padding: '10px 16px',
             background: 'transparent',
             border: '1px solid var(--color-border)',
@@ -306,6 +382,114 @@ export default function WalletSetup() {
         >
           ⬇ Download Private Key (.json)
         </button>
+
+        {/* ── Email encrypted key ───────────────────────────── */}
+        <div
+          style={{
+            background: 'var(--color-bg)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 10,
+            padding: '16px',
+            marginBottom: 24,
+          }}
+        >
+          <div
+            style={{
+              fontFamily: 'var(--font-condensed)',
+              fontSize: 13,
+              fontWeight: 800,
+              color: 'var(--color-text)',
+              letterSpacing: '0.4px',
+              marginBottom: 4,
+            }}
+          >
+            ✉ Email My Encrypted Key
+          </div>
+          <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: '0 0 12px', lineHeight: 1.6 }}>
+            Set a password — your key will be encrypted in your browser before being sent.
+            Only you can decrypt it. Includes a script to import into Solana CLI.
+          </p>
+
+          {emailSent ? (
+            <div
+              style={{
+                background: 'rgba(5,150,105,0.1)',
+                border: '1px solid rgba(5,150,105,0.3)',
+                borderRadius: 8,
+                padding: '10px 14px',
+                fontSize: 13,
+                color: '#059669',
+                fontWeight: 600,
+              }}
+            >
+              ✓ Encrypted key sent to your email
+            </div>
+          ) : (
+            <>
+              <input
+                type="password"
+                placeholder="Encryption password (min 8 characters)"
+                value={emailPassword}
+                onChange={e => setEmailPassword(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '9px 12px',
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 7,
+                  color: 'var(--color-text)',
+                  fontSize: 13,
+                  marginBottom: 8,
+                  boxSizing: 'border-box',
+                  outline: 'none',
+                }}
+              />
+              <input
+                type="password"
+                placeholder="Confirm password"
+                value={emailPassword2}
+                onChange={e => setEmailPassword2(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '9px 12px',
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 7,
+                  color: 'var(--color-text)',
+                  fontSize: 13,
+                  marginBottom: emailError ? 8 : 10,
+                  boxSizing: 'border-box',
+                  outline: 'none',
+                }}
+              />
+              {emailError && (
+                <div style={{ fontSize: 12, color: '#ef4444', marginBottom: 8 }}>{emailError}</div>
+              )}
+              <button
+                onClick={handleEmailKey}
+                disabled={emailSending || !emailPassword || !emailPassword2}
+                style={{
+                  width: '100%',
+                  padding: '9px 16px',
+                  background: emailPassword && emailPassword2 ? 'rgba(153,69,255,0.15)' : 'transparent',
+                  border: '1px solid rgba(153,69,255,0.4)',
+                  borderRadius: 7,
+                  cursor: emailPassword && emailPassword2 ? 'pointer' : 'not-allowed',
+                  fontFamily: 'var(--font-condensed)',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: emailPassword && emailPassword2 ? '#9945ff' : 'var(--color-text-muted)',
+                  letterSpacing: '0.4px',
+                  textTransform: 'uppercase',
+                  opacity: emailSending ? 0.7 : 1,
+                  transition: 'all 0.15s',
+                }}
+              >
+                {emailSending ? 'Encrypting & Sending…' : '✉ Send Encrypted Key to My Email'}
+              </button>
+            </>
+          )}
+        </div>
 
         <label
           style={{
