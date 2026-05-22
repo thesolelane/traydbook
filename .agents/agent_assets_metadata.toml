@@ -30,6 +30,12 @@ uri = "file://public/logo-ai5.png"
 type = "image"
 title = "traydbook hammer book-B logo"
 
+[[generated]]
+id = "uUzRTfbBxyP2CQN_V2Ejf"
+uri = "file://public/logo-wordmark.png"
+type = "image"
+title = "traydbook wordmark book-B icon"
+
 [[outputs]]
 id = "UHpKx-m6h3QnnnF1sI0kG"
 uri = "file://docs/traydbook-knowledge-base.md"
@@ -191,3 +197,9 @@ id = "uqTATnVkXAs_I7Cmb0YAT"
 uri = "file://public/logo-white-overlay.png"
 type = "image"
 title = "TraydBook — White overlay (transparent background)"
+
+[[outputs]]
+id = "F2Lx1ryjNP03h9KENpJKV"
+uri = "file://public/logo-wordmark.png"
+type = "image"
+title = "TraydBook Wordmark"
