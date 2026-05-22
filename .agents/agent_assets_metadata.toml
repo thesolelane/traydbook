@@ -185,3 +185,9 @@ id = "DzHUVTFpyMb94-ZkKzrIg"
 uri = "file://public/logo-v2-transparent.png"
 type = "image"
 title = "Logo — Transparent PNG"
+
+[[outputs]]
+id = "uqTATnVkXAs_I7Cmb0YAT"
+uri = "file://public/logo-white-overlay.png"
+type = "image"
+title = "TraydBook — White overlay (transparent background)"
