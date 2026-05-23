@@ -242,6 +242,7 @@ export default function SignupContractor() {
         location_zip: null,
         credit_balance: 0,
         deleted_at: null,
+        onboarding_complete: true,
         ...(referral
           ? {
               referral_source: referral.referral_source,

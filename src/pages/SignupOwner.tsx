@@ -270,6 +270,7 @@ export default function SignupOwner() {
         location_zip: null,
         credit_balance: 50,
         deleted_at: null,
+        onboarding_complete: true,
         ...(referral
           ? {
               referral_source: referral.referral_source,

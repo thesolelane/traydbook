@@ -541,20 +541,20 @@ export default function WalletSetup() {
 
         <button
           onClick={handleConfirm}
-          disabled={!confirmed || saving}
+          disabled={!confirmed || saving || !pubkeyB58}
           style={{
             width: '100%',
             padding: '12px 20px',
-            background: confirmed ? 'var(--color-brand)' : 'var(--color-border)',
+            background: confirmed && pubkeyB58 ? 'var(--color-brand)' : 'var(--color-border)',
             border: 'none',
             borderRadius: 8,
-            cursor: confirmed ? 'pointer' : 'not-allowed',
+            cursor: confirmed && pubkeyB58 ? 'pointer' : 'not-allowed',
             fontFamily: 'var(--font-condensed)',
             fontSize: 15,
             fontWeight: 800,
             letterSpacing: '0.5px',
             textTransform: 'uppercase',
-            color: confirmed ? '#fff' : 'var(--color-text-muted)',
+            color: confirmed && pubkeyB58 ? '#fff' : 'var(--color-text-muted)',
             transition: 'background 0.2s',
             opacity: saving ? 0.7 : 1,
           }}

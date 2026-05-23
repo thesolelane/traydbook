@@ -58,6 +58,7 @@ router.post('/api/onboarding/complete', onboardingLimiter, requireAuth, async (r
     location_city: location_city?.trim() || null,
     location_state: location_state || null,
     credit_balance: 0,
+    onboarding_complete: true,
   })
 
   if (userErr) {

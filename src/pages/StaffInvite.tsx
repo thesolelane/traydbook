@@ -91,6 +91,7 @@ export default function StaffInvite() {
         account_type: invite.role,
         credit_balance: 0,
         deleted_at: null,
+        onboarding_complete: true,
       })
       if (profileErr) throw new Error(profileErr.message)
 

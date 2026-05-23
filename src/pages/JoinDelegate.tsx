@@ -123,6 +123,7 @@ export default function JoinDelegate() {
         deleted_at: null,
         is_delegate: true,
         delegate_principal_id: invite.principal_id,
+        onboarding_complete: true,
       })
 
       if (profileError) throw new Error(profileError.message)
