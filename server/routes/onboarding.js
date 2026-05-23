@@ -1,8 +1,18 @@
 import { Router } from 'express'
+import { rateLimit } from 'express-rate-limit'
 import { supabaseAdmin } from '../lib/clients.js'
 import { requireAuth } from '../lib/auth.js'
 
 const router = Router()
+
+const onboardingLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: req => (req.ip ?? '').replace(/^::ffff:/, ''),
+  message: { error: 'Too many signup attempts from this IP — please try again in an hour.' },
+})
 
 const VALID_ACCOUNT_TYPES = ['contractor', 'project_owner', 'agent', 'homeowner']
 
@@ -16,7 +26,7 @@ function slugify(name) {
   return `${base}${suffix}`
 }
 
-router.post('/api/onboarding/complete', requireAuth, async (req, res) => {
+router.post('/api/onboarding/complete', onboardingLimiter, requireAuth, async (req, res) => {
   const { display_name, account_type, location_city, location_state, trade } = req.body
   const userId = req.user.id
 

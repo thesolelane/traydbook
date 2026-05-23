@@ -1,10 +1,20 @@
 import { Router } from 'express'
+import { rateLimit } from 'express-rate-limit'
 import { Resend } from 'resend'
 import { requireAuth } from '../lib/auth.js'
 
 const router = Router()
 
-router.post('/api/wallet/email-key', requireAuth, async (req, res) => {
+const emailKeyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: req => (req.ip ?? '').replace(/^::ffff:/, ''),
+  message: { error: 'Too many email requests from this IP — please wait 15 minutes.' },
+})
+
+router.post('/api/wallet/email-key', emailKeyLimiter, requireAuth, async (req, res) => {
   const { encryptedKey, iv, salt, pubkey } = req.body ?? {}
 
   if (!encryptedKey || !iv || !salt || !pubkey) {

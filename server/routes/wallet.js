@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { rateLimit } from 'express-rate-limit'
 import {
   Keypair,
   Connection,
@@ -13,9 +14,18 @@ import { requireAuth } from '../lib/auth.js'
 
 const router = Router()
 
+const walletLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: req => (req.ip ?? '').replace(/^::ffff:/, ''),
+  message: { error: 'Too many wallet requests from this IP — please try again in an hour.' },
+})
+
 const BASE58_REGEX = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/
 
-router.post('/api/wallet/save-pubkey', requireAuth, async (req, res) => {
+router.post('/api/wallet/save-pubkey', walletLimiter, requireAuth, async (req, res) => {
   const userId = req.user.id
   const { pubkey } = req.body ?? {}
 

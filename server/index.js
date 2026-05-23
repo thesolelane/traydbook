@@ -27,6 +27,10 @@ import { logError, loadLogFromDisk } from './lib/errorLog.js'
 
 const app = express()
 
+// Trust one reverse-proxy hop (Coolify/Traefik) so req.ip reflects the real
+// client IP rather than the proxy address. Required for IP-based rate limiting.
+app.set('trust proxy', 1)
+
 app.use(stripeRoutes)
 
 // Health check for Coolify / load balancers
