@@ -10,7 +10,6 @@ const onboardingLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: req => (req.ip ?? '').replace(/^::ffff:/, ''),
   message: { error: 'Too many signup attempts from this IP — please try again in an hour.' },
 })
 

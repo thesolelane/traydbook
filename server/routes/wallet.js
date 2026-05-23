@@ -19,7 +19,6 @@ const walletLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: req => (req.ip ?? '').replace(/^::ffff:/, ''),
   message: { error: 'Too many wallet requests from this IP — please try again in an hour.' },
 })
 

@@ -19,6 +19,7 @@ interface UserRow {
   credit_balance: number
   created_at: string
   deleted_at: string | null
+  email: string | null
 }
 
 const ALL_ROLES = [
@@ -206,7 +207,7 @@ export default function UsersSection({ authHeaders }: SectionProps) {
           <thead>
             <tr style={{ background: 'var(--color-surface)' }}>
               <th style={tableHeaderStyle}>User</th>
-              <th style={tableHeaderStyle}>Handle</th>
+              <th style={tableHeaderStyle}>Email</th>
               <th style={tableHeaderStyle}>Role</th>
               <th style={tableHeaderStyle}>Credits</th>
               <th style={tableHeaderStyle}>Joined</th>
@@ -266,8 +267,8 @@ export default function UsersSection({ authHeaders }: SectionProps) {
                       <span style={{ fontWeight: 600, fontSize: 13 }}>{u.display_name}</span>
                     </div>
                   </td>
-                  <td style={{ ...tableCellStyle, color: 'var(--color-text-muted)' }}>
-                    @{u.handle}
+                  <td style={{ ...tableCellStyle, color: 'var(--color-text-muted)', fontSize: 12 }}>
+                    {u.email ?? <span style={{ opacity: 0.35 }}>—</span>}
                   </td>
                   <td style={tableCellStyle}>
                     <select

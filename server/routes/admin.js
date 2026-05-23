@@ -228,7 +228,16 @@ router.get('/api/admin/users', requireAuth, requireAdminLevel, async (req, res) 
 
     const { data, error } = await q
     if (error) return res.status(500).json({ error: error.message })
-    res.json({ users: data ?? [] })
+
+    // Fetch emails from auth.users (email lives there, not in public.users)
+    const rows = data ?? []
+    const emailMap = {}
+    if (rows.length > 0) {
+      const { data: authList } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 })
+      for (const u of authList?.users ?? []) emailMap[u.id] = u.email ?? null
+    }
+
+    res.json({ users: rows.map(u => ({ ...u, email: emailMap[u.id] ?? null })) })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
@@ -456,28 +465,21 @@ router.delete('/api/admin/comment/:id', requireAuth, requireAdminLevel, async (r
 
 router.get('/api/admin/wallets', requireAuth, requireAdminLevel, async (req, res) => {
   try {
+    // Pubkeys are stored in users.solana_pubkey — not in a separate wallets table
     const { data: users, error: uErr } = await supabaseAdmin
       .from('users')
-      .select('id, display_name, handle, credit_balance')
-      .order('credit_balance', { ascending: false })
-      .limit(100)
+      .select('id, display_name, handle, credit_balance, solana_pubkey, account_type')
+      .eq('account_type', 'contractor')
+      .order('created_at', { ascending: false })
+      .limit(200)
     if (uErr) return res.status(500).json({ error: uErr.message })
 
-    let wallets = []
-    try {
-      const { data: walletsData, error: wErr } = await supabaseAdmin
-        .from('solana_wallets')
-        .select('user_id, wallet_address, network')
-      if (!wErr && walletsData) wallets = walletsData
-    } catch {
-      // table does not exist — continue with empty wallet list
-    }
-
-    const walletMap = new Map(wallets.map(w => [w.user_id, w]))
     const result = (users ?? []).map(u => ({
-      ...u,
-      wallet_address: walletMap.get(u.id)?.wallet_address ?? null,
-      wallet_network: walletMap.get(u.id)?.network ?? null,
+      id: u.id,
+      display_name: u.display_name,
+      handle: u.handle,
+      credit_balance: u.credit_balance,
+      solana_pubkey: u.solana_pubkey ?? null,
     }))
 
     res.json({ wallets: result })

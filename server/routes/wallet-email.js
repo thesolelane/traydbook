@@ -10,7 +10,6 @@ const emailKeyLimiter = rateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: req => (req.ip ?? '').replace(/^::ffff:/, ''),
   message: { error: 'Too many email requests from this IP — please wait 15 minutes.' },
 })
 

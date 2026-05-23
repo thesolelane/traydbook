@@ -14,8 +14,7 @@ interface WalletUser {
   display_name: string
   handle: string
   credit_balance: number
-  wallet_address: string | null
-  wallet_network: string | null
+  solana_pubkey: string | null
 }
 
 export default function WalletsSection({ authHeaders }: SectionProps) {
@@ -178,17 +177,16 @@ export default function WalletsSection({ authHeaders }: SectionProps) {
                 <th style={tableHeaderStyle}>User</th>
                 <th style={tableHeaderStyle}>Handle</th>
                 <th style={tableHeaderStyle}>Credits</th>
-                <th style={tableHeaderStyle}>Solana Wallet</th>
-                <th style={tableHeaderStyle}>Network</th>
+                <th style={tableHeaderStyle}>Solana Public Key</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                Array.from({ length: 5 }).map((_, i) => <LoadingRow key={i} cols={5} />)
+                Array.from({ length: 5 }).map((_, i) => <LoadingRow key={i} cols={4} />)
               ) : filtered.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={4}
                     style={{
                       ...tableCellStyle,
                       textAlign: 'center',
@@ -222,17 +220,15 @@ export default function WalletsSection({ authHeaders }: SectionProps) {
                         ...tableCellStyle,
                         fontFamily: 'monospace',
                         fontSize: 11,
-                        color: 'var(--color-text-muted)',
                       }}
                     >
-                      {w.wallet_address ? (
-                        w.wallet_address.slice(0, 8) + '…' + w.wallet_address.slice(-6)
+                      {w.solana_pubkey ? (
+                        <span title={w.solana_pubkey} style={{ color: '#9945ff' }}>
+                          {w.solana_pubkey.slice(0, 8)}…{w.solana_pubkey.slice(-6)}
+                        </span>
                       ) : (
-                        <span style={{ opacity: 0.4 }}>—</span>
+                        <span style={{ opacity: 0.4, color: 'var(--color-text-muted)' }}>not set</span>
                       )}
-                    </td>
-                    <td style={tableCellStyle}>
-                      {w.wallet_network ?? <span style={{ opacity: 0.4 }}>—</span>}
                     </td>
                   </tr>
                 ))
