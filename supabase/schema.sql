@@ -13,14 +13,19 @@ create table if not exists public.users (
   handle        text not null unique,
   avatar_url    text,
   account_type  text not null check (account_type in ('contractor','project_owner','agent','homeowner','admin')),
+  email         text,
   location_city  text,
   location_state text,
   location_zip   text,
   credit_balance integer not null default 0,
   social_links   jsonb not null default '{}'::jsonb,
+  onboarding_complete boolean not null default false,
   created_at    timestamptz not null default now(),
   deleted_at    timestamptz
 );
+-- Ensure email and onboarding_complete exist on databases created before this was formalised
+alter table public.users add column if not exists email               text;
+alter table public.users add column if not exists onboarding_complete boolean not null default false;
 -- SMS alert fields (phone_number is PII — column-level privileges restrict access)
 alter table public.users add column if not exists phone_number          text;
 alter table public.users add column if not exists phone_verified        boolean not null default false;
@@ -31,13 +36,11 @@ alter table public.users add column if not exists sms_otp_hash          text;
 alter table public.users add column if not exists sms_otp_expires_at    timestamptz;
 alter table public.users add column if not exists stripe_sms_sub_id     text;
 
--- Note: email is intentionally omitted from public.users.
--- Email lives in auth.users (Supabase managed) to prevent PII exposure.
-
 alter table public.users enable row level security;
 
 -- Authenticated users can read any profile (profile discovery).
--- Email (PII) is not stored here — use auth.users for email lookups server-side.
+-- Email is stored in both auth.users (Supabase managed) and public.users.email
+-- for efficient server-side lookups without repeated admin API calls.
 create policy "Authenticated users can read any profile" on public.users
   for select using (auth.uid() IS NOT NULL);
 

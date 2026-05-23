@@ -161,7 +161,7 @@ export default function UsersSection({ authHeaders }: SectionProps) {
               setSearch(v)
               setPage(0)
             }}
-            placeholder="Search by name or handle…"
+            placeholder="Search by name, handle, or email…"
             style={{ width: '100%', paddingLeft: 32, boxSizing: 'border-box' }}
           />
         </div>

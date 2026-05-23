@@ -218,26 +218,19 @@ router.get('/api/admin/users', requireAuth, requireAdminLevel, async (req, res) 
     let q = supabaseAdmin
       .from('users')
       .select(
-        'id, display_name, handle, avatar_url, account_type, credit_balance, created_at, deleted_at'
+        'id, display_name, handle, avatar_url, account_type, email, credit_balance, created_at, deleted_at'
       )
       .order('created_at', { ascending: false })
       .range(offset, offset + PAGE_SIZE - 1)
 
-    if (search) q = q.or(`display_name.ilike.%${search}%,handle.ilike.%${search}%`)
+    if (search)
+      q = q.or(`display_name.ilike.%${search}%,handle.ilike.%${search}%,email.ilike.%${search}%`)
     if (role) q = q.eq('account_type', role)
 
     const { data, error } = await q
     if (error) return res.status(500).json({ error: error.message })
 
-    // Fetch emails from auth.users (email lives there, not in public.users)
-    const rows = data ?? []
-    const emailMap = {}
-    if (rows.length > 0) {
-      const { data: authList } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 })
-      for (const u of authList?.users ?? []) emailMap[u.id] = u.email ?? null
-    }
-
-    res.json({ users: rows.map(u => ({ ...u, email: emailMap[u.id] ?? null })) })
+    res.json({ users: data ?? [] })
   } catch (err) {
     res.status(500).json({ error: err.message })
   }
