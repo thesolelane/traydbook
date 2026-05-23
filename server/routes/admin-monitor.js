@@ -123,4 +123,96 @@ router.get('/domains', async (_req, res) => {
   res.json({ domains: results, checkedAt: new Date().toISOString(), devEnv: isDevEnv })
 })
 
+// GET /api/admin/monitor/activity
+// Returns a unified activity feed from auth.users (catches even incomplete signups)
+// cross-referenced with public.users to flag onboarding status.
+// ?hours=N  — lookback window (default 2, max 72)
+router.get('/activity', async (req, res) => {
+  const hours = Math.min(parseInt(req.query.hours) || 2, 72)
+  const since = new Date(Date.now() - hours * 3600 * 1000).toISOString()
+
+  try {
+    // Auth-level signups (includes users who never finished onboarding)
+    const { data: authData, error: authErr } =
+      await supabaseAdmin.auth.admin.listUsers({ perPage: 200 })
+    if (authErr) return res.status(500).json({ error: authErr.message })
+
+    const recentAuth = (authData?.users ?? [])
+      .filter(u => u.created_at >= since)
+      .map(u => ({
+        id: u.id,
+        email: u.email,
+        created_at: u.created_at,
+        confirmed: !!u.email_confirmed_at,
+      }))
+
+    // Public profile rows for those same users
+    const ids = recentAuth.map(u => u.id)
+    let profileMap = {}
+    if (ids.length > 0) {
+      const { data: profiles } = await supabaseAdmin
+        .from('users')
+        .select('id, display_name, handle, account_type, created_at')
+        .in('id', ids)
+      for (const p of profiles ?? []) profileMap[p.id] = p
+    }
+
+    // Recent posts / bids / jobs for activity pulse
+    const [{ data: recentPosts }, { data: recentBids }, { data: recentJobs }] =
+      await Promise.all([
+        supabaseAdmin
+          .from('posts')
+          .select('id, author_id, post_type, created_at')
+          .gte('created_at', since)
+          .order('created_at', { ascending: false })
+          .limit(20),
+        supabaseAdmin
+          .from('bids')
+          .select('id, contractor_id, created_at')
+          .gte('created_at', since)
+          .order('created_at', { ascending: false })
+          .limit(20),
+        supabaseAdmin
+          .from('job_listings')
+          .select('id, poster_id, created_at')
+          .gte('created_at', since)
+          .order('created_at', { ascending: false })
+          .limit(20),
+      ])
+
+    const signups = recentAuth.map(u => ({
+      type: 'signup',
+      id: u.id,
+      email: u.email,
+      confirmed: u.confirmed,
+      onboarded: !!profileMap[u.id],
+      display_name: profileMap[u.id]?.display_name ?? null,
+      account_type: profileMap[u.id]?.account_type ?? null,
+      created_at: u.created_at,
+    }))
+
+    const events = [
+      ...signups,
+      ...(recentPosts ?? []).map(p => ({ type: 'post', post_type: p.post_type, created_at: p.created_at })),
+      ...(recentBids ?? []).map(b => ({ type: 'bid', created_at: b.created_at })),
+      ...(recentJobs ?? []).map(j => ({ type: 'job', created_at: j.created_at })),
+    ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+
+    res.json({
+      events,
+      signups_total: signups.length,
+      signups_onboarded: signups.filter(s => s.onboarded).length,
+      signups_incomplete: signups.filter(s => !s.onboarded).length,
+      posts_total: recentPosts?.length ?? 0,
+      bids_total: recentBids?.length ?? 0,
+      jobs_total: recentJobs?.length ?? 0,
+      since,
+      hours,
+    })
+  } catch (err) {
+    console.error('[admin/activity]', err.message)
+    res.status(500).json({ error: err.message })
+  }
+})
+
 export default router
