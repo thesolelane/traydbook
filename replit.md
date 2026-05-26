@@ -93,7 +93,7 @@ Stripe products need to be seeded using `scripts/seed-stripe-products.js`.
 
 _Populate as you build_
 
-## Real Estate User Types — Credits & Referrals (planned)
+## Real Estate User Types — Credits & Referrals (planned — launches with app.traydbook.com)
 
 Covers four user types: **Brokerages**, **Real Estate Agents**, **Investors**, and **Homeowners**.
 
