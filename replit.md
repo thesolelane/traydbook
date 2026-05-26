@@ -93,6 +93,31 @@ Stripe products need to be seeded using `scripts/seed-stripe-products.js`.
 
 _Populate as you build_
 
+## Brokerage Referral Credit Programme (planned)
+
+Real estate brokerages that sign up receive a pool of credits they can distribute to their agents and homeowner clients (buyers/sellers) once those users have created accounts.
+
+**Tiered credit pool by signup order (first 300 brokerages):**
+| Brokerage cohort | Credits issued to brokerage on signup |
+|---|---|
+| 1 – 100 | 250 credits |
+| 101 – 200 | 150 credits |
+| 201 – 300 | 50 credits |
+
+**Rules:**
+- Credits are held at the brokerage level until the brokerage issues them to a named user
+- Recipient must have an existing TraydBook account (agent or homeowner) before transfer
+- Credits transferred to agents/homeowners behave like normal platform credits
+- Cohort position is determined by the brokerage's `created_at` timestamp (first 100 rows with `account_type = 'brokerage'`, etc.)
+
+**Implementation notes (not yet built):**
+- Requires a `brokerage` account type and a `brokerage_credit_pool` table (or column on users)
+- A `brokerage_credit_transfers` log table to track who issued what to whom
+- Admin endpoint to view pool balances and transfer history
+- Cohort calculation should be a DB view or function so it updates automatically as brokerages join
+
+---
+
 ## Planned Platform Features (core — not AI-agent specific)
 
 These apply to all contractors regardless of AI subscription tier:
