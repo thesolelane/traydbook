@@ -139,9 +139,11 @@ Agents are onboarded through a brokerage or sign up independently.
 | First 100 investors | 50 free credits on account creation |
 | After first 100 | Referral link only — no welcome bonus |
 
-**Referral reward:** +10 credits each time someone completes onboarding using the investor's referral link. No cap.
+**Referral reward:** +10 credits per successful referral — credited **only after the investor has used all their free welcome credits**. No cap on total referrals.
 
-**Exhaust-first rule:** Referral credits are held until the investor's balance reaches 0, then released automatically. Prevents hoarding and ensures platform engagement before earning more.
+- While any free credits remain, referral earnings are held (not added to balance)
+- Once free credits reach 0, held referral credits are released to the balance
+- Every subsequent referral pays out immediately (no free credits left to block it)
 
 ---
 
@@ -152,9 +154,10 @@ Agents are onboarded through a brokerage or sign up independently.
 | First 100 homeowners | 50 free credits on account creation |
 | After first 100 | Referral link only — no welcome bonus |
 
-**Referral reward:** +10 credits each time someone completes onboarding using the homeowner's referral link. No cap.
+**Referral reward:** +10 credits per successful referral — credited **only after the homeowner has used all their free welcome credits**. No cap on total referrals.
 
-**Exhaust-first rule:** Same as investors — held credits release only when balance hits 0.
+- Same exhaust-first rule as investors: held until free credit balance hits 0, then released
+- Every subsequent referral after that pays out immediately
 
 ---
 
