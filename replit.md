@@ -69,12 +69,13 @@ Stripe products need to be seeded using `scripts/seed-stripe-products.js`.
 ## Architecture decisions
 
 - **Separate Admin Panel**: The admin panel is a standalone application with its own build and server, allowing independent deployment and enhanced security via IP whitelisting.
-- **Client-Side Solana Wallet Generation**: Solana private keys are generated and remain exclusively client-side, never touching the server, to maximize user security.
+- **Client-Side Solana Wallet Generation**: Solana private keys are generated and remain exclusively client-side, never touching the server, to maximize user security. The public key is saved to `users.solana_pubkey` via `POST /api/wallet/save-pubkey`.
 - **Pure CSS Styling**: No external CSS framework is used to maintain full control over styling and minimize bundle size.
 - **Environment-Agnostic Supabase Configuration**: A single `SUPABASE_ENV` variable controls whether the app connects to production or beta Supabase projects, simplifying environment switching.
 - **Module-Based Server Structure**: The server logic is refactored into focused modules by concern (e.g., `stripe.js`, `wallet.js`, `team.js`) to improve maintainability and scalability.
 - **Admin Safe Mode**: On startup, `admin-server.js` runs secret validation + Supabase connection check. Any failure activates safe mode — all write routes are quarantined, read-only monitoring still works.
 - **AI Command Bar (BOB-first)**: Admin natural language commands use Ollama (`BOB_ENDPOINT`) if configured, falling back to OpenAI. Neither is required; the endpoint returns a 503 with a hint if neither is set.
+- **Email in public.users**: `email` is stored in both `auth.users` (Supabase-managed) and `public.users.email` (written at onboarding via `req.user.email` from the verified JWT). This avoids repeated `auth.admin.listUsers` round-trips on admin queries and enables server-side email search. Migration `030` back-fills any rows missing it.
 
 ## Product
 
