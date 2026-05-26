@@ -93,29 +93,39 @@ Stripe products need to be seeded using `scripts/seed-stripe-products.js`.
 
 _Populate as you build_
 
-## Investor Referral Programme (planned)
+## Investor & Homeowner Referral Programme (planned)
 
-The first 100 investors who sign up receive a welcome credit bonus and a personal referral link.
+Both investors and homeowners receive welcome credits and a personal referral link. A shared rule governs when referral earnings are paid out.
 
-**Welcome bonus:**
-- First 100 investors: **50 free credits** on account creation
+### Investor tier
+| Cohort | Welcome credits |
+|---|---|
+| First 100 investors | 50 free credits on account creation |
+| After first 100 | Referral link only (no welcome bonus) |
 
-**Ongoing referral reward:**
-- Each time someone creates a TraydBook account using an investor's referral link: **+10 credits** added to the investor's balance automatically
+### Homeowner tier
+| Cohort | Welcome credits |
+|---|---|
+| First 100 homeowners | 50 free credits on account creation |
+| After first 100 | Referral link only (no welcome bonus) |
 
-**Rules:**
-- The 50-credit welcome bonus applies only to the first 100 investor accounts (by `created_at`)
-- Referral credits are awarded once the referred user completes onboarding (not just auth signup)
-- No cap on referral earnings — investors accumulate 10 credits per successful referral indefinitely
-- Referral links are unique per investor and tracked via a `referral_code` on their user record
+### Referral reward (both tiers)
+- **+10 credits** awarded to the referrer each time someone completes onboarding using their referral link
+- No cap on total referral earnings
+
+### Shared rule — credits must be exhausted before referral payouts
+- Referral credits are **held** (not added to balance) while the user still has any welcome or previously issued credits remaining
+- Once their balance reaches **0**, the held referral credits are released to their balance
+- This prevents credit hoarding and ensures users engage with the platform before earning more
 
 **Implementation notes (not yet built):**
-- `investor` account type (or a flag/role on existing user types)
-- `referral_code` column on `users` — short unique slug generated at signup
-- `referral_signups` table: `(id, referral_code, referred_user_id, credited_at)`
-- Credit award logic triggered in `/api/onboarding/complete` — look up `referral_code` from request/cookie, award 10 credits to the referrer, log the event
-- Cohort check (first 100 investors) done at onboarding time via `COUNT(*)` on investor accounts
-- Admin endpoint to view referral stats per investor
+- `investor` account type; homeowners already exist (`homeowner`)
+- `referral_code` column on `users` — unique slug generated at account creation for both types
+- `referral_signups` table: `(id, referral_code, referred_user_id, awarded_at, held)`
+- `referral_credits_held` column on `users` — pending credits not yet released
+- Payout trigger: when a credit debit brings `credit_balance` to 0, check `referral_credits_held > 0`, release to balance and log
+- Welcome bonus cohort check at onboarding time via `COUNT(*)` on matching account type
+- Admin view: referral stats, held balance, and release history per user
 
 ---
 
