@@ -93,6 +93,32 @@ Stripe products need to be seeded using `scripts/seed-stripe-products.js`.
 
 _Populate as you build_
 
+## Investor Referral Programme (planned)
+
+The first 100 investors who sign up receive a welcome credit bonus and a personal referral link.
+
+**Welcome bonus:**
+- First 100 investors: **50 free credits** on account creation
+
+**Ongoing referral reward:**
+- Each time someone creates a TraydBook account using an investor's referral link: **+10 credits** added to the investor's balance automatically
+
+**Rules:**
+- The 50-credit welcome bonus applies only to the first 100 investor accounts (by `created_at`)
+- Referral credits are awarded once the referred user completes onboarding (not just auth signup)
+- No cap on referral earnings — investors accumulate 10 credits per successful referral indefinitely
+- Referral links are unique per investor and tracked via a `referral_code` on their user record
+
+**Implementation notes (not yet built):**
+- `investor` account type (or a flag/role on existing user types)
+- `referral_code` column on `users` — short unique slug generated at signup
+- `referral_signups` table: `(id, referral_code, referred_user_id, credited_at)`
+- Credit award logic triggered in `/api/onboarding/complete` — look up `referral_code` from request/cookie, award 10 credits to the referrer, log the event
+- Cohort check (first 100 investors) done at onboarding time via `COUNT(*)` on investor accounts
+- Admin endpoint to view referral stats per investor
+
+---
+
 ## Brokerage Referral Credit Programme (planned)
 
 Real estate brokerages that sign up receive a pool of credits they can distribute to their agents and homeowner clients (buyers/sellers) once those users have created accounts.
