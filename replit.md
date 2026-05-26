@@ -93,64 +93,80 @@ Stripe products need to be seeded using `scripts/seed-stripe-products.js`.
 
 _Populate as you build_
 
-## Investor & Homeowner Referral Programme (planned)
+## Real Estate User Types — Credits & Referrals (planned)
 
-Both investors and homeowners receive welcome credits and a personal referral link. A shared rule governs when referral earnings are paid out.
-
-### Investor tier
-| Cohort | Welcome credits |
-|---|---|
-| First 100 investors | 50 free credits on account creation |
-| After first 100 | Referral link only (no welcome bonus) |
-
-### Homeowner tier
-| Cohort | Welcome credits |
-|---|---|
-| First 100 homeowners | 50 free credits on account creation |
-| After first 100 | Referral link only (no welcome bonus) |
-
-### Referral reward (both tiers)
-- **+10 credits** awarded to the referrer each time someone completes onboarding using their referral link
-- No cap on total referral earnings
-
-### Shared rule — credits must be exhausted before referral payouts
-- Referral credits are **held** (not added to balance) while the user still has any welcome or previously issued credits remaining
-- Once their balance reaches **0**, the held referral credits are released to their balance
-- This prevents credit hoarding and ensures users engage with the platform before earning more
-
-**Implementation notes (not yet built):**
-- `investor` account type; homeowners already exist (`homeowner`)
-- `referral_code` column on `users` — unique slug generated at account creation for both types
-- `referral_signups` table: `(id, referral_code, referred_user_id, awarded_at, held)`
-- `referral_credits_held` column on `users` — pending credits not yet released
-- Payout trigger: when a credit debit brings `credit_balance` to 0, check `referral_credits_held > 0`, release to balance and log
-- Welcome bonus cohort check at onboarding time via `COUNT(*)` on matching account type
-- Admin view: referral stats, held balance, and release history per user
+Covers four user types: **Brokerages**, **Real Estate Agents**, **Investors**, and **Homeowners**.
 
 ---
 
-## Brokerage Referral Credit Programme (planned)
+### 🏢 Brokerages
 
-Real estate brokerages that sign up receive a pool of credits they can distribute to their agents and homeowner clients (buyers/sellers) once those users have created accounts.
+Brokerages receive a credit pool on signup that they distribute to their agents and homeowner clients.
 
-**Tiered credit pool by signup order (first 300 brokerages):**
-| Brokerage cohort | Credits issued to brokerage on signup |
+| Signup cohort | Welcome credit pool |
 |---|---|
 | 1 – 100 | 250 credits |
 | 101 – 200 | 150 credits |
 | 201 – 300 | 50 credits |
 
-**Rules:**
-- Credits are held at the brokerage level until the brokerage issues them to a named user
-- Recipient must have an existing TraydBook account (agent or homeowner) before transfer
-- Credits transferred to agents/homeowners behave like normal platform credits
-- Cohort position is determined by the brokerage's `created_at` timestamp (first 100 rows with `account_type = 'brokerage'`, etc.)
+- Credits sit in the brokerage's pool until the brokerage issues them to a specific user
+- Recipient (agent or homeowner) must have an existing TraydBook account before transfer
+- Transferred credits behave like normal platform credits for the recipient
+- Cohort position based on `created_at` order among `account_type = 'brokerage'` rows
+
+**Implementation notes:**
+- `brokerage` account type
+- `brokerage_credit_pool` column (or table) to track remaining issuable credits
+- `brokerage_credit_transfers` log: `(id, brokerage_id, recipient_user_id, amount, transferred_at)`
+- Admin view: pool balance and transfer history per brokerage
+
+---
+
+### 🏠 Real Estate Agents
+
+Agents are onboarded through a brokerage or sign up independently.
+
+- Agents affiliated with a brokerage receive credits issued by their brokerage (see above)
+- Independent agents follow standard platform credit purchase model
+- No separate welcome bonus or referral programme for agents at this time _(subject to change)_
+
+---
+
+### 💼 Investors
+
+| Signup cohort | Welcome credits |
+|---|---|
+| First 100 investors | 50 free credits on account creation |
+| After first 100 | Referral link only — no welcome bonus |
+
+**Referral reward:** +10 credits each time someone completes onboarding using the investor's referral link. No cap.
+
+**Exhaust-first rule:** Referral credits are held until the investor's balance reaches 0, then released automatically. Prevents hoarding and ensures platform engagement before earning more.
+
+---
+
+### 🏡 Homeowners
+
+| Signup cohort | Welcome credits |
+|---|---|
+| First 100 homeowners | 50 free credits on account creation |
+| After first 100 | Referral link only — no welcome bonus |
+
+**Referral reward:** +10 credits each time someone completes onboarding using the homeowner's referral link. No cap.
+
+**Exhaust-first rule:** Same as investors — held credits release only when balance hits 0.
+
+---
+
+### Shared referral infrastructure (Investors & Homeowners)
 
 **Implementation notes (not yet built):**
-- Requires a `brokerage` account type and a `brokerage_credit_pool` table (or column on users)
-- A `brokerage_credit_transfers` log table to track who issued what to whom
-- Admin endpoint to view pool balances and transfer history
-- Cohort calculation should be a DB view or function so it updates automatically as brokerages join
+- `referral_code` column on `users` — unique slug generated at account creation
+- `referral_signups` table: `(id, referral_code, referred_user_id, awarded_at, held)`
+- `referral_credits_held` column on `users` — pending credits awaiting release
+- Release trigger: when a credit debit brings `credit_balance` to 0, check `referral_credits_held > 0` → move to balance and log
+- Welcome bonus cohort check at onboarding: `COUNT(*)` on matching `account_type`
+- Admin view: referral stats, held balance, release history per user
 
 ---
 
