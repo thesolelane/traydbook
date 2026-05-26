@@ -97,7 +97,7 @@ _Populate as you build_
 
 Covers four user types: **Brokerages**, **Real Estate Agents**, **Investors**, and **Homeowners**.
 
-> **Welcome credit sunset:** Free signup credits across all user types end once **500 users have fully subscribed** (paid, active accounts). After that threshold is reached, no new welcome credit bonuses are issued regardless of cohort position.
+> **Welcome credit sunset:** Free signup credits across all user types end once **500 users have fully subscribed**. A user counts toward this threshold when they have completed onboarding **and** have done at least one of the following: posted content, liked a post, or commented on someone else's profile. After the 500 threshold is reached, no new welcome credit bonuses are issued regardless of cohort position.
 
 ---
 
