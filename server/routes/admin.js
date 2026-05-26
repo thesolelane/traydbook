@@ -481,6 +481,39 @@ router.get('/api/admin/wallets', requireAuth, requireAdminLevel, async (req, res
   }
 })
 
+// ── Platform Settings / Feature Flags ─────────────────────────────────────────
+
+router.get('/api/admin/platform-settings', requireAuth, requireAdminLevel, async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('platform_settings')
+      .select('key, value, label, description, updated_at')
+      .order('key')
+    if (error) return res.status(500).json({ error: error.message })
+    res.json({ settings: data ?? [] })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+router.patch('/api/admin/platform-settings/:key', requireAuth, requireAdminLevel, async (req, res) => {
+  const { key } = req.params
+  const { value } = req.body ?? {}
+  if (value === undefined) return res.status(400).json({ error: 'value is required' })
+
+  try {
+    const { error } = await supabaseAdmin
+      .from('platform_settings')
+      .update({ value: String(value), updated_at: new Date().toISOString(), updated_by: req.user.id })
+      .eq('key', key)
+    if (error) return res.status(500).json({ error: error.message })
+    console.log(`[platform-settings] ${key} = ${value} by ${req.user.id}`)
+    res.json({ ok: true, key, value })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 // ── Secrets Management ────────────────────────────────────────────────────────
 
 router.get('/api/admin/secrets', blockServiceKeys, requireAuth, requireSuperAdmin, (req, res) => {
