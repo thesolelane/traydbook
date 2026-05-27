@@ -508,6 +508,7 @@ router.patch('/api/admin/platform-settings/:key', requireAuth, requireAdminLevel
       .eq('key', key)
     if (error) return res.status(500).json({ error: error.message })
     console.log(`[platform-settings] ${key} = ${value} by ${req.user.id}`)
+    void pushToBob('/platform-setting', { key, value })
     res.json({ ok: true, key, value })
   } catch (err) {
     res.status(500).json({ error: err.message })

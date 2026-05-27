@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { supabaseAdmin } from '../lib/clients.js'
+import { pushToBob } from '../lib/bob-push.js'
 import crypto from 'crypto'
 
 const router = Router()
@@ -282,6 +283,7 @@ router.post('/execute', async (req, res) => {
           .single()
         if (error) throw error
         result = { action: 'setPlatformSetting', key, value: data.value, label: data.label }
+        void pushToBob('/platform-setting', { key, value: data.value })
         break
       }
 
