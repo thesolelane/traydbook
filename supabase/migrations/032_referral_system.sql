@@ -4,12 +4,10 @@
 -- automatically when a referrer's balance drops to zero.
 
 -- ── New account types ────────────────────────────────────────────────────────
-ALTER TABLE public.users DROP CONSTRAINT IF EXISTS users_account_type_check;
-ALTER TABLE public.users ADD CONSTRAINT users_account_type_check
-  CHECK (account_type IN (
-    'contractor','project_owner','agent','homeowner',
-    'admin','investor','brokerage'
-  ));
+-- account_type is an ENUM in the live DB.
+-- ADD VALUE is idempotent-safe (IF NOT EXISTS requires Postgres 9.6+, which Supabase ships).
+ALTER TYPE account_type ADD VALUE IF NOT EXISTS 'investor';
+ALTER TYPE account_type ADD VALUE IF NOT EXISTS 'brokerage';
 
 -- ── Referral columns on users ────────────────────────────────────────────────
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS referral_code        text UNIQUE;

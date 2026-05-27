@@ -12,7 +12,7 @@ create table if not exists public.users (
   display_name  text not null,
   handle        text not null unique,
   avatar_url    text,
-  account_type  text not null check (account_type in ('contractor','project_owner','agent','homeowner','admin','investor','brokerage')),
+  account_type  account_type not null,
   email         text,
   location_city  text,
   location_state text,
