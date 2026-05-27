@@ -12,7 +12,7 @@ create table if not exists public.users (
   display_name  text not null,
   handle        text not null unique,
   avatar_url    text,
-  account_type  text not null check (account_type in ('contractor','project_owner','agent','homeowner','admin')),
+  account_type  text not null check (account_type in ('contractor','project_owner','agent','homeowner','admin','investor','brokerage')),
   email         text,
   location_city  text,
   location_state text,
@@ -24,8 +24,11 @@ create table if not exists public.users (
   deleted_at    timestamptz
 );
 -- Ensure email and onboarding_complete exist on databases created before this was formalised
-alter table public.users add column if not exists email               text;
-alter table public.users add column if not exists onboarding_complete boolean not null default false;
+alter table public.users add column if not exists email                  text;
+alter table public.users add column if not exists onboarding_complete    boolean not null default false;
+-- Referral system columns (migration 032)
+alter table public.users add column if not exists referral_code          text unique;
+alter table public.users add column if not exists referral_credits_held  integer not null default 0;
 -- SMS alert fields (phone_number is PII — column-level privileges restrict access)
 alter table public.users add column if not exists phone_number          text;
 alter table public.users add column if not exists phone_verified        boolean not null default false;

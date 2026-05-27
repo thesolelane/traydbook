@@ -31,6 +31,8 @@ const ALL_ROLES = [
   'project_owner',
   'agent',
   'homeowner',
+  'investor',
+  'brokerage',
 ]
 
 export default function UsersSection({ authHeaders }: SectionProps) {
