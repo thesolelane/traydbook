@@ -107,6 +107,15 @@ SQL REPAIR (two-person workflow — all steps require super-admin)
 - executeRepair(sql, approvalCode): Execute SQL that has been approved. The approval code is cryptographically bound to the exact SQL submitted — it cannot be reused on a different query. Codes expire after 1 hour.
 - listRepairApprovals(): List pending and recent repair approval requests.
 
+PLATFORM FEATURE FLAGS
+- getPlatformSettings(): Read all feature flag keys, their current values, and descriptions
+- setPlatformSetting(key, value): Toggle a feature flag on or off. key must be one of:
+    referral_system_enabled — enable investor & homeowner referral programme (launch gate)
+    maintenance_mode        — show maintenance page to non-admin visitors
+    new_feed_algo           — experimental feed ranking
+    crypto_payments         — Solana-based credit purchases
+  value must be "true" or "false" (string). REQUIRES confirmation.
+
 BOB AGENT CONTROL (requires admin-level role)
 - getBobStatus(): Read current Bob control flags (paused, ai_provider_override, lead_refresh_force, max_leads_per_cycle, traydbook_url_override)
 - setBobControl(key, value): Update a single Bob control flag. Valid keys: paused (true/false), ai_provider_override (string|null), lead_refresh_force (true/false), max_leads_per_cycle (number), traydbook_url_override (string|null)
@@ -119,7 +128,7 @@ BOB AGENT CONTROL (requires admin-level role)
 - pingBob(): Test connectivity to Bob's agent server
 
 CONFIRMATION RULES
-- requiresConfirmation must be true for: banUser, adjustCredits, revokeUserSessions, requestRepair, approveRepair, executeRepair, setBobControl
+- requiresConfirmation must be true for: banUser, adjustCredits, revokeUserSessions, requestRepair, approveRepair, executeRepair, setBobControl, setPlatformSetting
 - requiresConfirmation should be false for all read/search/list/get actions
 
 Respond ONLY with valid JSON: { "intent": string, "parameters": object, "requiresConfirmation": boolean, "explanation": string, "confidence": number }`
@@ -174,6 +183,20 @@ router.post('/command', async (req, res) => {
         .select('*')
         .eq('status', 'pending')
         .limit(10)
+      preview = data
+    } else if (plan.intent === 'getPlatformSettings') {
+      const { data } = await supabaseAdmin
+        .from('platform_settings')
+        .select('key, value, label, description, updated_at')
+        .order('key')
+      preview = data
+    } else if (plan.intent === 'setPlatformSetting') {
+      // Preview the current value before confirmation
+      const { data } = await supabaseAdmin
+        .from('platform_settings')
+        .select('key, value, label, description')
+        .eq('key', plan.parameters?.key)
+        .single()
       preview = data
     }
 
@@ -234,6 +257,31 @@ router.post('/execute', async (req, res) => {
           .select('credits')
           .single()
         result = { action: 'adjustCredits', userId, newBalance: after?.credits }
+        break
+      }
+
+      case 'setPlatformSetting': {
+        const { key, value } = confirmedPlan.parameters
+        const ALLOWED_KEYS = [
+          'referral_system_enabled',
+          'maintenance_mode',
+          'new_feed_algo',
+          'crypto_payments',
+        ]
+        if (!ALLOWED_KEYS.includes(key)) {
+          return res.status(400).json({ error: `Unknown platform setting: ${key}` })
+        }
+        if (value !== 'true' && value !== 'false') {
+          return res.status(400).json({ error: 'value must be "true" or "false"' })
+        }
+        const { data, error } = await supabaseAdmin
+          .from('platform_settings')
+          .update({ value, updated_at: new Date().toISOString(), updated_by: req.user?.id || null })
+          .eq('key', key)
+          .select('key, value, label')
+          .single()
+        if (error) throw error
+        result = { action: 'setPlatformSetting', key, value: data.value, label: data.label }
         break
       }
 
