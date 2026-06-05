@@ -15,6 +15,9 @@ CREATE TABLE IF NOT EXISTS public.credit_bundles (
   updated_at    timestamptz NOT NULL DEFAULT now()
 );
 
+-- Ensure id has its default (missing if table was created by an early partial run)
+ALTER TABLE public.credit_bundles ALTER COLUMN id SET DEFAULT uuid_generate_v4();
+
 -- Ensure every column exists on databases where CREATE TABLE was skipped
 ALTER TABLE public.credit_bundles ADD COLUMN IF NOT EXISTS name          text;
 ALTER TABLE public.credit_bundles ADD COLUMN IF NOT EXISTS credits       integer;
