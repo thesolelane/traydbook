@@ -1,4 +1,1 @@
-- [Email column in public.users](email-column.md) — column exists and is written at onboarding; schema.sql comment claiming it was "omitted" was stale/wrong.
-- [Solana pubkey storage](solana-pubkey.md) — pubkey saved to users.solana_pubkey, NOT a separate solana_wallets table.
-- [Rate-limit keyGenerator crash](rate-limit-ipv6.md) — custom keyGenerator using req.ip triggers ERR_ERL_KEY_GEN_IPV6 and crashes server; use default instead.
-- [account_type is a PG ENUM](account-type-enum.md) — live DB uses an ENUM type, not a text check constraint; extend with ALTER TYPE account_type ADD VALUE IF NOT EXISTS.
+- [Live DB ENUM types](live-db-enum-types.md) — purchase_status and account_type are ENUMs in live DB; use ALTER TYPE not DROP/ADD CONSTRAINT.
