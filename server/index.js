@@ -24,6 +24,7 @@ import leadBankRoutes from './routes/lead-bank.js'
 import missedLeadsRoutes from './routes/missed-leads.js'
 import agentRoutes from './routes/agent.js'
 import creditsRoutes from './routes/credits.js'
+import adminBundlesRoutes from './routes/admin-bundles.js'
 import { logError, loadLogFromDisk } from './lib/errorLog.js'
 
 const app = express()
@@ -79,6 +80,7 @@ app.use(leadBankRoutes)
 app.use(missedLeadsRoutes)
 app.use(agentRoutes)
 app.use(creditsRoutes)
+app.use(adminBundlesRoutes)
 
 if (process.env.NODE_ENV === 'production') {
   const path = await import('path')

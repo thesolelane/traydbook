@@ -9,6 +9,22 @@ import {
 } from '../lib/clients.js'
 import { requireAuth } from '../lib/auth.js'
 
+// Fetch a bundle from DB (preferred), fall back to hardcoded BUNDLES array
+async function lookupBundle(bundleId) {
+  if (!bundleId) return null
+  // Try UUID lookup in DB first
+  const { data } = await supabaseAdmin
+    .from('credit_bundles')
+    .select('id, name, credits, price_cents, stripe_price_id')
+    .eq('id', bundleId)
+    .eq('active', true)
+    .maybeSingle()
+  if (data) return { id: data.id, name: data.name, credits: data.credits, cents: data.price_cents, priceId: data.stripe_price_id }
+  // Fall back to legacy hardcoded array (string IDs like 'starter', 'builder')
+  const legacy = BUNDLES.find(b => b.id === bundleId)
+  return legacy ?? null
+}
+
 const router = express.Router()
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -222,7 +238,7 @@ const checkoutLimiter = rateLimit({
 router.post('/api/create-checkout-session', checkoutLimiter, requireAuth, async (req, res) => {
   const { bundleId } = req.body ?? {}
   const userId = req.user.id
-  const bundle = BUNDLES.find(b => b.id === bundleId)
+  const bundle = await lookupBundle(bundleId)
 
   if (!bundle) return res.status(400).json({ error: 'Invalid bundle' })
 

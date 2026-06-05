@@ -64,6 +64,7 @@ import {
   Terminal,
   Bug,
   FileSpreadsheet,
+  Package,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { AdminAuthProvider } from '../context/AuthContext'
@@ -85,6 +86,7 @@ import ModerationQueueSection from '@main/pages/admin/ModerationQueueSection'
 import BobMonitorSection from '@main/pages/admin/BobMonitorSection'
 import SecurityScanSection from '@main/pages/admin/SecurityScanSection'
 import ProspectsSection from '@main/pages/admin/ProspectsSection'
+import BundlesSection from '@main/pages/admin/BundlesSection'
 
 const SUPABASE_ENV = (import.meta.env.VITE_SUPABASE_ENV as string) || 'production'
 const isBeta = SUPABASE_ENV === 'beta'
@@ -96,6 +98,7 @@ type Section =
   | 'contractors'
   | 'feed'
   | 'payments'
+  | 'bundles'
   | 'errors'
   | 'bob-monitor'
   | 'prospects'
@@ -119,6 +122,7 @@ const NAV_GROUPS: { label: string; items: { id: Section; label: string; icon: Re
       { id: 'contractors', label: 'Contractors',         icon: <HardHat size={16} /> },
       { id: 'feed',        label: 'Feed Moderation',     icon: <MessageSquare size={16} /> },
       { id: 'payments',    label: 'Stripe & Payments',   icon: <CreditCard size={16} /> },
+      { id: 'bundles',     label: 'Credit Bundles',      icon: <Package size={16} /> },
       { id: 'errors',      label: 'Error Log',           icon: <AlertTriangle size={16} /> },
     ],
   },
@@ -365,6 +369,7 @@ export default function AdminPanel({ session }: Props) {
             {section === 'contractors'      && <ContractorsSection authHeaders={authHeaders} />}
             {section === 'feed'             && <FeedSection authHeaders={authHeaders} />}
             {section === 'payments'         && <PaymentsSection authHeaders={authHeaders} />}
+            {section === 'bundles'          && <BundlesSection authHeaders={authHeaders} />}
             {section === 'errors'           && <ErrorLogSection authHeaders={authHeaders} />}
             {section === 'bob-monitor'      && <BobMonitorSection authHeaders={authHeaders} />}
             {section === 'prospects'        && <ProspectsSection authHeaders={authHeaders} />}
