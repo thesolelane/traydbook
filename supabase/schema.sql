@@ -438,7 +438,7 @@ create table if not exists public.purchases (
   stripe_session_id text not null unique,  -- UNIQUE ensures one row per Stripe session
   credits           integer not null,
   amount_cents      integer not null,
-  status            text not null default 'pending' check (status in ('pending','completed','failed')),
+  status            text not null default 'pending' check (status in ('pending','completed','failed','held')),
   created_at        timestamptz not null default now()
 );
 

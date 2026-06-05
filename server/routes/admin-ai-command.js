@@ -112,6 +112,7 @@ PLATFORM FEATURE FLAGS
 - getPlatformSettings(): Read all feature flag keys, their current values, and descriptions
 - setPlatformSetting(key, value): Toggle a feature flag on or off. key must be one of:
     referral_system_enabled — enable investor & homeowner referral programme (launch gate)
+    credit_issuance_enabled — master switch for Stripe credit issuance (emergency kill switch)
     maintenance_mode        — show maintenance page to non-admin visitors
     new_feed_algo           — experimental feed ranking
     crypto_payments         — Solana-based credit purchases
@@ -268,6 +269,7 @@ router.post('/execute', async (req, res) => {
           'maintenance_mode',
           'new_feed_algo',
           'crypto_payments',
+          'credit_issuance_enabled',
         ]
         if (!ALLOWED_KEYS.includes(key)) {
           return res.status(400).json({ error: `Unknown platform setting: ${key}` })

@@ -1,4 +1,5 @@
 import express from 'express'
+import { rateLimit } from 'express-rate-limit'
 import {
   stripe,
   supabaseAdmin,
@@ -9,6 +10,34 @@ import {
 import { requireAuth } from '../lib/auth.js'
 
 const router = express.Router()
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+const MAX_PURCHASES_PER_DAY = 5   // per user, across all bundles
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+async function isCreditIssuanceEnabled() {
+  const { data } = await supabaseAdmin
+    .from('platform_settings')
+    .select('value')
+    .eq('key', 'credit_issuance_enabled')
+    .single()
+  // Defaults to enabled if the row is missing (safe fallback during migration)
+  return data?.value !== 'false'
+}
+
+async function getUserPurchasesToday(userId) {
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  const { count } = await supabaseAdmin
+    .from('purchases')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .in('status', ['pending', 'completed', 'held'])
+    .gte('created_at', since)
+  return count ?? 0
+}
+
+// ── SMS helpers ───────────────────────────────────────────────────────────────
 
 async function handleSmsSubscriptionActivated(session, userId, smsTier) {
   if (!userId || !smsTier) {
@@ -51,6 +80,8 @@ async function handleSmsSubscriptionCancelled(sub) {
   }
 }
 
+// ── Webhook ───────────────────────────────────────────────────────────────────
+
 router.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature']
   let event
@@ -68,20 +99,52 @@ router.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), a
     if (smsTier) {
       await handleSmsSubscriptionActivated(session, userId, smsTier)
     } else {
+      // ── Fix 2: guard missing / invalid metadata ──────────────────────────
       if (!userId || !credits) {
         console.error('[webhook] Missing metadata on session:', session.id)
         return res.status(400).json({ error: 'Missing metadata' })
       }
+
       const creditsNum = parseInt(credits, 10)
+      if (!Number.isInteger(creditsNum) || creditsNum <= 0) {
+        console.error('[webhook] Invalid credits value in metadata:', credits, 'session:', session.id)
+        return res.status(400).json({ error: 'Invalid credits metadata' })
+      }
+
+      // Use actual Stripe amount collected instead of bundle lookup fallback
+      const amountCents = session.amount_total ?? 0
+
       const bundle = BUNDLES.find(b => b.id === bundleId)
+      if (!bundle) {
+        // Payment was taken — still fulfil, but flag loudly for investigation
+        console.error(
+          `[webhook] UNKNOWN bundle "${bundleId}" on session ${session.id} — ` +
+          `issuing ${creditsNum} credits based on metadata. Manual review advised.`
+        )
+      }
+
+      // ── Fix 3: emergency kill switch ─────────────────────────────────────
+      const issuanceEnabled = await isCreditIssuanceEnabled()
+      if (!issuanceEnabled) {
+        console.warn(
+          `[webhook] credit_issuance_enabled=false — holding ${creditsNum} credits for user ${userId}, session ${session.id}`
+        )
+        // Mark purchase as held so it's visible in admin
+        await supabaseAdmin
+          .from('purchases')
+          .update({ status: 'held' })
+          .eq('stripe_session_id', session.id)
+        return res.json({ received: true, held: true })
+      }
+
       const { data: shouldCredit, error: fulfillErr } = await supabaseAdmin.rpc(
         'fulfill_stripe_purchase',
         {
           p_stripe_session_id: session.id,
-          p_user_id: userId,
-          p_credits: creditsNum,
-          p_amount_cents: bundle?.cents ?? 0,
-          p_bundle_id: bundleId ?? '',
+          p_user_id:           userId,
+          p_credits:           creditsNum,
+          p_amount_cents:      amountCents,
+          p_bundle_id:         bundleId ?? '',
         }
       )
       if (fulfillErr) {
@@ -145,7 +208,18 @@ router.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), a
   res.json({ received: true })
 })
 
-router.post('/api/create-checkout-session', requireAuth, async (req, res) => {
+// ── Checkout session ──────────────────────────────────────────────────────────
+
+// Separate rate limiter for checkout — keyed by IP, covers unauthenticated abuse
+const checkoutLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many checkout attempts — try again in an hour.' },
+})
+
+router.post('/api/create-checkout-session', checkoutLimiter, requireAuth, async (req, res) => {
   const { bundleId } = req.body ?? {}
   const userId = req.user.id
   const bundle = BUNDLES.find(b => b.id === bundleId)
@@ -159,6 +233,14 @@ router.post('/api/create-checkout-session', requireAuth, async (req, res) => {
     .single()
   if (userRow?.account_type === 'contractor' || userRow?.account_type === 'admin') {
     return res.status(403).json({ error: 'This account type does not use credits' })
+  }
+
+  // ── Fix 1: per-user daily purchase limit ─────────────────────────────────
+  const purchasesToday = await getUserPurchasesToday(userId)
+  if (purchasesToday >= MAX_PURCHASES_PER_DAY) {
+    return res.status(429).json({
+      error: `Purchase limit reached — maximum ${MAX_PURCHASES_PER_DAY} purchases per 24 hours.`,
+    })
   }
 
   const rawEmail = req.user.email ?? ''
@@ -181,11 +263,11 @@ router.post('/api/create-checkout-session', requireAuth, async (req, res) => {
     })
 
     const { error: purchaseErr } = await supabaseAdmin.from('purchases').insert({
-      user_id: userId,
+      user_id:           userId,
       stripe_session_id: session.id,
-      credits: bundle.credits,
-      amount_cents: bundle.cents,
-      status: 'pending',
+      credits:           bundle.credits,
+      amount_cents:      bundle.cents,
+      status:            'pending',
     })
     if (purchaseErr) console.error('[checkout] Purchase pre-insert failed:', purchaseErr.message)
 
@@ -195,6 +277,8 @@ router.post('/api/create-checkout-session', requireAuth, async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
+
+// ── Session status ────────────────────────────────────────────────────────────
 
 router.get('/api/session-status', requireAuth, async (req, res) => {
   const sessionId = req.query.session_id
