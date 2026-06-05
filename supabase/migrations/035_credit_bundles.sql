@@ -18,6 +18,21 @@ CREATE TABLE IF NOT EXISTS public.credit_bundles (
 -- Ensure id has its default (missing if table was created by an early partial run)
 ALTER TABLE public.credit_bundles ALTER COLUMN id SET DEFAULT uuid_generate_v4();
 
+-- Earlier migration attempts created a `price_usd` column (NOT NULL, no default).
+-- Our canonical column is price_cents. Make price_usd nullable so INSERTs don't fail.
+-- Wrapped in DO block so it's a no-op on fresh databases where price_usd never existed.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name   = 'credit_bundles'
+      AND column_name  = 'price_usd'
+  ) THEN
+    ALTER TABLE public.credit_bundles ALTER COLUMN price_usd DROP NOT NULL;
+  END IF;
+END $$;
+
 -- Ensure every column exists on databases where CREATE TABLE was skipped
 ALTER TABLE public.credit_bundles ADD COLUMN IF NOT EXISTS name          text;
 ALTER TABLE public.credit_bundles ADD COLUMN IF NOT EXISTS credits       integer;
