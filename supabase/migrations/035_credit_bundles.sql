@@ -7,13 +7,32 @@ CREATE TABLE IF NOT EXISTS public.credit_bundles (
   name          text        NOT NULL,
   credits       integer     NOT NULL CHECK (credits > 0),
   price_cents   integer     NOT NULL CHECK (price_cents > 0),
-  stripe_price_id   text    UNIQUE,
+  stripe_price_id   text,
   stripe_product_id text,
   active        boolean     NOT NULL DEFAULT true,
   sort_order    integer     NOT NULL DEFAULT 0,
   created_at    timestamptz NOT NULL DEFAULT now(),
   updated_at    timestamptz NOT NULL DEFAULT now()
 );
+
+-- Ensure all columns exist on databases where CREATE TABLE was skipped
+ALTER TABLE public.credit_bundles ADD COLUMN IF NOT EXISTS stripe_price_id   text;
+ALTER TABLE public.credit_bundles ADD COLUMN IF NOT EXISTS stripe_product_id text;
+ALTER TABLE public.credit_bundles ADD COLUMN IF NOT EXISTS active        boolean     NOT NULL DEFAULT true;
+ALTER TABLE public.credit_bundles ADD COLUMN IF NOT EXISTS sort_order    integer     NOT NULL DEFAULT 0;
+ALTER TABLE public.credit_bundles ADD COLUMN IF NOT EXISTS updated_at    timestamptz NOT NULL DEFAULT now();
+
+-- Unique constraint on stripe_price_id (safe to re-run)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'public.credit_bundles'::regclass
+      AND conname = 'credit_bundles_stripe_price_id_key'
+  ) THEN
+    ALTER TABLE public.credit_bundles ADD CONSTRAINT credit_bundles_stripe_price_id_key UNIQUE (stripe_price_id);
+  END IF;
+END $$;
 
 GRANT ALL ON public.credit_bundles TO service_role;
 
