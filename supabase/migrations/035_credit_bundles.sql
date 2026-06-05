@@ -15,11 +15,15 @@ CREATE TABLE IF NOT EXISTS public.credit_bundles (
   updated_at    timestamptz NOT NULL DEFAULT now()
 );
 
--- Ensure all columns exist on databases where CREATE TABLE was skipped
+-- Ensure every column exists on databases where CREATE TABLE was skipped
+ALTER TABLE public.credit_bundles ADD COLUMN IF NOT EXISTS name          text;
+ALTER TABLE public.credit_bundles ADD COLUMN IF NOT EXISTS credits       integer;
+ALTER TABLE public.credit_bundles ADD COLUMN IF NOT EXISTS price_cents   integer;
 ALTER TABLE public.credit_bundles ADD COLUMN IF NOT EXISTS stripe_price_id   text;
 ALTER TABLE public.credit_bundles ADD COLUMN IF NOT EXISTS stripe_product_id text;
 ALTER TABLE public.credit_bundles ADD COLUMN IF NOT EXISTS active        boolean     NOT NULL DEFAULT true;
 ALTER TABLE public.credit_bundles ADD COLUMN IF NOT EXISTS sort_order    integer     NOT NULL DEFAULT 0;
+ALTER TABLE public.credit_bundles ADD COLUMN IF NOT EXISTS created_at    timestamptz NOT NULL DEFAULT now();
 ALTER TABLE public.credit_bundles ADD COLUMN IF NOT EXISTS updated_at    timestamptz NOT NULL DEFAULT now();
 
 -- Unique constraint on stripe_price_id (safe to re-run)
