@@ -65,6 +65,8 @@ import {
   Bug,
   FileSpreadsheet,
   Package,
+  Building2,
+  GitBranch,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { AdminAuthProvider } from '../context/AuthContext'
@@ -87,6 +89,8 @@ import BobMonitorSection from '@main/pages/admin/BobMonitorSection'
 import SecurityScanSection from '@main/pages/admin/SecurityScanSection'
 import ProspectsSection from '@main/pages/admin/ProspectsSection'
 import BundlesSection from '@main/pages/admin/BundlesSection'
+import BrokeragesSection from '@main/pages/admin/BrokeragesSection'
+import ReferralsSection from '@main/pages/admin/ReferralsSection'
 
 const SUPABASE_ENV = (import.meta.env.VITE_SUPABASE_ENV as string) || 'production'
 const isBeta = SUPABASE_ENV === 'beta'
@@ -99,6 +103,8 @@ type Section =
   | 'feed'
   | 'payments'
   | 'bundles'
+  | 'brokerages'
+  | 'referrals'
   | 'errors'
   | 'bob-monitor'
   | 'prospects'
@@ -123,6 +129,8 @@ const NAV_GROUPS: { label: string; items: { id: Section; label: string; icon: Re
       { id: 'feed',        label: 'Feed Moderation',     icon: <MessageSquare size={16} /> },
       { id: 'payments',    label: 'Stripe & Payments',   icon: <CreditCard size={16} /> },
       { id: 'bundles',     label: 'Credit Bundles',      icon: <Package size={16} /> },
+      { id: 'brokerages',  label: 'Brokerages',          icon: <Building2 size={16} /> },
+      { id: 'referrals',   label: 'Referral Stats',      icon: <GitBranch size={16} /> },
       { id: 'errors',      label: 'Error Log',           icon: <AlertTriangle size={16} /> },
     ],
   },
@@ -370,6 +378,8 @@ export default function AdminPanel({ session }: Props) {
             {section === 'feed'             && <FeedSection authHeaders={authHeaders} />}
             {section === 'payments'         && <PaymentsSection authHeaders={authHeaders} />}
             {section === 'bundles'          && <BundlesSection authHeaders={authHeaders} />}
+            {section === 'brokerages'       && <BrokeragesSection authHeaders={authHeaders} />}
+            {section === 'referrals'        && <ReferralsSection authHeaders={authHeaders} />}
             {section === 'errors'           && <ErrorLogSection authHeaders={authHeaders} />}
             {section === 'bob-monitor'      && <BobMonitorSection authHeaders={authHeaders} />}
             {section === 'prospects'        && <ProspectsSection authHeaders={authHeaders} />}

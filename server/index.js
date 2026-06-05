@@ -25,6 +25,8 @@ import missedLeadsRoutes from './routes/missed-leads.js'
 import agentRoutes from './routes/agent.js'
 import creditsRoutes from './routes/credits.js'
 import adminBundlesRoutes from './routes/admin-bundles.js'
+import adminBrokeragesRoutes from './routes/admin-brokerages.js'
+import adminReferralsRoutes from './routes/admin-referrals.js'
 import { logError, loadLogFromDisk } from './lib/errorLog.js'
 
 const app = express()
@@ -81,6 +83,8 @@ app.use(missedLeadsRoutes)
 app.use(agentRoutes)
 app.use(creditsRoutes)
 app.use(adminBundlesRoutes)
+app.use(adminBrokeragesRoutes)
+app.use(adminReferralsRoutes)
 
 if (process.env.NODE_ENV === 'production') {
   const path = await import('path')
