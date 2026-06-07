@@ -18,6 +18,10 @@ import {
   Bot,
   Bug,
   FileSpreadsheet,
+  HardHat,
+  Package,
+  Building2,
+  GitBranch,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { isSuperAdmin } from '../lib/roles'
@@ -38,14 +42,22 @@ import AiCommandSection from './admin/AiCommandSection'
 import BobMonitorSection from './admin/BobMonitorSection'
 import SecurityScanSection from './admin/SecurityScanSection'
 import ProspectsSection from './admin/ProspectsSection'
+import ContractorsSection from './admin/ContractorsSection'
+import BundlesSection from './admin/BundlesSection'
+import BrokeragesSection from './admin/BrokeragesSection'
+import ReferralsSection from './admin/ReferralsSection'
 
 type Section =
   | 'overview'
   | 'users'
   | 'wallets'
+  | 'contractors'
   | 'feed'
   | 'controls'
   | 'payments'
+  | 'bundles'
+  | 'brokerages'
+  | 'referrals'
   | 'domains'
   | 'secrets'
   | 'errors'
@@ -67,8 +79,12 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { id: 'overview', label: 'Analytics Overview', icon: <BarChart2 size={16} /> },
       { id: 'users', label: 'User Management', icon: <Users size={16} /> },
       { id: 'wallets', label: 'Wallet & Credits', icon: <Wallet size={16} /> },
+      { id: 'contractors', label: 'Contractors', icon: <HardHat size={16} /> },
       { id: 'feed', label: 'Feed Moderation', icon: <MessageSquare size={16} /> },
       { id: 'payments', label: 'Stripe & Payments', icon: <CreditCard size={16} /> },
+      { id: 'bundles', label: 'Credit Bundles', icon: <Package size={16} /> },
+      { id: 'brokerages', label: 'Brokerages', icon: <Building2 size={16} /> },
+      { id: 'referrals', label: 'Referral Stats', icon: <GitBranch size={16} /> },
       { id: 'errors', label: 'Error Log', icon: <AlertTriangle size={16} />, superOnly: true },
     ],
   },
@@ -77,7 +93,7 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
     items: [
       { id: 'bob', label: 'Bob Monitor', icon: <Bot size={16} /> },
       { id: 'prospects', label: 'Outreach Prospects', icon: <FileSpreadsheet size={16} /> },
-      { id: 'ai', label: 'AI Command Bar', icon: <Terminal size={16} />, superOnly: true },
+      { id: 'ai', label: 'AI Command Bar', icon: <Terminal size={16} /> },
     ],
   },
   {
@@ -230,23 +246,27 @@ export default function Admin() {
           </p>
         </div>
 
-        {section === 'overview' && <OverviewSection authHeaders={authHeaders} />}
-        {section === 'users' && <UsersSection authHeaders={authHeaders} />}
-        {section === 'wallets' && <WalletsSection authHeaders={authHeaders} />}
-        {section === 'feed' && <FeedSection authHeaders={authHeaders} />}
-        {section === 'controls' && <ControlsSection authHeaders={authHeaders} />}
-        {section === 'payments' && <PaymentsSection authHeaders={authHeaders} />}
-        {section === 'domains' && <DomainsSection authHeaders={authHeaders} />}
-        {section === 'secrets' && <SecretsSection authHeaders={authHeaders} />}
-        {section === 'errors' && <ErrorLogSection authHeaders={authHeaders} />}
-        {section === 'threats' && <ThreatMonitorSection authHeaders={authHeaders} />}
-        {section === 'moderation' && <ModerationQueueSection authHeaders={authHeaders} />}
-        {section === 'audit' && <AuditLogSection authHeaders={authHeaders} />}
-        {section === 'revoke' && <SessionRevokeSection authHeaders={authHeaders} />}
-        {section === 'ai' && <AiCommandSection authHeaders={authHeaders} />}
-        {section === 'bob' && <BobMonitorSection authHeaders={authHeaders} />}
-        {section === 'prospects' && <ProspectsSection authHeaders={authHeaders} />}
-        {section === 'code-scan' && <SecurityScanSection authHeaders={authHeaders} />}
+        {section === 'overview'     && <OverviewSection authHeaders={authHeaders} />}
+        {section === 'users'        && <UsersSection authHeaders={authHeaders} />}
+        {section === 'wallets'      && <WalletsSection authHeaders={authHeaders} />}
+        {section === 'contractors'  && <ContractorsSection authHeaders={authHeaders} />}
+        {section === 'feed'         && <FeedSection authHeaders={authHeaders} />}
+        {section === 'controls'     && <ControlsSection authHeaders={authHeaders} />}
+        {section === 'payments'     && <PaymentsSection authHeaders={authHeaders} />}
+        {section === 'bundles'      && <BundlesSection authHeaders={authHeaders} />}
+        {section === 'brokerages'   && <BrokeragesSection authHeaders={authHeaders} />}
+        {section === 'referrals'    && <ReferralsSection authHeaders={authHeaders} />}
+        {section === 'domains'      && <DomainsSection authHeaders={authHeaders} />}
+        {section === 'secrets'      && <SecretsSection authHeaders={authHeaders} />}
+        {section === 'errors'       && <ErrorLogSection authHeaders={authHeaders} />}
+        {section === 'threats'      && <ThreatMonitorSection authHeaders={authHeaders} />}
+        {section === 'moderation'   && <ModerationQueueSection authHeaders={authHeaders} />}
+        {section === 'audit'        && <AuditLogSection authHeaders={authHeaders} />}
+        {section === 'revoke'       && <SessionRevokeSection authHeaders={authHeaders} />}
+        {section === 'ai'           && <AiCommandSection authHeaders={authHeaders} />}
+        {section === 'bob'          && <BobMonitorSection authHeaders={authHeaders} />}
+        {section === 'prospects'    && <ProspectsSection authHeaders={authHeaders} />}
+        {section === 'code-scan'    && <SecurityScanSection authHeaders={authHeaders} />}
       </main>
     </div>
   )
