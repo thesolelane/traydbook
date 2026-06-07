@@ -10,6 +10,7 @@ import adminModerationRoutes from './routes/admin-moderation.js'
 import adminRepairRoutes from './routes/admin-repair.js'
 import adminRevokeRoutes from './routes/admin-revoke.js'
 import adminAiRoutes from './routes/admin-ai-command.js'
+import adminBobRoutes from './routes/admin-bob.js'
 import smsRoutes, { sendSmsAlert } from './routes/sms.js'
 import walletRoutes from './routes/wallet.js'
 import walletEmailRoutes from './routes/wallet-email.js'
@@ -68,6 +69,7 @@ app.use('/api/admin/moderation', adminModerationRoutes)
 app.use('/api/admin/repair', adminRepairRoutes)
 app.use('/api/admin/revoke', adminRevokeRoutes)
 app.use('/api/admin/ai', adminAiRoutes)
+app.use('/api/admin/bob', adminBobRoutes)
 app.use(simRoutes)
 app.use(smsRoutes)
 app.use(walletRoutes)
