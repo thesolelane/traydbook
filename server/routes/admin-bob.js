@@ -129,6 +129,44 @@ router.post('/command', requireAuth, requireAdminLevel, async (req, res) => {
   res.json({ ok: true, command })
 })
 
+// POST /api/admin/bob/chat — proxy to Bob's chat endpoint (keeps token server-side)
+// Body: { messages: [{ role, content }] }
+// Response: { reply, provider, model, sources }
+router.post('/chat', requireAuth, requireAdminLevel, async (req, res) => {
+  const { messages } = req.body ?? {}
+  if (!Array.isArray(messages) || messages.length === 0) {
+    return res.status(400).json({ error: 'messages array is required' })
+  }
+
+  const bobUrl = process.env.BOB_URL || process.env.BOB_AGENT_ENDPOINT
+  if (!bobUrl) return res.status(503).json({ error: 'BOB_URL not configured' })
+
+  const token = process.env.BOB_ADMIN_KEY || process.env.ADMIN_TO_BOB_TOKEN
+  if (!token) return res.status(503).json({ error: 'BOB_ADMIN_KEY not configured' })
+
+  try {
+    const r = await fetch(`${bobUrl.replace(/\/$/, '')}/bob/chat/message`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ messages }),
+      signal: AbortSignal.timeout(60_000),
+    })
+
+    const data = await r.json().catch(() => ({ error: 'Invalid JSON from Bob' }))
+    if (!r.ok) {
+      return res.status(r.status).json({ error: data?.error ?? `Bob returned ${r.status}` })
+    }
+    res.json(data)
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Failed to reach Bob'
+    console.error('[admin-bob/chat]', msg)
+    res.status(502).json({ error: msg })
+  }
+})
+
 // POST /api/admin/bob/suggestion/:id/approve
 router.post('/suggestion/:id/approve', requireAuth, requireAdminLevel, async (req, res) => {
   const { id } = req.params
