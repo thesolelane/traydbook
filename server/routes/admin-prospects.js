@@ -162,4 +162,164 @@ router.delete('/batch/:batchId', requireAuth, requireAdminLevel, async (req, res
   res.json({ deleted: count, batch_id: batchId })
 })
 
+// ── Template CRUD ────────────────────────────────────────────────────────────
+
+// GET /api/admin/prospects/templates
+router.get('/templates', requireAuth, requireAnyStaff, async (req, res) => {
+  const { data, error } = await supabaseAdmin
+    .from('outreach_templates')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (error) return res.status(500).json({ error: error.message })
+  res.json(data || [])
+})
+
+// POST /api/admin/prospects/templates
+router.post('/templates', requireAuth, requireAdminLevel, async (req, res) => {
+  const { name, prospect_type, subject, body_text, status } = req.body
+  if (!name || !subject || !body_text) {
+    return res.status(400).json({ error: 'name, subject, and body_text are required' })
+  }
+  const { data, error } = await supabaseAdmin
+    .from('outreach_templates')
+    .insert({
+      name,
+      prospect_type: prospect_type || 'contractor',
+      subject,
+      body_text,
+      status: status || 'draft',
+      created_by: req.user?.id || null,
+    })
+    .select()
+    .single()
+  if (error) return res.status(500).json({ error: error.message })
+  res.status(201).json(data)
+})
+
+// PATCH /api/admin/prospects/templates/:id
+router.patch('/templates/:id', requireAuth, requireAdminLevel, async (req, res) => {
+  const { id } = req.params
+  const allowed = ['name', 'prospect_type', 'subject', 'body_text', 'status']
+  const updates = {}
+  for (const k of allowed) {
+    if (req.body[k] !== undefined) updates[k] = req.body[k]
+  }
+  updates.updated_at = new Date().toISOString()
+
+  const { data, error } = await supabaseAdmin
+    .from('outreach_templates')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) return res.status(500).json({ error: error.message })
+  res.json(data)
+})
+
+// DELETE /api/admin/prospects/templates/:id
+router.delete('/templates/:id', requireAuth, requireAdminLevel, async (req, res) => {
+  const { id } = req.params
+  const { error } = await supabaseAdmin
+    .from('outreach_templates')
+    .delete()
+    .eq('id', id)
+  if (error) return res.status(500).json({ error: error.message })
+  res.json({ deleted: id })
+})
+
+// ── Bob work-queue ───────────────────────────────────────────────────────────
+
+// GET /api/admin/prospects/work-queue
+// Returns up to `limit` prospects (enriched or pending-with-email) paired with
+// the matching approved template so Bob can fill merge tags and send.
+router.get('/work-queue', requireAuth, requireAnyStaff, async (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit) || 25, 100)
+
+  const [prospectsResult, templatesResult] = await Promise.all([
+    supabaseAdmin
+      .from('outreach_prospects')
+      .select('*')
+      .in('status', ['pending', 'enriched'])
+      .not('email_found', 'is', null)
+      .order('created_at', { ascending: true })
+      .limit(limit),
+    supabaseAdmin
+      .from('outreach_templates')
+      .select('*')
+      .eq('status', 'approved'),
+  ])
+
+  if (prospectsResult.error) return res.status(500).json({ error: prospectsResult.error.message })
+  if (templatesResult.error) return res.status(500).json({ error: templatesResult.error.message })
+
+  const templates = templatesResult.data || []
+  const templateByType = {}
+  for (const t of templates) {
+    if (!templateByType[t.prospect_type]) templateByType[t.prospect_type] = t
+  }
+
+  const items = (prospectsResult.data || [])
+    .map(p => {
+      const template = templateByType[p.prospect_type] || templateByType['other'] || null
+      return { prospect: p, template }
+    })
+    .filter(item => item.template !== null)
+
+  res.json({ items, total: items.length })
+})
+
+// ── Send log ─────────────────────────────────────────────────────────────────
+
+// POST /api/admin/prospects/send-log — Bob logs a completed send
+router.post('/send-log', requireAuth, requireAnyStaff, async (req, res) => {
+  const { prospect_id, template_id, rendered_subject, rendered_body, delivery_status, bob_job_id, notes } = req.body
+  if (!prospect_id) return res.status(400).json({ error: 'prospect_id is required' })
+
+  const { data, error } = await supabaseAdmin
+    .from('outreach_send_log')
+    .insert({
+      prospect_id,
+      template_id: template_id || null,
+      rendered_subject,
+      rendered_body,
+      delivery_status: delivery_status || 'sent',
+      bob_job_id: bob_job_id || null,
+      notes: notes || null,
+    })
+    .select()
+    .single()
+
+  if (error) return res.status(500).json({ error: error.message })
+
+  // Mark the prospect as sent
+  await supabaseAdmin
+    .from('outreach_prospects')
+    .update({ status: 'sent', sent_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+    .eq('id', prospect_id)
+
+  res.status(201).json(data)
+})
+
+// GET /api/admin/prospects/send-log — admin views send history
+router.get('/send-log', requireAuth, requireAnyStaff, async (req, res) => {
+  const { prospect_id, template_id, limit = 50, offset = 0 } = req.query
+
+  let q = supabaseAdmin
+    .from('outreach_send_log')
+    .select(`
+      *,
+      outreach_prospects ( first_name, last_name, business_name, email_found, prospect_type ),
+      outreach_templates ( name, prospect_type )
+    `, { count: 'exact' })
+    .order('sent_at', { ascending: false })
+    .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1)
+
+  if (prospect_id) q = q.eq('prospect_id', prospect_id)
+  if (template_id) q = q.eq('template_id', template_id)
+
+  const { data, error, count } = await q
+  if (error) return res.status(500).json({ error: error.message })
+  res.json({ logs: data || [], total: count || 0 })
+})
+
 export default router
