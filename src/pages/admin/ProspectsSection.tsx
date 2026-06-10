@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Upload, RefreshCw, Mail, CheckCircle, XCircle, Clock, SkipForward, Plus, Eye, Trash2, ChevronDown, ChevronRight } from 'lucide-react'
+import { Upload, RefreshCw, Mail, CheckCircle, XCircle, Clock, SkipForward, Plus, Eye, Pause, Play, Trash2, ChevronDown, ChevronRight } from 'lucide-react'
 import { SectionProps } from './shared'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -837,20 +837,61 @@ function TemplateEditor({ initial, onSave, onClose, authHeaders }: TemplateEdito
 
 // ─── Templates tab ────────────────────────────────────────────────────────────
 
+const AUDIENCE_GROUPS = [
+  { type: 'contractor',        label: '🔨 Contractor' },
+  { type: 'homeowner',         label: '🏡 Homeowner' },
+  { type: 'real_estate_agent', label: '🏠 Real Estate Agent' },
+  { type: 'investor_flipper',  label: '💼 Investor — Flipper' },
+  { type: 'investor_buy_hold', label: '🏘 Investor — Buy & Hold' },
+  { type: 'other',             label: '⋯ Other' },
+]
+
+function MasterToggle({ on, toggling, onToggle }: { on: boolean; toggling: boolean; onToggle: () => void }) {
+  return (
+    <button
+      onClick={onToggle}
+      disabled={toggling}
+      title={on ? 'All approved — click to pause entire audience' : 'Click to approve all templates in this audience'}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        background: 'none', border: 'none', cursor: toggling ? 'wait' : 'pointer', padding: 0,
+      }}
+    >
+      <span style={{ fontSize: 11, fontWeight: 600, color: on ? '#52c97a' : 'var(--color-text-muted)', opacity: toggling ? 0.5 : 1 }}>
+        {on ? 'ALL ON' : 'ALL OFF'}
+      </span>
+      <span style={{
+        display: 'inline-flex', alignItems: 'center',
+        width: 40, height: 22, borderRadius: 11,
+        background: on ? '#52c97a' : 'var(--color-border)',
+        transition: 'background 0.2s',
+        padding: '0 3px',
+        opacity: toggling ? 0.5 : 1,
+      }}>
+        <span style={{
+          display: 'block', width: 16, height: 16, borderRadius: '50%',
+          background: '#fff',
+          transform: on ? 'translateX(18px)' : 'translateX(0)',
+          transition: 'transform 0.2s',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+        }} />
+      </span>
+    </button>
+  )
+}
+
 function TemplatesTab({ authHeaders }: SectionProps) {
-  const [templates, setTemplates] = useState<Template[]>([])
-  const [loading, setLoading]     = useState(true)
-  const [err, setErr]             = useState('')
-  const [editing, setEditing]     = useState<Partial<Template> | null | false>(false)
-  const [typeFilter, setTypeFilter] = useState('')
+  const [templates, setTemplates]   = useState<Template[]>([])
+  const [loading, setLoading]       = useState(true)
+  const [err, setErr]               = useState('')
+  const [editing, setEditing]       = useState<Partial<Template> | null | false>(false)
+  const [toggling, setToggling]     = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
     setErr('')
     try {
-      const params = new URLSearchParams()
-      if (typeFilter) params.set('prospect_type', typeFilter)
-      const res = await fetch(`/api/admin/outreach/templates?${params}`, { headers: authHeaders() })
+      const res = await fetch('/api/admin/outreach/templates', { headers: authHeaders() })
       if (!res.ok) throw new Error('Failed to load templates')
       const data = await res.json()
       setTemplates(data.templates || [])
@@ -859,27 +900,48 @@ function TemplatesTab({ authHeaders }: SectionProps) {
     } finally {
       setLoading(false)
     }
-  }, [typeFilter])
+  }, [])
 
   useEffect(() => { void load() }, [load])
 
   async function updateStatus(id: string, status: 'draft' | 'approved' | 'paused') {
-    const res = await fetch(`/api/admin/outreach/templates/${id}`, {
+    await fetch(`/api/admin/outreach/templates/${id}`, {
       method: 'PATCH',
       headers: { ...authHeaders(), 'Content-Type': 'application/json' },
       body: JSON.stringify({ status }),
     })
-    if (res.ok) await load()
+    await load()
+  }
+
+  async function masterToggle(type: string, groupTemplates: Template[]) {
+    const allApproved = groupTemplates.every(t => t.status === 'approved')
+    const newStatus = allApproved ? 'paused' : 'approved'
+    setToggling(type)
+    try {
+      await Promise.all(
+        groupTemplates.map(t =>
+          fetch(`/api/admin/outreach/templates/${t.id}`, {
+            method: 'PATCH',
+            headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus }),
+          })
+        )
+      )
+      await load()
+    } finally {
+      setToggling(null)
+    }
   }
 
   async function deleteTemplate(id: string) {
     if (!confirm('Delete this template? This cannot be undone.')) return
-    const res = await fetch(`/api/admin/outreach/templates/${id}`, {
-      method: 'DELETE',
-      headers: authHeaders(),
-    })
-    if (res.ok) await load()
+    await fetch(`/api/admin/outreach/templates/${id}`, { method: 'DELETE', headers: authHeaders() })
+    await load()
   }
+
+  const grouped = AUDIENCE_GROUPS
+    .map(g => ({ ...g, items: templates.filter(t => t.prospect_type === g.type) }))
+    .filter(g => g.items.length > 0)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -894,29 +956,6 @@ function TemplatesTab({ authHeaders }: SectionProps) {
         >
           <Plus size={14} /> New Template
         </button>
-        <div style={{ display: 'flex', gap: 6, marginLeft: 8, flexWrap: 'wrap' }}>
-          {[
-            { value: '',                   label: 'All' },
-            { value: 'contractor',         label: '🔨 Contractor' },
-            { value: 'homeowner',          label: '🏡 Homeowner' },
-            { value: 'real_estate_agent',  label: '🏠 RE Agent' },
-            { value: 'investor_flipper',   label: '💼 Flipper' },
-            { value: 'investor_buy_hold',  label: '🏘 Buy & Hold' },
-          ].map(({ value, label }) => (
-            <button
-              key={value}
-              onClick={() => setTypeFilter(value)}
-              style={{
-                padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600,
-                border: typeFilter === value ? '1px solid var(--color-brand)' : '1px solid var(--color-border)',
-                background: typeFilter === value ? 'rgba(226,114,42,0.1)' : 'var(--color-surface)',
-                color: typeFilter === value ? 'var(--color-brand)' : 'var(--color-text-muted)', cursor: 'pointer',
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
         <button
           onClick={load}
           style={{
@@ -930,7 +969,7 @@ function TemplatesTab({ authHeaders }: SectionProps) {
       </div>
 
       <div style={{ fontSize: 12, color: 'var(--color-text-muted)', padding: '8px 12px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8 }}>
-        <strong style={{ color: 'var(--color-text)' }}>How it works:</strong> Bob picks the latest <span style={{ color: '#52c97a' }}>approved</span> template matching a prospect's type, fills the merge tags, sends the email autonomously, and logs it to the Send Log — no per-email review needed. <span style={{ color: '#e0b852' }}>Draft</span> templates are ignored. Set to <span style={{ color: '#888' }}>paused</span> to kill-switch a template.
+        <strong style={{ color: 'var(--color-text)' }}>How it works:</strong> Bob picks the latest <span style={{ color: '#52c97a' }}>approved</span> template matching a prospect's type, fills the merge tags, sends the email autonomously, and logs it to the Send Log — no per-email review needed. <span style={{ color: '#e0b852' }}>Draft</span> templates are ignored. Set to <span style={{ color: '#888' }}>paused</span> to kill-switch a template. Use the audience master toggle to turn an entire sequence on or off at once.
       </div>
 
       {err && (
@@ -939,106 +978,136 @@ function TemplatesTab({ authHeaders }: SectionProps) {
 
       {loading ? (
         <div style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>Loading templates...</div>
-      ) : templates.length === 0 ? (
+      ) : grouped.length === 0 ? (
         <div style={{ color: 'var(--color-text-muted)', fontSize: 13, textAlign: 'center', padding: 40 }}>
           No templates yet. Create one to get started.
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {templates.map(t => (
-            <div key={t.id} style={{
-              background: 'var(--color-surface)',
-              border: `1px solid ${t.status === 'approved' ? '#52c97a44' : 'var(--color-border)'}`,
-              borderRadius: 10,
-              padding: '16px 20px',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                <span style={{
-                  padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700,
-                  background: (TMPL_STATUS_COLOR[t.status] || '#888') + '22',
-                  color: TMPL_STATUS_COLOR[t.status] || '#888',
-                  textTransform: 'uppercase',
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          {grouped.map(({ type, label, items }) => {
+            const allApproved = items.every(t => t.status === 'approved')
+            const anyApproved = items.some(t => t.status === 'approved')
+            return (
+              <div key={type}>
+                {/* Audience header + master toggle */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '10px 14px',
+                  background: allApproved ? '#1a3a2518' : anyApproved ? '#2a2a1a18' : 'var(--color-surface)',
+                  border: `1px solid ${allApproved ? '#52c97a44' : 'var(--color-border)'}`,
+                  borderRadius: 8,
+                  marginBottom: 8,
                 }}>
-                  {t.status}
-                </span>
-                <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--color-text)' }}>{t.name}</span>
-                <span style={{ fontSize: 11, color: '#7c70e8' }}>
-                  {({
-                    contractor:        '🔨 Contractor',
-                    homeowner:         '🏡 Homeowner',
-                    real_estate_agent: '🏠 RE Agent',
-                    investor_flipper:  '💼 Flipper',
-                    investor_buy_hold: '🏘 Buy & Hold',
-                  } as Record<string, string>)[t.prospect_type] ?? t.prospect_type}
-                  {t.touch_number ? ` · Touch ${t.touch_number}` : ''}
-                </span>
-                <span style={{ fontSize: 11, color: 'var(--color-text-muted)', marginLeft: 'auto' }}>
-                  Updated {new Date(t.updated_at).toLocaleDateString()}
-                </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text)' }}>{label}</span>
+                    <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
+                      {items.filter(t => t.status === 'approved').length}/{items.length} active
+                    </span>
+                  </div>
+                  <MasterToggle
+                    on={allApproved}
+                    toggling={toggling === type}
+                    onToggle={() => masterToggle(type, items)}
+                  />
+                </div>
+
+                {/* Individual template cards */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingLeft: 12, borderLeft: `2px solid ${allApproved ? '#52c97a44' : 'var(--color-border)'}` }}>
+                  {items
+                    .sort((a, b) => (a.touch_number ?? 99) - (b.touch_number ?? 99))
+                    .map(t => (
+                    <div key={t.id} style={{
+                      background: 'var(--color-surface)',
+                      border: `1px solid ${t.status === 'approved' ? '#52c97a33' : 'var(--color-border)'}`,
+                      borderRadius: 8,
+                      padding: '14px 16px',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                        <span style={{
+                          padding: '2px 7px', borderRadius: 4, fontSize: 10, fontWeight: 700,
+                          background: (TMPL_STATUS_COLOR[t.status] || '#888') + '22',
+                          color: TMPL_STATUS_COLOR[t.status] || '#888',
+                          textTransform: 'uppercase', letterSpacing: '0.4px',
+                        }}>
+                          {t.status}
+                        </span>
+                        {t.touch_number && (
+                          <span style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: 600 }}>
+                            Touch {t.touch_number}
+                          </span>
+                        )}
+                        <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--color-text)' }}>{t.name}</span>
+                        <span style={{ fontSize: 11, color: 'var(--color-text-muted)', marginLeft: 'auto' }}>
+                          {new Date(t.updated_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 5 }}>
+                        <strong>Subject:</strong> {t.subject}
+                      </div>
+                      <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
+                        <button
+                          onClick={() => setEditing(t)}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 4,
+                            padding: '4px 10px', borderRadius: 5, border: '1px solid var(--color-border)',
+                            background: 'none', color: 'var(--color-text-muted)', fontSize: 12, cursor: 'pointer',
+                          }}
+                        >
+                          <Eye size={11} /> Edit / Preview
+                        </button>
+                        {t.status !== 'approved' && (
+                          <button
+                            onClick={() => updateStatus(t.id, 'approved')}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 4,
+                              padding: '4px 10px', borderRadius: 5, border: '1px solid #52c97a44',
+                              background: '#1a3a2522', color: '#52c97a', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                            }}
+                          >
+                            <Play size={11} /> Approve
+                          </button>
+                        )}
+                        {t.status === 'approved' && (
+                          <button
+                            onClick={() => updateStatus(t.id, 'paused')}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 4,
+                              padding: '4px 10px', borderRadius: 5, border: '1px solid #88888844',
+                              background: 'none', color: '#888', fontSize: 12, cursor: 'pointer',
+                            }}
+                          >
+                            <Pause size={11} /> Pause
+                          </button>
+                        )}
+                        {t.status === 'paused' && (
+                          <button
+                            onClick={() => updateStatus(t.id, 'draft')}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 4,
+                              padding: '4px 10px', borderRadius: 5, border: '1px solid #e0b85244',
+                              background: 'none', color: '#e0b852', fontSize: 12, cursor: 'pointer',
+                            }}
+                          >
+                            Back to Draft
+                          </button>
+                        )}
+                        <button
+                          onClick={() => deleteTemplate(t.id)}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 4, marginLeft: 'auto',
+                            padding: '4px 10px', borderRadius: 5, border: '1px solid #e0525222',
+                            background: 'none', color: '#e05252', fontSize: 12, cursor: 'pointer',
+                          }}
+                        >
+                          <Trash2 size={11} /> Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 6 }}>
-                <strong>Subject:</strong> {t.subject}
-              </div>
-              <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-                <button
-                  onClick={() => setEditing(t)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 4,
-                    padding: '5px 12px', borderRadius: 6, border: '1px solid var(--color-border)',
-                    background: 'none', color: 'var(--color-text-muted)', fontSize: 12, cursor: 'pointer',
-                  }}
-                >
-                  <Eye size={12} /> Edit / Preview
-                </button>
-                {t.status !== 'approved' && (
-                  <button
-                    onClick={() => updateStatus(t.id, 'approved')}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 4,
-                      padding: '5px 12px', borderRadius: 6, border: '1px solid #52c97a44',
-                      background: '#1a3a2522', color: '#52c97a', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                    }}
-                  >
-                    <Play size={12} /> Approve
-                  </button>
-                )}
-                {t.status === 'approved' && (
-                  <button
-                    onClick={() => updateStatus(t.id, 'paused')}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 4,
-                      padding: '5px 12px', borderRadius: 6, border: '1px solid #88888844',
-                      background: 'none', color: '#888', fontSize: 12, cursor: 'pointer',
-                    }}
-                  >
-                    <Pause size={12} /> Pause
-                  </button>
-                )}
-                {t.status === 'paused' && (
-                  <button
-                    onClick={() => updateStatus(t.id, 'draft')}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 4,
-                      padding: '5px 12px', borderRadius: 6, border: '1px solid #e0b85244',
-                      background: 'none', color: '#e0b852', fontSize: 12, cursor: 'pointer',
-                    }}
-                  >
-                    Back to Draft
-                  </button>
-                )}
-                <button
-                  onClick={() => deleteTemplate(t.id)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 4, marginLeft: 'auto',
-                    padding: '5px 12px', borderRadius: 6, border: '1px solid #e0525222',
-                    background: 'none', color: '#e05252', fontSize: 12, cursor: 'pointer',
-                  }}
-                >
-                  <Trash2 size={12} /> Delete
-                </button>
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
