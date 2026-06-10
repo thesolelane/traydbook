@@ -250,20 +250,20 @@ export default function WalletTab() {
             >
               You can import your TraydBook wallet into{' '}
               <strong style={{ color: 'var(--color-text)' }}>Phantom</strong> or{' '}
-              <strong style={{ color: 'var(--color-text)' }}>Solflare</strong> using the private key
-              JSON array you saved during setup.
+              <strong style={{ color: 'var(--color-text)' }}>Solflare</strong> using the 12-word
+              seed phrase you saved during setup.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {[
                 {
                   app: 'Phantom',
                   steps:
-                    'Open Phantom → Add / Connect Wallet → Import Private Key → paste the JSON array',
+                    'Open Phantom → Add / Connect Wallet → Import Secret Recovery Phrase → enter your 12 words',
                 },
                 {
                   app: 'Solflare',
                   steps:
-                    'Open Solflare → Access Existing Wallet → Private Key → paste the JSON array',
+                    'Open Solflare → Access Existing Wallet → Mnemonic Phrase → enter your 12 words',
                 },
               ].map(({ app, steps }) => (
                 <div
