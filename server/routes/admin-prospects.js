@@ -164,10 +164,17 @@ router.get('/work-queue', requireServiceKeyOrStaff(['outreach:read']), async (re
 
   const sentProspectIds = (sentLogResult.data || []).map(r => r.prospect_id)
 
+  // Explicitly exclude bounced and skipped prospects in addition to the
+  // enriched-only filter. The enriched filter is the primary gate, but the
+  // NOT IN guard below is intentional: it makes the exclusion ironclad against
+  // race conditions where a prospect is fetched, sent to, then bounces before
+  // the status flip lands — and guards against re-imported duplicates being
+  // served again if a record is ever reset to a sendable status.
   let prospectsQuery = supabaseAdmin
     .from('outreach_prospects')
     .select('id, prospect_type, first_name, last_name, business_name, city, state, license_number, type_class, general_type, email_found')
     .eq('status', 'enriched')
+    .not('status', 'in', '("bounced","skipped")')
     .not('email_found', 'is', null)
     .order('created_at', { ascending: true })
     .limit(parseInt(limit))
