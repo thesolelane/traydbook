@@ -13,7 +13,6 @@ import adminAiRoutes from './routes/admin-ai-command.js'
 import adminBobRoutes from './routes/admin-bob.js'
 import smsRoutes, { sendSmsAlert } from './routes/sms.js'
 import walletRoutes from './routes/wallet.js'
-import walletEmailRoutes from './routes/wallet-email.js'
 import onboardingRoutes from './routes/onboarding.js'
 import uploadRoutes from './routes/upload.js'
 import postRoutes from './routes/posts.js'
@@ -73,7 +72,6 @@ app.use('/api/admin/bob', adminBobRoutes)
 app.use(simRoutes)
 app.use(smsRoutes)
 app.use(walletRoutes)
-app.use(walletEmailRoutes)
 app.use(onboardingRoutes)
 app.use('/api/upload', uploadRoutes)
 app.use('/api/posts', postRoutes)

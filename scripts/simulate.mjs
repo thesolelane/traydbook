@@ -23,11 +23,6 @@ const AK         = process.env.SIM_SB_ANON_KEY    || ''
 const SK         = process.env.SIM_SB_SERVICE_KEY || ''
 const APP        = process.env.SIM_APP_URL        || 'https://dev.traydbook.com'
 const CLEANUP    = ['1', 'true'].includes((process.env.SIM_CLEANUP || '').toLowerCase())
-// SIM_EMAIL: real inbox for wallet key emails (e.g. you@traydbook.com)
-// Contractor sim users get addresses like: you+sim_contractor_1_TS@traydbook.com
-// All wallet key emails land in this one inbox. Optional — skips email step if not set.
-const SIM_EMAIL  = process.env.SIM_EMAIL || ''
-const SIM_WALLET_PASSWORD = 'TraydSimWallet2026!'
 // SIM_NO_AUTO_CONFIRM=1 — skip admin email auto-confirm.
 // Use this when the sim has real email accounts and handles confirmation itself.
 // Default: auto-confirm ON (sim script confirms via admin API so no inbox click is needed)
@@ -38,23 +33,6 @@ if (!SB || !AK || !SK) {
   process.exit(1)
 }
 
-// Encrypt privkey JSON using AES-256-GCM + PBKDF2 — same as browser flow
-async function encryptPrivateKey(privkeyJson, password) {
-  const enc      = new TextEncoder()
-  const salt     = globalThis.crypto.getRandomValues(new Uint8Array(16))
-  const iv       = globalThis.crypto.getRandomValues(new Uint8Array(12))
-  const keyMat   = await globalThis.crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey'])
-  const derived  = await globalThis.crypto.subtle.deriveKey(
-    { name: 'PBKDF2', salt, iterations: 600000, hash: 'SHA-256' },
-    keyMat,
-    { name: 'AES-GCM', length: 256 },
-    false,
-    ['encrypt']
-  )
-  const encrypted = await globalThis.crypto.subtle.encrypt({ name: 'AES-GCM', iv }, derived, enc.encode(privkeyJson))
-  const toB64 = (buf) => Buffer.from(buf).toString('base64')
-  return { encryptedKey: toB64(encrypted), iv: toB64(iv), salt: toB64(salt) }
-}
 
 const TS = Date.now()
 const PW = 'TraydSim2026!'
@@ -169,12 +147,7 @@ for (const [m, p, b] of [
 //    Then auto-confirm via admin API so the sim can proceed without clicking an email link.
 sep('Signup (real flow)')
 for (const u of USERS) {
-  if (SIM_EMAIL && u.type === 'contractor') {
-    const [local, domain] = SIM_EMAIL.split('@')
-    u.email = `${local}+sim_${u.type}_${u.i}_${TS}@${domain}`
-  } else {
-    u.email = `sim_${u.type}_${u.i}_${TS}@traydbook-sim.test`
-  }
+  u.email = `sim_${u.type}_${u.i}_${TS}@traydbook-sim.test`
 
   // Step 1 — real signup (same as supabase.auth.signUp() in the browser)
   const signup = await req('POST', `${SB}/auth/v1/signup`, { email: u.email, password: PW })
@@ -231,8 +204,6 @@ for (const u of USERS) {
 //    Mirrors the real /wallet-setup page flow:
 //      a) generate keypair (browser does this automatically on page load)
 //      b) save pubkey via POST /api/wallet/save-pubkey
-//      c) optionally email encrypted key via POST /api/wallet/email-key
-//         (only when SIM_EMAIL is set — use SIM_WALLET_PASSWORD to decrypt)
 sep('Wallet Setup (contractors)')
 const contractors = USERS.filter(u => u.type === 'contractor')
 for (const u of contractors) {
@@ -248,18 +219,6 @@ for (const u of contractors) {
     ? ok(`Wallet #${u.i} ${u.name}`, pubkey.slice(0,12) + '...')
     : no(`Wallet #${u.i} ${u.name}`, r.b?.error || r.s)
 
-  // b) email encrypted key (only if SIM_EMAIL is set)
-  if (SIM_EMAIL && r.s === 200) {
-    try {
-      const { encryptedKey, iv, salt } = await encryptPrivateKey(privkeyJson, SIM_WALLET_PASSWORD)
-      const er = await req('POST', `${APP}/api/wallet/email-key`, { encryptedKey, iv, salt, pubkey }, u.token)
-      er.s === 200
-        ? ok(`Wallet email #${u.i} ${u.name}`, u.email)
-        : no(`Wallet email #${u.i} ${u.name}`, er.b?.error || er.s)
-    } catch (e) {
-      no(`Wallet email #${u.i} ${u.name}`, e.message)
-    }
-  }
 }
 
 // 7. Image upload (contractors)
@@ -443,10 +402,6 @@ sep('Cleanup')
 if (!CLEANUP) {
   console.log(`  ⏭  Skipped — set SIM_CLEANUP=1 to delete sim users after the run`)
   console.log(`  ℹ  ${USERS.filter(u => u.id).length} sim users are now visible in the admin panel`)
-  if (SIM_EMAIL) {
-    console.log(`  ✉  Wallet key emails sent to: ${SIM_EMAIL} (+ addressing per contractor)`)
-    console.log(`  🔑  Decrypt password: ${SIM_WALLET_PASSWORD}`)
-  }
 } else {
   for (const u of USERS) {
     if (!u.id) continue
