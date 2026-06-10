@@ -27,6 +27,8 @@ import creditsRoutes from './routes/credits.js'
 import adminBundlesRoutes from './routes/admin-bundles.js'
 import adminBrokeragesRoutes from './routes/admin-brokerages.js'
 import adminReferralsRoutes from './routes/admin-referrals.js'
+import prospectsRoutes from './routes/admin-prospects.js'
+import outreachTemplatesRoutes from './routes/admin-outreach-templates.js'
 import { logError, loadLogFromDisk } from './lib/errorLog.js'
 
 const app = express()
@@ -85,6 +87,8 @@ app.use(creditsRoutes)
 app.use(adminBundlesRoutes)
 app.use(adminBrokeragesRoutes)
 app.use(adminReferralsRoutes)
+app.use('/api/admin/prospects', prospectsRoutes)
+app.use('/api/admin/outreach', outreachTemplatesRoutes)
 
 if (process.env.NODE_ENV === 'production') {
   const path = await import('path')

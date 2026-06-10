@@ -1,3 +1,4 @@
+import { createHash } from 'crypto'
 import { supabaseAdmin, supabaseAnon } from './clients.js'
 
 export const STAFF_ROLES = ['admin', 'admin_2', 'hired_dev', 'moderator']
@@ -91,6 +92,74 @@ export async function isProtectedAdmin(userId) {
   if (!protectedEmail) return false
   const { data } = await supabaseAdmin.from('users').select('email').eq('id', userId).single()
   return data?.email?.toLowerCase() === protectedEmail.toLowerCase()
+}
+
+/**
+ * Middleware factory — validates X-Service-Key (Bob's machine-to-machine auth).
+ * Checks the key hash against service_api_keys and enforces required scopes.
+ * Usage: router.get('/route', await requireServiceKey(['outreach:read']), handler)
+ */
+export async function requireServiceKey(scopes = []) {
+  return async (req, res, next) => {
+    const raw = (req.headers['x-service-key'] || req.headers['x-api-key'] || '').trim()
+    if (!raw) return res.status(401).json({ error: 'Missing X-Service-Key header' })
+
+    const hash = createHash('sha256').update(raw).digest('hex')
+    const { data: key, error } = await supabaseAdmin
+      .from('service_api_keys')
+      .select('id, scopes, revoked_at, expires_at')
+      .eq('key_hash', hash)
+      .maybeSingle()
+
+    if (error || !key) return res.status(401).json({ error: 'Invalid service key' })
+    if (key.revoked_at) return res.status(401).json({ error: 'Service key revoked' })
+    if (key.expires_at && new Date(key.expires_at) < new Date()) {
+      return res.status(401).json({ error: 'Service key expired' })
+    }
+    for (const scope of scopes) {
+      if (!key.scopes.includes(scope) && !key.scopes.includes('*')) {
+        return res.status(403).json({ error: `Missing scope: ${scope}` })
+      }
+    }
+    supabaseAdmin
+      .from('service_api_keys')
+      .update({ last_used_at: new Date().toISOString() })
+      .eq('id', key.id)
+      .then(() => {})
+    req.serviceKey = key
+    next()
+  }
+}
+
+/**
+ * Combined middleware — accepts EITHER a valid service key OR a staff JWT.
+ * Use for endpoints Bob calls autonomously that admins also access via UI.
+ * scopes: required service key scopes (ignored when JWT path is used).
+ */
+export function requireServiceKeyOrStaff(scopes = []) {
+  return async (req, res, next) => {
+    const hasServiceKey = !!(req.headers['x-service-key'] || req.headers['x-api-key'])
+    if (hasServiceKey) {
+      const mw = await requireServiceKey(scopes)
+      return mw(req, res, next)
+    }
+    // Fall through to JWT + staff check
+    const authHeader = req.headers.authorization ?? ''
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
+    if (!token) return res.status(401).json({ error: 'Unauthorized' })
+    const { data, error } = await supabaseAnon.auth.getUser(token)
+    if (error || !data?.user) return res.status(401).json({ error: 'Unauthorized' })
+    req.user = data.user
+    const { data: u } = await supabaseAdmin
+      .from('users')
+      .select('account_type')
+      .eq('id', req.user.id)
+      .single()
+    if (!STAFF_ROLES.includes(u?.account_type))
+      return res.status(403).json({ error: 'Staff access required' })
+    req.adminUser = u
+    next()
+  }
 }
 
 /**

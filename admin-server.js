@@ -24,6 +24,7 @@ import webhookRoutes from './server/routes/webhook-dispatch.js'
 import bobRoutes from './server/routes/admin-bob.js'
 import securityScanRoutes from './server/routes/admin-security-scan.js'
 import prospectsRoutes from './server/routes/admin-prospects.js'
+import outreachTemplatesRoutes from './server/routes/admin-outreach-templates.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -227,6 +228,7 @@ app.use('/api/admin/bob', (req, res, next) => {
 
 // ── Outreach Prospects (CSV import + Bob enrichment) ─────────────────────────
 app.use('/api/admin/prospects', generalRateLimit, prospectsRoutes)
+app.use('/api/admin/outreach', generalRateLimit, outreachTemplatesRoutes)
 
 // ── Code Security Scanner (expensive — shell + FS scan) ──────────────────────
 app.use('/api/admin/security', scanRateLimit, securityScanRoutes)

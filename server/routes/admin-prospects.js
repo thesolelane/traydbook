@@ -2,7 +2,16 @@ import { Router } from 'express'
 import multer from 'multer'
 import { parse } from 'csv-parse/sync'
 import { supabaseAdmin } from '../lib/clients.js'
-import { requireAuth, requireAnyStaff, requireAdminLevel } from '../lib/auth.js'
+import { requireAuth, requireAnyStaff, requireAdminLevel, requireServiceKeyOrStaff } from '../lib/auth.js'
+
+function escapeHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
 
 const router = Router()
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } })
@@ -127,6 +136,63 @@ router.get('/stats', requireAuth, requireAnyStaff, async (req, res) => {
     stats.by_type[row.prospect_type] = (stats.by_type[row.prospect_type] || 0) + 1
   }
   res.json(stats)
+})
+
+// GET /api/admin/prospects/work-queue — Bob fetches pending prospects + matching approved template
+router.get('/work-queue', requireServiceKeyOrStaff(['outreach:read']), async (req, res) => {
+  const { limit = 50 } = req.query
+
+  const [prospectsResult, templatesResult] = await Promise.all([
+    supabaseAdmin
+      .from('outreach_prospects')
+      .select('id, prospect_type, first_name, last_name, business_name, city, state, license_number, type_class, general_type, email_found')
+      .eq('status', 'enriched')
+      .not('email_found', 'is', null)
+      .order('created_at', { ascending: true })
+      .limit(parseInt(limit)),
+    supabaseAdmin
+      .from('outreach_templates')
+      .select('*')
+      .eq('status', 'approved')
+      .order('updated_at', { ascending: false }),
+  ])
+
+  if (prospectsResult.error) return res.status(500).json({ error: prospectsResult.error.message })
+  if (templatesResult.error) return res.status(500).json({ error: templatesResult.error.message })
+
+  const prospects = prospectsResult.data || []
+  const templates = templatesResult.data || []
+
+  // Pick the most recently updated approved template per prospect_type
+  const templateByType = {}
+  for (const t of templates) {
+    if (!templateByType[t.prospect_type]) templateByType[t.prospect_type] = t
+  }
+
+  function fillTags(str, p) {
+    return str
+      .replace(/\{\{first_name\}\}/g, escapeHtml(p.first_name))
+      .replace(/\{\{trade\}\}/g, escapeHtml(p.type_class || p.general_type))
+      .replace(/\{\{city\}\}/g, escapeHtml(p.city))
+      .replace(/\{\{license_number\}\}/g, escapeHtml(p.license_number))
+      .replace(/\{\{state\}\}/g, escapeHtml(p.state))
+  }
+
+  const queue = prospects
+    .map(p => {
+      const tmpl = templateByType[p.prospect_type]
+      if (!tmpl) return null
+      return {
+        prospect: p,
+        template: { id: tmpl.id, name: tmpl.name, prospect_type: tmpl.prospect_type },
+        rendered_subject: fillTags(tmpl.subject, p),
+        rendered_body_html: fillTags(tmpl.body_html, p),
+        rendered_body_text: tmpl.body_text ? fillTags(tmpl.body_text, p) : null,
+      }
+    })
+    .filter(Boolean)
+
+  res.json({ queue, total: queue.length })
 })
 
 // PATCH /api/admin/prospects/:id — update a single prospect
