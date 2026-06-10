@@ -167,4 +167,47 @@ router.post('/send-log', requireServiceKeyOrStaff(['outreach:write']), async (re
   res.status(201).json(logEntry)
 })
 
+// PATCH /api/admin/outreach/send-log/:id — Bob reports a delivery event (bounce, open, click, delivered)
+router.patch('/send-log/:id', requireServiceKeyOrStaff(['outreach:write']), async (req, res) => {
+  const { id } = req.params
+  const { delivery_status, event } = req.body
+
+  const VALID_STATUSES = ['sent', 'delivered', 'bounced', 'failed', 'opened', 'clicked']
+  if (delivery_status && !VALID_STATUSES.includes(delivery_status)) {
+    return res.status(400).json({ error: `Invalid delivery_status. Must be one of: ${VALID_STATUSES.join(', ')}` })
+  }
+
+  const { data: existing, error: fetchErr } = await supabaseAdmin
+    .from('outreach_send_log')
+    .select('delivery_events')
+    .eq('id', id)
+    .single()
+
+  if (fetchErr) {
+    return res.status(fetchErr.code === 'PGRST116' ? 404 : 500).json({ error: fetchErr.message })
+  }
+
+  const updates = { updated_at: new Date().toISOString() }
+  if (delivery_status) updates.delivery_status = delivery_status
+
+  if (event || delivery_status) {
+    const newEvent = {
+      type: (event && event.type) || delivery_status || 'unknown',
+      timestamp: (event && event.timestamp) || new Date().toISOString(),
+      ...(event && event.metadata ? { metadata: event.metadata } : {}),
+    }
+    updates.delivery_events = [...(existing.delivery_events || []), newEvent]
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('outreach_send_log')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) return res.status(500).json({ error: error.message })
+  res.json(data)
+})
+
 export default router

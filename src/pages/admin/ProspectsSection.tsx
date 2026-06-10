@@ -43,6 +43,12 @@ interface Template {
   updated_at: string
 }
 
+interface DeliveryEvent {
+  type: string
+  timestamp: string
+  metadata?: Record<string, unknown>
+}
+
 interface SendLogEntry {
   id: string
   prospect_id: string
@@ -52,6 +58,8 @@ interface SendLogEntry {
   delivery_status: string
   bob_job_id: string | null
   sent_at: string
+  updated_at: string | null
+  delivery_events: DeliveryEvent[]
   prospect: {
     id: string
     first_name: string
@@ -102,6 +110,17 @@ const DELIVERY_COLOR: Record<string, string> = {
   delivered: '#10B981',
   bounced:   '#e05252',
   failed:    '#e05252',
+  opened:    '#7c70e8',
+  clicked:   '#3b82f6',
+}
+
+const DELIVERY_EVENT_ICON: Record<string, string> = {
+  sent:      '📤',
+  delivered: '✅',
+  bounced:   '🚫',
+  failed:    '❌',
+  opened:    '👁️',
+  clicked:   '🖱️',
 }
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
@@ -945,7 +964,7 @@ function SendLogTab({ authHeaders }: SectionProps) {
 
   useEffect(() => { void load() }, [load])
 
-  const deliveryStatuses = ['', 'sent', 'delivered', 'bounced', 'failed']
+  const deliveryStatuses = ['', 'sent', 'delivered', 'opened', 'clicked', 'bounced', 'failed']
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -1045,6 +1064,42 @@ function SendLogTab({ authHeaders }: SectionProps) {
                       <strong>Bob Job ID:</strong> {entry.bob_job_id}
                     </div>
                   )}
+
+                  {/* Delivery event timeline */}
+                  {entry.delivery_events && entry.delivery_events.length > 0 && (
+                    <div>
+                      <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+                        Delivery Timeline
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        {entry.delivery_events.map((ev, i) => (
+                          <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                            <span style={{ fontSize: 13, lineHeight: 1 }}>{DELIVERY_EVENT_ICON[ev.type] || '📋'}</span>
+                            <div style={{ flex: 1 }}>
+                              <span style={{
+                                padding: '1px 6px', borderRadius: 4, fontSize: 10, fontWeight: 700,
+                                background: (DELIVERY_COLOR[ev.type] || '#888') + '22',
+                                color: DELIVERY_COLOR[ev.type] || '#888',
+                                textTransform: 'uppercase',
+                                marginRight: 8,
+                              }}>
+                                {ev.type}
+                              </span>
+                              <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
+                                {new Date(ev.timestamp).toLocaleString()}
+                              </span>
+                              {ev.metadata && Object.keys(ev.metadata).length > 0 && (
+                                <span style={{ fontSize: 10, color: 'var(--color-text-muted)', marginLeft: 8 }}>
+                                  {JSON.stringify(ev.metadata)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div>
                     <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
                       Rendered Email
