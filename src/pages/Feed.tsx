@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
-import { useSearchParams, useNavigate, useLocation } from 'react-router-dom'
-import { Plus, TrendingUp, UserPlus, Loader, RefreshCw } from 'lucide-react'
+import { useSearchParams, useNavigate, useLocation, Link } from 'react-router-dom'
+import { Plus, TrendingUp, UserPlus, Loader, RefreshCw, Share2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import PostCard, { AuthorAvatar } from '../components/PostCard'
@@ -44,6 +44,81 @@ function SkeletonCard() {
         <div className="feed-skeleton" style={{ height: 13, width: '90%' }} />
         <div className="feed-skeleton" style={{ height: 13, width: '75%' }} />
       </div>
+    </div>
+  )
+}
+
+function InviteCard({ handle }: { handle?: string | null }) {
+  const [copied, setCopied] = useState(false)
+
+  const shareUrl = handle
+    ? `${window.location.origin}/explore?ref=${handle}`
+    : `${window.location.origin}/explore`
+
+  async function handleShare() {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Join me on TraydBook',
+          text: 'Connect with verified trade professionals on TraydBook.',
+          url: shareUrl,
+        })
+        return
+      } catch {
+        // fall through to clipboard
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // ignore
+    }
+  }
+
+  return (
+    <div
+      className="card"
+      style={{ padding: '14px 16px', borderTop: '2px solid var(--color-brand)' }}
+    >
+      <h3
+        style={{
+          fontFamily: 'var(--font-condensed)',
+          fontSize: 14,
+          fontWeight: 800,
+          marginBottom: 6,
+          letterSpacing: '-0.2px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+        }}
+      >
+        <Share2 size={13} color="var(--color-brand)" /> Invite a Trade Pro
+      </h3>
+      <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 12, lineHeight: 1.5 }}>
+        Know a contractor, sub, or estimator? Send them your link — you earn credits when they join.
+      </p>
+      <button
+        onClick={() => void handleShare()}
+        style={{
+          width: '100%',
+          padding: '8px 0',
+          borderRadius: 7,
+          border: '1.5px solid var(--color-brand)',
+          background: copied ? 'var(--color-brand)' : 'transparent',
+          color: copied ? '#fff' : 'var(--color-brand)',
+          fontFamily: 'var(--font-condensed)',
+          fontSize: 13,
+          fontWeight: 700,
+          cursor: 'pointer',
+          letterSpacing: '0.3px',
+          textTransform: 'uppercase',
+          transition: 'all 0.2s',
+        }}
+      >
+        {copied ? '✓ Link Copied!' : 'Copy Invite Link'}
+      </button>
     </div>
   )
 }
@@ -729,14 +804,76 @@ export default function Feed() {
               <SkeletonCard />
             </>
           ) : posts.length === 0 ? (
-            <div className="card" style={{ padding: 40, textAlign: 'center' }}>
-              <p style={{ fontSize: 14, color: 'var(--color-text-muted)' }}>
-                {feedMode === 'following'
-                  ? connectedAuthorIds.size === 0
-                    ? 'Connect with people to see their posts here.'
-                    : "No posts from people you're connected with yet."
-                  : 'No posts in this category yet — be the first to share something!'}
-              </p>
+            <div className="card" style={{ padding: '40px 32px', textAlign: 'center' }}>
+              {feedMode === 'following' ? (
+                connectedAuthorIds.size === 0 ? (
+                  <>
+                    <p style={{ fontSize: 24, marginBottom: 8 }}>🤝</p>
+                    <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text)', margin: '0 0 6px' }}>
+                      No connections yet
+                    </p>
+                    <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '0 0 18px', lineHeight: 1.6 }}>
+                      Follow trade professionals to see their updates here.
+                    </p>
+                    <Link
+                      to="/explore"
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 6,
+                        padding: '9px 18px', borderRadius: 8,
+                        background: 'var(--color-brand)', color: '#fff',
+                        fontFamily: 'var(--font-condensed)', fontSize: 13, fontWeight: 700,
+                        textDecoration: 'none', letterSpacing: '0.3px', textTransform: 'uppercase',
+                      }}
+                    >
+                      Find Contractors to Follow
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <p style={{ fontSize: 24, marginBottom: 8 }}>📭</p>
+                    <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text)', margin: '0 0 6px' }}>
+                      Nothing from your network yet
+                    </p>
+                    <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '0 0 18px', lineHeight: 1.6 }}>
+                      Your connections haven't posted recently. Check the For You feed or be the first to post.
+                    </p>
+                    <button
+                      onClick={() => setComposeOpen(true)}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 6,
+                        padding: '9px 18px', borderRadius: 8,
+                        background: 'var(--color-brand)', color: '#fff',
+                        fontFamily: 'var(--font-condensed)', fontSize: 13, fontWeight: 700,
+                        border: 'none', cursor: 'pointer', letterSpacing: '0.3px', textTransform: 'uppercase',
+                      }}
+                    >
+                      Post Something
+                    </button>
+                  </>
+                )
+              ) : (
+                <>
+                  <p style={{ fontSize: 24, marginBottom: 8 }}>🏗️</p>
+                  <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text)', margin: '0 0 6px' }}>
+                    Be the first to post
+                  </p>
+                  <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '0 0 18px', lineHeight: 1.6 }}>
+                    Share a project update, tip, or job opening with the TraydBook community.
+                  </p>
+                  <button
+                    onClick={() => setComposeOpen(true)}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 6,
+                      padding: '9px 18px', borderRadius: 8,
+                      background: 'var(--color-brand)', color: '#fff',
+                      fontFamily: 'var(--font-condensed)', fontSize: 13, fontWeight: 700,
+                      border: 'none', cursor: 'pointer', letterSpacing: '0.3px', textTransform: 'uppercase',
+                    }}
+                  >
+                    <Plus size={13} /> Create a Post
+                  </button>
+                </>
+              )}
             </div>
           ) : (
             posts.map(post => (
@@ -863,6 +1000,8 @@ export default function Feed() {
               </div>
             </div>
           )}
+
+          <InviteCard handle={profile?.handle} />
 
           {trendingTags.length > 0 && (
             <div className="card" style={{ padding: '14px 16px' }}>
