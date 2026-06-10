@@ -1204,7 +1204,7 @@ function UnsubscribesPanel({ authHeaders }: SectionProps) {
             ? <>
                 <strong style={{ color: 'var(--color-text)' }}>{total.toLocaleString()}</strong> suppressed
                 {entries.length > 0 && (
-                  <> — <strong style={{ color: 'var(--color-text)' }}>{optOutCount}</strong> opt-out{optOutCount !== 1 ? 's' : ''}, <strong style={{ color: 'var(--color-text)' }}>{bounceCount}</strong> bounce{bounceCount !== 1 ? 's' : ''}</>
+                  <> — <strong style={{ color: 'var(--color-text)' }}>{optOutCount}</strong> opt-out{optOutCount !== 1 ? 's' : ''}, <strong style={{ color: 'var(--color-text)' }}>{bounceCount}</strong> bounce{bounceCount !== 1 ? 's' : ''}{total > 0 ? <> (<strong style={{ color: 'var(--color-text)' }}>{Math.round((bounceCount / total) * 100)}%</strong>)</> : null}</>
                 )}
               </>
             : 'No opt-outs or bounces yet.'}
