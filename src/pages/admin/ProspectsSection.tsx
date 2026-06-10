@@ -655,7 +655,7 @@ function TemplateEditor({ initial, onSave, onClose, authHeaders }: TemplateEdito
     }
   }
 
-  const PHYSICAL_ADDRESS = 'TraydBook · 8 The Green, Suite A · Dover, DE 19901'
+  const PHYSICAL_ADDRESS = import.meta.env.VITE_PHYSICAL_ADDRESS || '[⚠ PHYSICAL_ADDRESS NOT SET — configure VITE_PHYSICAL_ADDRESS before sending live emails]'
   const PREVIEW_FOOTER_HTML = `<!-- traydbook-footer -->
 <div style="margin-top:32px;padding-top:16px;border-top:1px solid #e0e0e0;font-family:Arial,sans-serif;font-size:12px;color:#888;text-align:center;line-height:1.7;">
   <p style="margin:0 0 6px 0;">This is a commercial message from TraydBook. You received this email because your contact information appears in licensed contractor public records.</p>

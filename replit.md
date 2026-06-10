@@ -40,6 +40,8 @@ Stripe products need to be seeded using `scripts/seed-stripe-products.js`.
 - `ENABLE_KEY_ROTATION` (`true` to activate 10-minute key rotation)
 - `SOLANA_TREASURY_PRIVATE_KEY` (for admin rewards)
 - `SIM_WEBHOOK_SECRET` (for internal simulation webhook)
+- `PHYSICAL_ADDRESS` (**required for production outreach** — CAN-SPAM mailing address appended to every outreach email footer; server throws and blocks sending if unset in `NODE_ENV=production`)
+- `VITE_PHYSICAL_ADDRESS` (**required for production outreach** — same address shown in the admin email preview UI; must match `PHYSICAL_ADDRESS` exactly)
 
 ## Stack
 
