@@ -280,7 +280,7 @@ router.get('/unsubscribes', requireAuth, requireAnyStaff, async (req, res) => {
   res.json({ unsubscribes: data || [], total: count || 0 })
 })
 
-// DELETE /api/admin/outreach/unsubscribes/:email — admin removes an opt-out
+// DELETE /api/admin/outreach/unsubscribes/:email — remove a single opt-out
 router.delete('/unsubscribes/:email', requireAuth, requireAdminLevel, async (req, res) => {
   const email = decodeURIComponent(req.params.email).toLowerCase()
   const { error } = await supabaseAdmin
@@ -289,6 +289,21 @@ router.delete('/unsubscribes/:email', requireAuth, requireAdminLevel, async (req
     .eq('email', email)
   if (error) return res.status(500).json({ error: error.message })
   res.json({ ok: true, email })
+})
+
+// DELETE /api/admin/outreach/unsubscribes — bulk remove by email array
+router.delete('/unsubscribes', requireAuth, requireAdminLevel, async (req, res) => {
+  const { emails } = req.body
+  if (!Array.isArray(emails) || emails.length === 0) {
+    return res.status(400).json({ error: 'emails array is required' })
+  }
+  const normalized = emails.map(e => String(e).toLowerCase().trim()).filter(Boolean)
+  const { error, count } = await supabaseAdmin
+    .from('outreach_unsubscribes')
+    .delete({ count: 'exact' })
+    .in('email', normalized)
+  if (error) return res.status(500).json({ error: error.message })
+  res.json({ ok: true, removed: count ?? normalized.length })
 })
 
 export default router

@@ -1142,11 +1142,13 @@ interface UnsubscribeEntry {
 }
 
 function UnsubscribesPanel({ authHeaders }: SectionProps) {
-  const [entries, setEntries]   = useState<UnsubscribeEntry[]>([])
-  const [total, setTotal]       = useState(0)
-  const [loading, setLoading]   = useState(true)
-  const [err, setErr]           = useState('')
-  const [removing, setRemoving] = useState<string | null>(null)
+  const [entries, setEntries]     = useState<UnsubscribeEntry[]>([])
+  const [total, setTotal]         = useState(0)
+  const [loading, setLoading]     = useState(true)
+  const [err, setErr]             = useState('')
+  const [removing, setRemoving]   = useState<string | null>(null)
+  const [selected, setSelected]   = useState<Set<string>>(new Set())
+  const [bulkWorking, setBulkWorking] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -1157,6 +1159,7 @@ function UnsubscribesPanel({ authHeaders }: SectionProps) {
       const data = await res.json()
       setEntries(data.unsubscribes || [])
       setTotal(data.total || 0)
+      setSelected(new Set())
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Failed')
     } finally {
@@ -1166,24 +1169,62 @@ function UnsubscribesPanel({ authHeaders }: SectionProps) {
 
   useEffect(() => { void load() }, [load])
 
+  function toggleSelect(email: string) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      next.has(email) ? next.delete(email) : next.add(email)
+      return next
+    })
+  }
+
+  function toggleAll() {
+    setSelected(prev =>
+      prev.size === entries.length
+        ? new Set()
+        : new Set(entries.map(e => e.email))
+    )
+  }
+
   async function handleRemove(email: string) {
-    if (!confirm(`Remove ${email} from the unsubscribe list? They will be eligible for outreach again.`)) return
+    if (!confirm(`Remove ${email} from the suppression list? They will be eligible for outreach again.`)) return
     setRemoving(email)
     try {
       const res = await fetch(`/api/admin/outreach/unsubscribes/${encodeURIComponent(email)}`, {
         method: 'DELETE',
         headers: authHeaders(),
       })
-      if (!res.ok) {
-        const d = await res.json()
-        throw new Error(d.error || 'Remove failed')
-      }
+      if (!res.ok) throw new Error((await res.json()).error || 'Remove failed')
       setEntries(prev => prev.filter(e => e.email !== email))
       setTotal(t => Math.max(0, t - 1))
+      setSelected(prev => { const n = new Set(prev); n.delete(email); return n })
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Remove failed')
     } finally {
       setRemoving(null)
+    }
+  }
+
+  async function handleBulkRemove() {
+    const emails = Array.from(selected)
+    if (emails.length === 0) return
+    if (!confirm(`Remove ${emails.length} email${emails.length !== 1 ? 's' : ''} from the suppression list? They will be eligible for outreach again.`)) return
+    setBulkWorking(true)
+    setErr('')
+    try {
+      const res = await fetch('/api/admin/outreach/unsubscribes', {
+        method: 'DELETE',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emails }),
+      })
+      if (!res.ok) throw new Error((await res.json()).error || 'Bulk remove failed')
+      const { removed } = await res.json()
+      setEntries(prev => prev.filter(e => !selected.has(e.email)))
+      setTotal(t => Math.max(0, t - (removed ?? emails.length)))
+      setSelected(new Set())
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Bulk remove failed')
+    } finally {
+      setBulkWorking(false)
     }
   }
 
@@ -1193,30 +1234,24 @@ function UnsubscribesPanel({ authHeaders }: SectionProps) {
     bounce:     'Bounce',
   }
 
-  const bounceCount  = entries.filter(e => e.source === 'bounce').length
-  const optOutCount  = entries.filter(e => e.source !== 'bounce').length
+  const bounceCount = entries.filter(e => e.source === 'bounce').length
+  const optOutCount = entries.filter(e => e.source !== 'bounce').length
+  const allSelected = entries.length > 0 && selected.size === entries.length
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
         <div style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
           {total > 0
             ? <>
                 <strong style={{ color: 'var(--color-text)' }}>{total.toLocaleString()}</strong> suppressed
                 {entries.length > 0 && (
-                  <> — <strong style={{ color: 'var(--color-text)' }}>{optOutCount}</strong> opt-out{optOutCount !== 1 ? 's' : ''}, <strong style={{ color: 'var(--color-text)' }}>{bounceCount}</strong> bounce{bounceCount !== 1 ? 's' : ''}{total > 0 ? <> (<strong style={{ color: 'var(--color-text)' }}>{Math.round((bounceCount / total) * 100)}%</strong>)</> : null}</>
+                  <> — <strong style={{ color: 'var(--color-text)' }}>{optOutCount}</strong> opt-out{optOutCount !== 1 ? 's' : ''}, <strong style={{ color: 'var(--color-text)' }}>{bounceCount}</strong> bounce{bounceCount !== 1 ? 's' : ''}{total > 0 ? <> ({Math.round((bounceCount / total) * 100)}%)</> : null}</>
                 )}
               </>
             : 'No opt-outs or bounces yet.'}
         </div>
-        <button
-          onClick={load}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            background: 'var(--color-surface)', border: '1px solid var(--color-border)',
-            borderRadius: 6, color: 'var(--color-text-muted)', padding: '5px 12px', fontSize: 12, cursor: 'pointer',
-          }}
-        >
+        <button onClick={load} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 6, color: 'var(--color-text-muted)', padding: '5px 12px', fontSize: 12, cursor: 'pointer' }}>
           <RefreshCw size={12} /> Refresh
         </button>
       </div>
@@ -1225,40 +1260,74 @@ function UnsubscribesPanel({ authHeaders }: SectionProps) {
         <div style={{ padding: 12, background: '#2a1515', border: '1px solid #e05252', borderRadius: 8, color: '#e05252', fontSize: 13 }}>{err}</div>
       )}
 
+      {/* Bulk action bar — visible when anything is selected */}
+      {selected.size > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', background: 'rgba(226,114,42,0.08)', border: '1px solid var(--color-brand)', borderRadius: 8 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-brand)', flex: 1 }}>
+            {selected.size} selected
+          </span>
+          <button
+            onClick={handleBulkRemove}
+            disabled={bulkWorking}
+            style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 14px', borderRadius: 6, border: 'none', background: '#3a1515', color: '#e05252', fontSize: 12, fontWeight: 700, cursor: bulkWorking ? 'not-allowed' : 'pointer', opacity: bulkWorking ? 0.6 : 1 }}
+          >
+            <Trash2 size={12} /> {bulkWorking ? 'Removing…' : `Remove ${selected.size}`}
+          </button>
+          <button
+            onClick={() => setSelected(new Set())}
+            style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--color-border)', background: 'none', color: 'var(--color-text-muted)', fontSize: 12, cursor: 'pointer' }}
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+
       {loading ? (
         <div style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>Loading...</div>
       ) : entries.length === 0 ? (
         <div style={{ color: 'var(--color-text-muted)', fontSize: 13, textAlign: 'center', padding: 40 }}>
-          No unsubscribes on record.
+          No suppressed emails on record.
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {/* Select-all header */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 16px' }}>
+            <input
+              type="checkbox"
+              checked={allSelected}
+              onChange={toggleAll}
+              style={{ cursor: 'pointer', width: 14, height: 14 }}
+            />
+            <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
+              {allSelected ? 'Deselect all' : `Select all ${entries.length}`}
+            </span>
+          </div>
+
           {entries.map(entry => (
-            <div key={entry.id} style={{
-              background: 'var(--color-surface)',
-              border: '1px solid var(--color-border)',
-              borderRadius: 8,
-              padding: '10px 16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              flexWrap: 'wrap',
-            }}>
+            <div
+              key={entry.id}
+              style={{
+                background: selected.has(entry.email) ? 'rgba(226,114,42,0.06)' : 'var(--color-surface)',
+                border: selected.has(entry.email) ? '1px solid rgba(226,114,42,0.4)' : '1px solid var(--color-border)',
+                borderRadius: 8, padding: '10px 16px',
+                display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={selected.has(entry.email)}
+                onChange={() => toggleSelect(entry.email)}
+                style={{ cursor: 'pointer', width: 14, height: 14, flexShrink: 0 }}
+              />
               <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text)', flex: 1 }}>
                 {entry.email}
               </span>
               {entry.source === 'bounce' ? (
-                <span style={{
-                  padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700,
-                  background: '#2a1800', color: '#f5a623', textTransform: 'uppercase',
-                }}>
+                <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700, background: '#2a1800', color: '#f5a623', textTransform: 'uppercase' }}>
                   bounced
                 </span>
               ) : (
-                <span style={{
-                  padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700,
-                  background: '#2a1515', color: '#e05252', textTransform: 'uppercase',
-                }}>
+                <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700, background: '#2a1515', color: '#e05252', textTransform: 'uppercase' }}>
                   opted out
                 </span>
               )}
@@ -1271,14 +1340,7 @@ function UnsubscribesPanel({ authHeaders }: SectionProps) {
               <button
                 onClick={() => handleRemove(entry.email)}
                 disabled={removing === entry.email}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 4,
-                  padding: '4px 10px', borderRadius: 5,
-                  border: '1px solid var(--color-border)',
-                  background: 'none', color: 'var(--color-text-muted)',
-                  fontSize: 11, cursor: removing === entry.email ? 'not-allowed' : 'pointer',
-                  opacity: removing === entry.email ? 0.5 : 1,
-                }}
+                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 5, border: '1px solid var(--color-border)', background: 'none', color: 'var(--color-text-muted)', fontSize: 11, cursor: removing === entry.email ? 'not-allowed' : 'pointer', opacity: removing === entry.email ? 0.5 : 1 }}
               >
                 <Trash2 size={11} /> Remove
               </button>
