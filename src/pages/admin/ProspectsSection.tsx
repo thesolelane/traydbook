@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Upload, RefreshCw, Mail, CheckCircle, XCircle, Clock, SkipForward, Plus, Eye, Pause, Play, Trash2, ChevronDown, ChevronRight } from 'lucide-react'
+import { Upload, RefreshCw, Mail, CheckCircle, XCircle, Clock, SkipForward, Plus, Eye, Trash2, ChevronDown, ChevronRight } from 'lucide-react'
 import { SectionProps } from './shared'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
