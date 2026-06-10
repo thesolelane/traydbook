@@ -184,6 +184,8 @@ function ProspectsTab({ authHeaders }: SectionProps) {
   const [statusFilter, setStatusFilter] = useState('pending')
   const [typeFilter, setTypeFilter]   = useState('')
   const [expanded, setExpanded]       = useState<string | null>(null)
+  const [bounceLogs, setBounceLogs]   = useState<Record<string, SendLogEntry | null>>({})
+  const [bounceLoading, setBounceLoading] = useState<Record<string, boolean>>({})
   const fileRef                       = useRef<HTMLInputElement>(null)
   const [prospectType, setProspectType] = useState<'contractor' | 'real_estate_agent'>('contractor')
 
@@ -255,6 +257,26 @@ function ProspectsTab({ authHeaders }: SectionProps) {
       body: JSON.stringify({ status: 'skipped', skip_reason: 'admin_skipped' }),
     })
     await loadProspects()
+  }
+
+  async function fetchBounceLog(id: string) {
+    if (bounceLogs[id] !== undefined || bounceLoading[id]) return
+    setBounceLoading(prev => ({ ...prev, [id]: true }))
+    try {
+      const res = await fetch(`/api/admin/prospects/${id}/send-log`, { headers: authHeaders() })
+      const data = res.ok ? await res.json() : null
+      setBounceLogs(prev => ({ ...prev, [id]: data }))
+    } catch {
+      setBounceLogs(prev => ({ ...prev, [id]: null }))
+    } finally {
+      setBounceLoading(prev => ({ ...prev, [id]: false }))
+    }
+  }
+
+  function handleExpand(p: Prospect) {
+    const next = expanded === p.id ? null : p.id
+    setExpanded(next)
+    if (next && p.status === 'bounced') void fetchBounceLog(p.id)
   }
 
   const statuses = ['pending', 'enriched', 'drafted', 'sent', 'replied', 'skipped', 'bounced']
@@ -426,7 +448,7 @@ function ProspectsTab({ authHeaders }: SectionProps) {
               overflow: 'hidden',
             }}>
               <div
-                onClick={() => setExpanded(expanded === p.id ? null : p.id)}
+                onClick={() => handleExpand(p)}
                 style={{
                   padding: '12px 16px',
                   display: 'flex',
@@ -514,6 +536,62 @@ function ProspectsTab({ authHeaders }: SectionProps) {
                       </button>
                     </div>
                   )}
+
+                  {p.status === 'bounced' && (() => {
+                    const log = bounceLogs[p.id]
+                    const isLoading = bounceLoading[p.id]
+                    const bounceEvent = log?.delivery_events?.find((e: DeliveryEvent) => e.type === 'bounced' || e.type === 'failed')
+                    const meta = bounceEvent?.metadata as Record<string, unknown> | undefined
+
+                    return (
+                      <div style={{
+                        background: '#2a1515',
+                        border: '1px solid #e05252',
+                        borderRadius: 6,
+                        padding: 12,
+                        marginTop: 4,
+                      }}>
+                        <div style={{ fontSize: 11, color: '#e05252', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <XCircle size={12} /> Bounce Details
+                        </div>
+                        {isLoading ? (
+                          <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Loading…</div>
+                        ) : !log ? (
+                          <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>No send-log entry found for this prospect.</div>
+                        ) : !bounceEvent ? (
+                          <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+                            Send log found (status: <strong>{log.delivery_status}</strong>) but no bounce event recorded yet.
+                          </div>
+                        ) : (
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, fontSize: 12, color: 'var(--color-text-muted)' }}>
+                            <div><strong style={{ color: 'var(--color-text)' }}>Event:</strong> {bounceEvent.type}</div>
+                            <div><strong style={{ color: 'var(--color-text)' }}>Time:</strong> {new Date(bounceEvent.timestamp).toLocaleString()}</div>
+                            {meta?.bounce_type && (
+                              <div><strong style={{ color: 'var(--color-text)' }}>Type:</strong> {String(meta.bounce_type)}</div>
+                            )}
+                            {meta?.smtp_code && (
+                              <div><strong style={{ color: 'var(--color-text)' }}>SMTP Code:</strong> {String(meta.smtp_code)}</div>
+                            )}
+                            {meta?.reason && (
+                              <div style={{ gridColumn: '1 / -1' }}><strong style={{ color: 'var(--color-text)' }}>Reason:</strong> {String(meta.reason)}</div>
+                            )}
+                            {meta?.message && (
+                              <div style={{ gridColumn: '1 / -1' }}><strong style={{ color: 'var(--color-text)' }}>Message:</strong> {String(meta.message)}</div>
+                            )}
+                            {meta?.description && (
+                              <div style={{ gridColumn: '1 / -1' }}><strong style={{ color: 'var(--color-text)' }}>Description:</strong> {String(meta.description)}</div>
+                            )}
+                            {meta?.diagnostic_code && (
+                              <div style={{ gridColumn: '1 / -1' }}><strong style={{ color: 'var(--color-text)' }}>Diagnostic:</strong> {String(meta.diagnostic_code)}</div>
+                            )}
+                            {log.rendered_subject && (
+                              <div style={{ gridColumn: '1 / -1', marginTop: 4 }}><strong style={{ color: 'var(--color-text)' }}>Subject sent:</strong> {log.rendered_subject}</div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })()}
 
                   {p.status === 'pending' && (
                     <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>

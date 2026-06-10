@@ -454,6 +454,22 @@ router.post('/send-log', requireAuth, requireAnyStaff, async (req, res) => {
   res.status(201).json(data)
 })
 
+// GET /api/admin/prospects/:id/send-log — fetch send-log entry for a single prospect (lazy load for expanded row)
+router.get('/:id/send-log', requireAuth, requireAnyStaff, async (req, res) => {
+  const { id } = req.params
+
+  const { data, error } = await supabaseAdmin
+    .from('outreach_send_log')
+    .select('id, prospect_id, template_id, rendered_subject, delivery_status, bob_job_id, sent_at, updated_at, delivery_events, notes')
+    .eq('prospect_id', id)
+    .order('sent_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (error) return res.status(500).json({ error: error.message })
+  res.json(data || null)
+})
+
 // GET /api/admin/prospects/send-log — admin views send history
 router.get('/send-log', requireAuth, requireAnyStaff, async (req, res) => {
   const { prospect_id, template_id, limit = 50, offset = 0 } = req.query
