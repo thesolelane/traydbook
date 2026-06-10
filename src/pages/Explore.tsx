@@ -974,25 +974,57 @@ export default function Explore() {
               Loading contractors...
             </div>
           ) : contractors.length === 0 ? (
-            <div
-              style={{ textAlign: 'center', padding: '60px 0', color: 'var(--color-text-muted)' }}
-            >
-              <p style={{ fontSize: 16, fontWeight: 600 }}>No contractors found</p>
-              <p style={{ fontSize: 13, marginTop: 6 }}>
-                Try adjusting your filters or{' '}
-                <button
-                  onClick={clearFilters}
-                  style={{
-                    color: 'var(--color-brand)',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontSize: 13,
-                  }}
-                >
-                  clear all
-                </button>
-              </p>
+            <div style={{ textAlign: 'center', padding: '60px 24px', color: 'var(--color-text-muted)' }}>
+              {hasActiveFilters ? (
+                <>
+                  <p style={{ fontSize: 16, fontWeight: 600 }}>No contractors match your filters</p>
+                  <p style={{ fontSize: 13, marginTop: 6 }}>
+                    Try adjusting your filters or{' '}
+                    <button onClick={clearFilters} style={{ color: 'var(--color-brand)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13 }}>
+                      clear all
+                    </button>
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p style={{ fontSize: 28, marginBottom: 8 }}>👷</p>
+                  <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--color-text)', margin: '0 0 8px' }}>
+                    No contractors in this area yet
+                  </p>
+                  <p style={{ fontSize: 13, margin: '0 0 20px', lineHeight: 1.6 }}>
+                    {isContractor
+                      ? 'Complete your profile to show up here — the more complete your profile, the higher you rank in search.'
+                      : 'Know a trade pro looking for work? Send them your referral link and earn credits when they join.'}
+                  </p>
+                  {isContractor ? (
+                    <Link
+                      to="/profile/edit"
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 6,
+                        padding: '10px 20px', borderRadius: 8,
+                        background: 'var(--color-brand)', color: '#fff',
+                        fontFamily: 'var(--font-condensed)', fontSize: 14, fontWeight: 700,
+                        textDecoration: 'none', letterSpacing: '0.3px', textTransform: 'uppercase',
+                      }}
+                    >
+                      Complete Your Profile
+                    </Link>
+                  ) : (
+                    <Link
+                      to="/profile"
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 6,
+                        padding: '10px 20px', borderRadius: 8,
+                        background: 'var(--color-brand)', color: '#fff',
+                        fontFamily: 'var(--font-condensed)', fontSize: 14, fontWeight: 700,
+                        textDecoration: 'none', letterSpacing: '0.3px', textTransform: 'uppercase',
+                      }}
+                    >
+                      Get Your Referral Link
+                    </Link>
+                  )}
+                </>
+              )}
             </div>
           ) : (
             <div
