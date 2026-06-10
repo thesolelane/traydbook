@@ -566,22 +566,22 @@ function ProspectsTab({ authHeaders }: SectionProps) {
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, fontSize: 12, color: 'var(--color-text-muted)' }}>
                             <div><strong style={{ color: 'var(--color-text)' }}>Event:</strong> {bounceEvent.type}</div>
                             <div><strong style={{ color: 'var(--color-text)' }}>Time:</strong> {new Date(bounceEvent.timestamp).toLocaleString()}</div>
-                            {meta?.bounce_type && (
+                            {!!meta?.bounce_type && (
                               <div><strong style={{ color: 'var(--color-text)' }}>Type:</strong> {String(meta.bounce_type)}</div>
                             )}
-                            {meta?.smtp_code && (
+                            {!!meta?.smtp_code && (
                               <div><strong style={{ color: 'var(--color-text)' }}>SMTP Code:</strong> {String(meta.smtp_code)}</div>
                             )}
-                            {meta?.reason && (
+                            {!!meta?.reason && (
                               <div style={{ gridColumn: '1 / -1' }}><strong style={{ color: 'var(--color-text)' }}>Reason:</strong> {String(meta.reason)}</div>
                             )}
-                            {meta?.message && (
+                            {!!meta?.message && (
                               <div style={{ gridColumn: '1 / -1' }}><strong style={{ color: 'var(--color-text)' }}>Message:</strong> {String(meta.message)}</div>
                             )}
-                            {meta?.description && (
+                            {!!meta?.description && (
                               <div style={{ gridColumn: '1 / -1' }}><strong style={{ color: 'var(--color-text)' }}>Description:</strong> {String(meta.description)}</div>
                             )}
-                            {meta?.diagnostic_code && (
+                            {!!meta?.diagnostic_code && (
                               <div style={{ gridColumn: '1 / -1' }}><strong style={{ color: 'var(--color-text)' }}>Diagnostic:</strong> {String(meta.diagnostic_code)}</div>
                             )}
                             {log.rendered_subject && (

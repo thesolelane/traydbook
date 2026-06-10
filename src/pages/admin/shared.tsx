@@ -4,10 +4,12 @@ export interface SectionProps {
 
 export function SectionCard({
   title,
+  subtitle,
   children,
   action,
 }: {
   title: React.ReactNode
+  subtitle?: React.ReactNode
   children: React.ReactNode
   action?: React.ReactNode
 }) {
@@ -29,16 +31,23 @@ export function SectionCard({
           borderBottom: '1px solid var(--color-border)',
         }}
       >
-        <span
-          style={{
-            fontFamily: 'var(--font-condensed)',
-            fontWeight: 800,
-            fontSize: 15,
-            letterSpacing: '0.3px',
-          }}
-        >
-          {title}
-        </span>
+        <div>
+          <span
+            style={{
+              fontFamily: 'var(--font-condensed)',
+              fontWeight: 800,
+              fontSize: 15,
+              letterSpacing: '0.3px',
+            }}
+          >
+            {title}
+          </span>
+          {subtitle && (
+            <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 2 }}>
+              {subtitle}
+            </div>
+          )}
+        </div>
         {action}
       </div>
       <div style={{ padding: 20 }}>{children}</div>
