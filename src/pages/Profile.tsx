@@ -222,6 +222,12 @@ export default function Profile() {
   const [credentialsLoading, setCredentialsLoading] = useState(false)
 
   useEffect(() => {
+    // If visiting /profile with no handle in the URL, redirect to the
+    // canonical /profile/:handle so the query always has a definite handle
+    if (!urlHandle && authProfile?.handle) {
+      navigate(`/profile/${authProfile.handle}`, { replace: true })
+      return
+    }
     const handle = urlHandle ?? authProfile?.handle
     if (!handle) return
     void loadProfile(handle)

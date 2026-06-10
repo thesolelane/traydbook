@@ -334,7 +334,7 @@ export default function Navbar() {
             )}
 
             {/* Credits pill — desktop only */}
-            {profile && !isContractor && (
+            {profile && (
               <div
                 className="credits-pill-desktop"
                 style={{
@@ -788,25 +788,23 @@ export default function Navbar() {
                   {profile.account_type.replace('_', ' ')}
                 </div>
               </div>
-              {!isContractor && (
-                <div
-                  style={{
-                    marginLeft: 'auto',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 4,
-                    background: 'var(--color-brand-light)',
-                    borderRadius: 99,
-                    padding: '4px 10px',
-                    fontFamily: 'var(--font-condensed)',
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: 'var(--color-brand)',
-                  }}
-                >
-                  <Coins size={12} /> {profile.credit_balance}
-                </div>
-              )}
+              <div
+                style={{
+                  marginLeft: 'auto',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  background: 'var(--color-brand-light)',
+                  borderRadius: 99,
+                  padding: '4px 10px',
+                  fontFamily: 'var(--font-condensed)',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: 'var(--color-brand)',
+                }}
+              >
+                <Coins size={12} /> {profile.credit_balance}
+              </div>
             </div>
 
             {/* Drawer links */}
