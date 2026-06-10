@@ -1474,11 +1474,42 @@ function UnsubscribesPanel({ authHeaders }: SectionProps) {
 
 // ─── Root export ──────────────────────────────────────────────────────────────
 
+const PLACEHOLDER_ADDRESS = 'TraydBook · 8 The Green, Suite A · Dover, DE 19901'
+
+function MailingAddressWarning() {
+  const addr = import.meta.env.VITE_PHYSICAL_ADDRESS as string | undefined
+  const isMissing = !addr || addr.trim() === ''
+  const isPlaceholder = !isMissing && addr.trim() === PLACEHOLDER_ADDRESS
+  if (!isMissing && !isPlaceholder) return null
+  const message = isMissing
+    ? 'VITE_PHYSICAL_ADDRESS is not set. Outreach email previews and live sends will use a fake placeholder address, violating CAN-SPAM. Set this env var to the real TraydBook mailing address.'
+    : 'VITE_PHYSICAL_ADDRESS is still the placeholder (Dover, DE). Replace it with the real confirmed mailing address before sending outreach emails.'
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'flex-start',
+      gap: 10,
+      background: '#fff8e1',
+      border: '1px solid #f9a825',
+      borderRadius: 8,
+      padding: '10px 14px',
+      margin: '0 0 12px 0',
+      fontSize: 13,
+      color: '#7a5800',
+      lineHeight: 1.5,
+    }}>
+      <span style={{ fontSize: 16, flexShrink: 0 }}>⚠️</span>
+      <span><strong>CAN-SPAM address warning:</strong> {message}</span>
+    </div>
+  )
+}
+
 export default function ProspectsSection({ authHeaders }: SectionProps) {
   const [tab, setTab] = useState<'prospects' | 'templates' | 'send-log'>('prospects')
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <MailingAddressWarning />
       <TabBar active={tab} onChange={t => setTab(t as typeof tab)} />
       {tab === 'prospects' && <ProspectsTab authHeaders={authHeaders} />}
       {tab === 'templates' && <TemplatesTab authHeaders={authHeaders} />}

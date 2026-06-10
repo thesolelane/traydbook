@@ -16,7 +16,20 @@ function resolvePhysicalAddress() {
     )
     return PLACEHOLDER_ADDRESS
   }
-  return addr.trim()
+  const trimmed = addr.trim()
+  if (trimmed === PLACEHOLDER_ADDRESS) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(
+        '[email-footer] PHYSICAL_ADDRESS is still set to the placeholder value. ' +
+        'Replace it with TraydBook\'s real confirmed mailing address before sending outreach emails.'
+      )
+    }
+    console.warn(
+      '[email-footer] PHYSICAL_ADDRESS is still the placeholder value — emails will show a fake address. ' +
+      'Set PHYSICAL_ADDRESS to TraydBook\'s confirmed mailing address before sending to real recipients.'
+    )
+  }
+  return trimmed
 }
 
 const FOOTER_SENTINEL_HTML = '<!-- traydbook-footer -->'
