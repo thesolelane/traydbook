@@ -152,6 +152,32 @@ router.post('/send-log', requireServiceKeyOrStaff(['outreach:write']), async (re
     return res.status(400).json({ error: 'prospect_id, template_id, rendered_subject, and rendered_body_html are required' })
   }
 
+  // Suppression guard — reject if the prospect's email is in outreach_unsubscribes
+  // (covers both manual opt-outs and auto-suppressed bounces)
+  const { data: prospect, error: prospectErr } = await supabaseAdmin
+    .from('outreach_prospects')
+    .select('email_found')
+    .eq('id', prospect_id)
+    .single()
+
+  if (prospectErr) return res.status(500).json({ error: 'Failed to look up prospect: ' + prospectErr.message })
+
+  if (prospect && prospect.email_found) {
+    const { data: suppressed } = await supabaseAdmin
+      .from('outreach_unsubscribes')
+      .select('email, source')
+      .eq('email', prospect.email_found.toLowerCase())
+      .maybeSingle()
+
+    if (suppressed) {
+      return res.status(422).json({
+        error: 'Suppressed address',
+        reason: suppressed.source === 'bounce' ? 'Email has previously bounced' : 'Email has opted out',
+        email: prospect.email_found,
+      })
+    }
+  }
+
   const { data: logEntry, error: logError } = await supabaseAdmin
     .from('outreach_send_log')
     .insert({
