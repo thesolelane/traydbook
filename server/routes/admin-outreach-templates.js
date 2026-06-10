@@ -68,8 +68,9 @@ router.post('/templates', requireAuth, requireAdminLevel, async (req, res) => {
   if (!name || !prospect_type || !subject || !body_html) {
     return res.status(400).json({ error: 'name, prospect_type, subject, and body_html are required' })
   }
-  if (!['contractor', 'real_estate_agent'].includes(prospect_type)) {
-    return res.status(400).json({ error: 'prospect_type must be contractor or real_estate_agent' })
+  const VALID_TYPES = ['contractor', 'homeowner', 'real_estate_agent', 'investor_flipper', 'investor_buy_hold', 'other']
+  if (!VALID_TYPES.includes(prospect_type)) {
+    return res.status(400).json({ error: `prospect_type must be one of: ${VALID_TYPES.join(', ')}` })
   }
   const { data, error } = await supabaseAdmin
     .from('outreach_templates')
@@ -95,8 +96,9 @@ router.patch('/templates/:id', requireAuth, requireAdminLevel, async (req, res) 
   for (const k of allowed) {
     if (req.body[k] !== undefined) updates[k] = req.body[k]
   }
-  if (updates.prospect_type && !['contractor', 'real_estate_agent'].includes(updates.prospect_type)) {
-    return res.status(400).json({ error: 'Invalid prospect_type' })
+  const VALID_TYPES = ['contractor', 'homeowner', 'real_estate_agent', 'investor_flipper', 'investor_buy_hold', 'other']
+  if (updates.prospect_type && !VALID_TYPES.includes(updates.prospect_type)) {
+    return res.status(400).json({ error: `Invalid prospect_type. Must be one of: ${VALID_TYPES.join(', ')}` })
   }
   if (updates.status && !['draft', 'approved', 'paused'].includes(updates.status)) {
     return res.status(400).json({ error: 'Invalid status' })
