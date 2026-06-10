@@ -1198,8 +1198,8 @@ function UnsubscribesPanel({ authHeaders }: SectionProps) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
         <div style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
           {total > 0
-            ? <><strong style={{ color: 'var(--color-text)' }}>{total.toLocaleString()}</strong> email{total !== 1 ? 's' : ''} opted out — these are skipped by the work-queue.</>
-            : 'No opt-outs yet.'}
+            ? <><strong style={{ color: 'var(--color-text)' }}>{total.toLocaleString()}</strong> email{total !== 1 ? 's' : ''} suppressed (opt-outs &amp; bounces) — these are skipped by the work-queue.</>
+            : 'No opt-outs or bounces yet.'}
         </div>
         <button
           onClick={load}
@@ -1239,12 +1239,21 @@ function UnsubscribesPanel({ authHeaders }: SectionProps) {
               <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text)', flex: 1 }}>
                 {entry.email}
               </span>
-              <span style={{
-                padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700,
-                background: '#2a1515', color: '#e05252', textTransform: 'uppercase',
-              }}>
-                opted out
-              </span>
+              {entry.source === 'bounce' ? (
+                <span style={{
+                  padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700,
+                  background: '#2a1800', color: '#f5a623', textTransform: 'uppercase',
+                }}>
+                  bounced
+                </span>
+              ) : (
+                <span style={{
+                  padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700,
+                  background: '#2a1515', color: '#e05252', textTransform: 'uppercase',
+                }}>
+                  opted out
+                </span>
+              )}
               <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
                 {SOURCE_LABEL[entry.source] || entry.source}
               </span>
