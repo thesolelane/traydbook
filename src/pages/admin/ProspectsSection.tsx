@@ -34,11 +34,12 @@ interface Stats {
 interface Template {
   id: string
   name: string
-  prospect_type: 'contractor' | 'real_estate_agent'
+  prospect_type: string
   subject: string
   body_html: string
   body_text: string | null
   status: 'draft' | 'approved' | 'paused'
+  touch_number: number | null
   created_at: string
   updated_at: string
 }
@@ -540,7 +541,8 @@ interface TemplateEditorProps {
 
 function TemplateEditor({ initial, onSave, onClose, authHeaders }: TemplateEditorProps) {
   const [name, setName]         = useState(initial?.name || '')
-  const [type, setType]         = useState<'contractor' | 'real_estate_agent'>(initial?.prospect_type || 'contractor')
+  const [type, setType]         = useState(initial?.prospect_type || 'contractor')
+  const [touchNumber, setTouchNumber] = useState<string>(String(initial?.touch_number ?? ''))
   const [subject, setSubject]   = useState(initial?.subject || '')
   const [bodyHtml, setBodyHtml] = useState(initial?.body_html || '')
   const [bodyText, setBodyText] = useState(initial?.body_text || '')
@@ -562,7 +564,7 @@ function TemplateEditor({ initial, onSave, onClose, authHeaders }: TemplateEdito
         {
           method: isEdit ? 'PATCH' : 'POST',
           headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, prospect_type: type, subject, body_html: bodyHtml, body_text: bodyText }),
+          body: JSON.stringify({ name, prospect_type: type, subject, body_html: bodyHtml, body_text: bodyText, touch_number: touchNumber ? parseInt(touchNumber) : null }),
         }
       )
       const data = await res.json()
@@ -631,10 +633,23 @@ function TemplateEditor({ initial, onSave, onClose, authHeaders }: TemplateEdito
             />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <label style={{ fontSize: 12, color: 'var(--color-text-muted)', fontWeight: 600 }}>Prospect Type</label>
-            <select value={type} onChange={e => setType(e.target.value as 'contractor' | 'real_estate_agent')} style={inputStyle}>
+            <label style={{ fontSize: 12, color: 'var(--color-text-muted)', fontWeight: 600 }}>Audience</label>
+            <select value={type} onChange={e => setType(e.target.value)} style={inputStyle}>
               <option value="contractor">🔨 Contractor</option>
+              <option value="homeowner">🏡 Homeowner</option>
               <option value="real_estate_agent">🏠 Real Estate Agent</option>
+              <option value="investor_flipper">💼 Investor — Flipper</option>
+              <option value="investor_buy_hold">🏘 Investor — Buy & Hold</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <label style={{ fontSize: 12, color: 'var(--color-text-muted)', fontWeight: 600 }}>Touch # (sequence)</label>
+            <select value={touchNumber} onChange={e => setTouchNumber(e.target.value)} style={inputStyle}>
+              <option value="">— unset —</option>
+              <option value="1">1 — Cold Introduction</option>
+              <option value="2">2 — Second Touch</option>
+              <option value="3">3 — Final Touch</option>
             </select>
           </div>
         </div>
@@ -801,19 +816,26 @@ function TemplatesTab({ authHeaders }: SectionProps) {
         >
           <Plus size={14} /> New Template
         </button>
-        <div style={{ display: 'flex', gap: 6, marginLeft: 8 }}>
-          {(['', 'contractor', 'real_estate_agent'] as const).map(t => (
+        <div style={{ display: 'flex', gap: 6, marginLeft: 8, flexWrap: 'wrap' }}>
+          {[
+            { value: '',                   label: 'All' },
+            { value: 'contractor',         label: '🔨 Contractor' },
+            { value: 'homeowner',          label: '🏡 Homeowner' },
+            { value: 'real_estate_agent',  label: '🏠 RE Agent' },
+            { value: 'investor_flipper',   label: '💼 Flipper' },
+            { value: 'investor_buy_hold',  label: '🏘 Buy & Hold' },
+          ].map(({ value, label }) => (
             <button
-              key={t}
-              onClick={() => setTypeFilter(t)}
+              key={value}
+              onClick={() => setTypeFilter(value)}
               style={{
                 padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600,
-                border: typeFilter === t ? '1px solid var(--color-brand)' : '1px solid var(--color-border)',
-                background: typeFilter === t ? 'rgba(226,114,42,0.1)' : 'var(--color-surface)',
-                color: typeFilter === t ? 'var(--color-brand)' : 'var(--color-text-muted)', cursor: 'pointer',
+                border: typeFilter === value ? '1px solid var(--color-brand)' : '1px solid var(--color-border)',
+                background: typeFilter === value ? 'rgba(226,114,42,0.1)' : 'var(--color-surface)',
+                color: typeFilter === value ? 'var(--color-brand)' : 'var(--color-text-muted)', cursor: 'pointer',
               }}
             >
-              {t === '' ? 'All Types' : t === 'contractor' ? '🔨 Contractors' : '🏠 RE Agents'}
+              {label}
             </button>
           ))}
         </div>
@@ -863,7 +885,14 @@ function TemplatesTab({ authHeaders }: SectionProps) {
                 </span>
                 <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--color-text)' }}>{t.name}</span>
                 <span style={{ fontSize: 11, color: '#7c70e8' }}>
-                  {t.prospect_type === 'contractor' ? '🔨 Contractor' : '🏠 RE Agent'}
+                  {({
+                    contractor:        '🔨 Contractor',
+                    homeowner:         '🏡 Homeowner',
+                    real_estate_agent: '🏠 RE Agent',
+                    investor_flipper:  '💼 Flipper',
+                    investor_buy_hold: '🏘 Buy & Hold',
+                  } as Record<string, string>)[t.prospect_type] ?? t.prospect_type}
+                  {t.touch_number ? ` · Touch ${t.touch_number}` : ''}
                 </span>
                 <span style={{ fontSize: 11, color: 'var(--color-text-muted)', marginLeft: 'auto' }}>
                   Updated {new Date(t.updated_at).toLocaleDateString()}
