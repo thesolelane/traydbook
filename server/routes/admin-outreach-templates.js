@@ -1,10 +1,13 @@
 import { Router } from 'express'
 import { supabaseAdmin } from '../lib/clients.js'
 import { requireAuth, requireAnyStaff, requireAdminLevel, requireServiceKeyOrStaff } from '../lib/auth.js'
+import { generateUnsubscribeToken } from '../lib/unsubscribe-token.js'
 
 const router = Router()
 
-const MERGE_TAGS = ['{{first_name}}', '{{trade}}', '{{city}}', '{{license_number}}', '{{state}}']
+const MERGE_TAGS = ['{{first_name}}', '{{trade}}', '{{city}}', '{{license_number}}', '{{state}}', '{{unsubscribe_url}}']
+
+const APP_ORIGIN = () => process.env.APP_ORIGIN || 'https://app.traydbook.com'
 
 function escapeHtml(str) {
   return String(str || '')
@@ -15,6 +18,12 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;')
 }
 
+function buildUnsubscribeUrl(email) {
+  if (!email) return ''
+  const token = generateUnsubscribeToken(email)
+  return `${APP_ORIGIN()}/api/outreach/unsubscribe?token=${encodeURIComponent(token)}`
+}
+
 function fillMergeTags(template, prospect) {
   return template
     .replace(/\{\{first_name\}\}/g, escapeHtml(prospect.first_name))
@@ -22,6 +31,7 @@ function fillMergeTags(template, prospect) {
     .replace(/\{\{city\}\}/g, escapeHtml(prospect.city))
     .replace(/\{\{license_number\}\}/g, escapeHtml(prospect.license_number))
     .replace(/\{\{state\}\}/g, escapeHtml(prospect.state))
+    .replace(/\{\{unsubscribe_url\}\}/g, buildUnsubscribeUrl(prospect.email_found))
 }
 
 // ── Templates CRUD ────────────────────────────────────────────────────────────
@@ -208,6 +218,31 @@ router.patch('/send-log/:id', requireServiceKeyOrStaff(['outreach:write']), asyn
 
   if (error) return res.status(500).json({ error: error.message })
   res.json(data)
+})
+
+// ── Unsubscribes ──────────────────────────────────────────────────────────────
+
+// GET /api/admin/outreach/unsubscribes
+router.get('/unsubscribes', requireAuth, requireAnyStaff, async (req, res) => {
+  const { limit = 100, offset = 0 } = req.query
+  const { data, error, count } = await supabaseAdmin
+    .from('outreach_unsubscribes')
+    .select('*', { count: 'exact' })
+    .order('unsubscribed_at', { ascending: false })
+    .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1)
+  if (error) return res.status(500).json({ error: error.message })
+  res.json({ unsubscribes: data || [], total: count || 0 })
+})
+
+// DELETE /api/admin/outreach/unsubscribes/:email — admin removes an opt-out
+router.delete('/unsubscribes/:email', requireAuth, requireAdminLevel, async (req, res) => {
+  const email = decodeURIComponent(req.params.email).toLowerCase()
+  const { error } = await supabaseAdmin
+    .from('outreach_unsubscribes')
+    .delete()
+    .eq('email', email)
+  if (error) return res.status(500).json({ error: error.message })
+  res.json({ ok: true, email })
 })
 
 export default router

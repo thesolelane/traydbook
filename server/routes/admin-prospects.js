@@ -3,6 +3,15 @@ import multer from 'multer'
 import { parse } from 'csv-parse/sync'
 import { supabaseAdmin } from '../lib/clients.js'
 import { requireAuth, requireAnyStaff, requireAdminLevel, requireServiceKeyOrStaff } from '../lib/auth.js'
+import { generateUnsubscribeToken } from '../lib/unsubscribe-token.js'
+
+const APP_ORIGIN = () => process.env.APP_ORIGIN || 'https://app.traydbook.com'
+
+function buildUnsubscribeUrl(email) {
+  if (!email) return ''
+  const token = generateUnsubscribeToken(email)
+  return `${APP_ORIGIN()}/api/outreach/unsubscribe?token=${encodeURIComponent(token)}`
+}
 
 function escapeHtml(str) {
   return String(str || '')
@@ -166,13 +175,16 @@ router.get('/work-queue', requireServiceKeyOrStaff(['outreach:read']), async (re
     prospectsQuery = prospectsQuery.not('id', 'in', `(${sentProspectIds.join(',')})`)
   }
 
-  const [prospectsResult, templatesResult] = await Promise.all([
+  const [prospectsResult, templatesResult, unsubscribesResult] = await Promise.all([
     prospectsQuery,
     supabaseAdmin
       .from('outreach_templates')
       .select('*')
       .eq('status', 'approved')
       .order('updated_at', { ascending: false }),
+    supabaseAdmin
+      .from('outreach_unsubscribes')
+      .select('email'),
   ])
 
   if (prospectsResult.error) return res.status(500).json({ error: prospectsResult.error.message })
@@ -180,6 +192,11 @@ router.get('/work-queue', requireServiceKeyOrStaff(['outreach:read']), async (re
 
   const prospects = prospectsResult.data || []
   const templates = templatesResult.data || []
+
+  // Build a lowercase set of unsubscribed emails for O(1) lookup
+  const unsubscribedEmails = new Set(
+    (unsubscribesResult.data || []).map(r => r.email.toLowerCase())
+  )
 
   // Pick the most recently updated approved template per prospect_type
   const templateByType = {}
@@ -194,9 +211,11 @@ router.get('/work-queue', requireServiceKeyOrStaff(['outreach:read']), async (re
       .replace(/\{\{city\}\}/g, escapeHtml(p.city))
       .replace(/\{\{license_number\}\}/g, escapeHtml(p.license_number))
       .replace(/\{\{state\}\}/g, escapeHtml(p.state))
+      .replace(/\{\{unsubscribe_url\}\}/g, buildUnsubscribeUrl(p.email_found))
   }
 
   const queue = prospects
+    .filter(p => !unsubscribedEmails.has((p.email_found || '').toLowerCase()))
     .map(p => {
       const tmpl = templateByType[p.prospect_type]
       if (!tmpl) return null
@@ -319,7 +338,7 @@ router.delete('/templates/:id', requireAuth, requireAdminLevel, async (req, res)
 router.get('/work-queue', requireAuth, requireAnyStaff, async (req, res) => {
   const limit = Math.min(parseInt(req.query.limit) || 25, 100)
 
-  const [prospectsResult, templatesResult] = await Promise.all([
+  const [prospectsResult, templatesResult, unsubscribesResult] = await Promise.all([
     supabaseAdmin
       .from('outreach_prospects')
       .select('*')
@@ -331,6 +350,9 @@ router.get('/work-queue', requireAuth, requireAnyStaff, async (req, res) => {
       .from('outreach_templates')
       .select('*')
       .eq('status', 'approved'),
+    supabaseAdmin
+      .from('outreach_unsubscribes')
+      .select('email'),
   ])
 
   if (prospectsResult.error) return res.status(500).json({ error: prospectsResult.error.message })
@@ -342,12 +364,22 @@ router.get('/work-queue', requireAuth, requireAnyStaff, async (req, res) => {
     if (!templateByType[t.prospect_type]) templateByType[t.prospect_type] = t
   }
 
+  const unsubscribedEmails = new Set(
+    (unsubscribesResult.data || []).map(r => r.email.toLowerCase())
+  )
+
   const items = (prospectsResult.data || [])
+    .filter(p => !unsubscribedEmails.has((p.email_found || '').toLowerCase()))
     .map(p => {
       const template = templateByType[p.prospect_type] || templateByType['other'] || null
-      return { prospect: p, template }
+      if (!template) return null
+      return {
+        prospect: p,
+        template,
+        unsubscribe_url: buildUnsubscribeUrl(p.email_found),
+      }
     })
-    .filter(item => item.template !== null)
+    .filter(Boolean)
 
   res.json({ items, total: items.length })
 })

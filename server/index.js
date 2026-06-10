@@ -29,6 +29,7 @@ import adminBrokeragesRoutes from './routes/admin-brokerages.js'
 import adminReferralsRoutes from './routes/admin-referrals.js'
 import prospectsRoutes from './routes/admin-prospects.js'
 import outreachTemplatesRoutes from './routes/admin-outreach-templates.js'
+import outreachUnsubscribeRoutes from './routes/outreach-unsubscribe.js'
 import { logError, loadLogFromDisk } from './lib/errorLog.js'
 
 const app = express()
@@ -89,6 +90,7 @@ app.use(adminBrokeragesRoutes)
 app.use(adminReferralsRoutes)
 app.use('/api/admin/prospects', prospectsRoutes)
 app.use('/api/admin/outreach', outreachTemplatesRoutes)
+app.use(outreachUnsubscribeRoutes)
 
 if (process.env.NODE_ENV === 'production') {
   const path = await import('path')

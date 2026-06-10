@@ -97,7 +97,7 @@ const STATUS_ICON: Record<string, React.ReactNode> = {
   skipped:  <SkipForward size={12} />,
 }
 
-const MERGE_TAGS = ['{{first_name}}', '{{trade}}', '{{city}}', '{{license_number}}', '{{state}}']
+const MERGE_TAGS = ['{{first_name}}', '{{trade}}', '{{city}}', '{{license_number}}', '{{state}}', '{{unsubscribe_url}}']
 
 const TMPL_STATUS_COLOR: Record<string, string> = {
   draft:    '#e0b852',
@@ -1120,6 +1120,155 @@ function SendLogTab({ authHeaders }: SectionProps) {
           ))}
         </div>
       )}
+
+      {/* ── Unsubscribes panel ─────────────────────────────────────────── */}
+      <div style={{ marginTop: 32, borderTop: '1px solid var(--color-border)', paddingTop: 24 }}>
+        <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 16, color: 'var(--color-text)' }}>
+          Opt-out List (Unsubscribes)
+        </div>
+        <UnsubscribesPanel authHeaders={authHeaders} />
+      </div>
+    </div>
+  )
+}
+
+// ─── Unsubscribes panel (embedded inside Send Log tab) ────────────────────────
+
+interface UnsubscribeEntry {
+  id: string
+  email: string
+  unsubscribed_at: string
+  source: string
+}
+
+function UnsubscribesPanel({ authHeaders }: SectionProps) {
+  const [entries, setEntries]   = useState<UnsubscribeEntry[]>([])
+  const [total, setTotal]       = useState(0)
+  const [loading, setLoading]   = useState(true)
+  const [err, setErr]           = useState('')
+  const [removing, setRemoving] = useState<string | null>(null)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    setErr('')
+    try {
+      const res = await fetch('/api/admin/outreach/unsubscribes?limit=200', { headers: authHeaders() })
+      if (!res.ok) throw new Error('Failed to load unsubscribes')
+      const data = await res.json()
+      setEntries(data.unsubscribes || [])
+      setTotal(data.total || 0)
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Failed')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { void load() }, [load])
+
+  async function handleRemove(email: string) {
+    if (!confirm(`Remove ${email} from the unsubscribe list? They will be eligible for outreach again.`)) return
+    setRemoving(email)
+    try {
+      const res = await fetch(`/api/admin/outreach/unsubscribes/${encodeURIComponent(email)}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      })
+      if (!res.ok) {
+        const d = await res.json()
+        throw new Error(d.error || 'Remove failed')
+      }
+      setEntries(prev => prev.filter(e => e.email !== email))
+      setTotal(t => Math.max(0, t - 1))
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Remove failed')
+    } finally {
+      setRemoving(null)
+    }
+  }
+
+  const SOURCE_LABEL: Record<string, string> = {
+    email_link: 'Email link',
+    admin:      'Admin',
+    bounce:     'Bounce',
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+        <div style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
+          {total > 0
+            ? <><strong style={{ color: 'var(--color-text)' }}>{total.toLocaleString()}</strong> email{total !== 1 ? 's' : ''} opted out — these are skipped by the work-queue.</>
+            : 'No opt-outs yet.'}
+        </div>
+        <button
+          onClick={load}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+            borderRadius: 6, color: 'var(--color-text-muted)', padding: '5px 12px', fontSize: 12, cursor: 'pointer',
+          }}
+        >
+          <RefreshCw size={12} /> Refresh
+        </button>
+      </div>
+
+      {err && (
+        <div style={{ padding: 12, background: '#2a1515', border: '1px solid #e05252', borderRadius: 8, color: '#e05252', fontSize: 13 }}>{err}</div>
+      )}
+
+      {loading ? (
+        <div style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>Loading...</div>
+      ) : entries.length === 0 ? (
+        <div style={{ color: 'var(--color-text-muted)', fontSize: 13, textAlign: 'center', padding: 40 }}>
+          No unsubscribes on record.
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {entries.map(entry => (
+            <div key={entry.id} style={{
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 8,
+              padding: '10px 16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              flexWrap: 'wrap',
+            }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text)', flex: 1 }}>
+                {entry.email}
+              </span>
+              <span style={{
+                padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700,
+                background: '#2a1515', color: '#e05252', textTransform: 'uppercase',
+              }}>
+                opted out
+              </span>
+              <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
+                {SOURCE_LABEL[entry.source] || entry.source}
+              </span>
+              <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
+                {new Date(entry.unsubscribed_at).toLocaleString()}
+              </span>
+              <button
+                onClick={() => handleRemove(entry.email)}
+                disabled={removing === entry.email}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  padding: '4px 10px', borderRadius: 5,
+                  border: '1px solid var(--color-border)',
+                  background: 'none', color: 'var(--color-text-muted)',
+                  fontSize: 11, cursor: removing === entry.email ? 'not-allowed' : 'pointer',
+                  opacity: removing === entry.email ? 0.5 : 1,
+                }}
+              >
+                <Trash2 size={11} /> Remove
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -1134,7 +1283,7 @@ export default function ProspectsSection({ authHeaders }: SectionProps) {
       <TabBar active={tab} onChange={t => setTab(t as typeof tab)} />
       {tab === 'prospects' && <ProspectsTab authHeaders={authHeaders} />}
       {tab === 'templates' && <TemplatesTab authHeaders={authHeaders} />}
-      {tab === 'send-log' && <SendLogTab authHeaders={authHeaders} />}
+      {tab === 'send-log'  && <SendLogTab authHeaders={authHeaders} />}
     </div>
   )
 }
