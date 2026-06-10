@@ -86,6 +86,7 @@ const STATUS_COLOR: Record<string, string> = {
   sent:     '#52c97a',
   replied:  '#10B981',
   skipped:  '#888',
+  bounced:  '#e05252',
 }
 
 const STATUS_ICON: Record<string, React.ReactNode> = {
@@ -95,6 +96,7 @@ const STATUS_ICON: Record<string, React.ReactNode> = {
   sent:     <CheckCircle size={12} />,
   replied:  <CheckCircle size={12} />,
   skipped:  <SkipForward size={12} />,
+  bounced:  <XCircle size={12} />,
 }
 
 const MERGE_TAGS = ['{{first_name}}', '{{trade}}', '{{city}}', '{{license_number}}', '{{state}}', '{{unsubscribe_url}}']
@@ -254,7 +256,7 @@ function ProspectsTab({ authHeaders }: SectionProps) {
     await loadProspects()
   }
 
-  const statuses = ['pending', 'enriched', 'drafted', 'sent', 'replied', 'skipped']
+  const statuses = ['pending', 'enriched', 'drafted', 'sent', 'replied', 'skipped', 'bounced']
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -267,6 +269,7 @@ function ProspectsTab({ authHeaders }: SectionProps) {
             { label: 'Pending', value: stats.by_status.pending || 0, color: '#e0b852' },
             { label: 'Drafted', value: stats.by_status.drafted || 0, color: '#7c70e8' },
             { label: 'Sent', value: stats.by_status.sent || 0, color: '#52c97a' },
+            { label: 'Bounced', value: stats.by_status.bounced || 0, color: '#e05252' },
           ].map(s => (
             <div key={s.label} style={{
               background: 'var(--color-surface)',

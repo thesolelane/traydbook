@@ -250,7 +250,7 @@ router.patch('/send-log/:id', requireServiceKeyOrStaff(['outreach:write']), asyn
 
   if (error) return res.status(500).json({ error: error.message })
 
-  // Auto-suppress bounced addresses so they are never contacted again
+  // Auto-suppress bounced addresses and mark prospect as bounced
   if (delivery_status === 'bounced' && existing.prospect_id) {
     const { data: prospect } = await supabaseAdmin
       .from('outreach_prospects')
@@ -266,6 +266,14 @@ router.patch('/send-log/:id', requireServiceKeyOrStaff(['outreach:write']), asyn
       if (upsertErr) {
         console.warn('[send-log] Failed to suppress bounced email:', upsertErr.message)
       }
+    }
+
+    const { error: prospectErr } = await supabaseAdmin
+      .from('outreach_prospects')
+      .update({ status: 'bounced', updated_at: new Date().toISOString() })
+      .eq('id', existing.prospect_id)
+    if (prospectErr) {
+      console.warn('[send-log] Failed to mark prospect as bounced:', prospectErr.message)
     }
   }
 
