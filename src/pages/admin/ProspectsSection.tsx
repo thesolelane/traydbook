@@ -1193,12 +1193,20 @@ function UnsubscribesPanel({ authHeaders }: SectionProps) {
     bounce:     'Bounce',
   }
 
+  const bounceCount  = entries.filter(e => e.source === 'bounce').length
+  const optOutCount  = entries.filter(e => e.source !== 'bounce').length
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
         <div style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
           {total > 0
-            ? <><strong style={{ color: 'var(--color-text)' }}>{total.toLocaleString()}</strong> email{total !== 1 ? 's' : ''} suppressed (opt-outs &amp; bounces) — these are skipped by the work-queue.</>
+            ? <>
+                <strong style={{ color: 'var(--color-text)' }}>{total.toLocaleString()}</strong> suppressed
+                {entries.length > 0 && (
+                  <> — <strong style={{ color: 'var(--color-text)' }}>{optOutCount}</strong> opt-out{optOutCount !== 1 ? 's' : ''}, <strong style={{ color: 'var(--color-text)' }}>{bounceCount}</strong> bounce{bounceCount !== 1 ? 's' : ''}</>
+                )}
+              </>
             : 'No opt-outs or bounces yet.'}
         </div>
         <button
