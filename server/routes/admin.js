@@ -593,5 +593,24 @@ router.delete(
   }
 )
 
+// GET /api/admin/users/:userId/ledger — full credit ledger for a user
+router.get('/api/admin/users/:userId/ledger', requireAuth, requireAdminLevel, async (req, res) => {
+  const { userId } = req.params
+  const limit = Math.min(parseInt(req.query.limit ?? '100'), 200)
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('credit_ledger')
+      .select('id, delta, balance_after, transaction_type, description, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    if (error) throw error
+    res.json({ ledger: data ?? [] })
+  } catch (err) {
+    console.error('[admin/ledger]', err.message)
+    res.status(500).json({ error: err.message })
+  }
+})
+
 export { logError }
 export default router

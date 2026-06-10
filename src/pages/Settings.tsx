@@ -20,7 +20,7 @@ import NotificationsTab from './settings/NotificationsTab'
 import PrivacyTab from './settings/PrivacyTab'
 import BillingTab from './settings/BillingTab'
 import VerificationTab from './settings/VerificationTab'
-import WalletTab from './settings/WalletTab'
+import AdvancedTab from './settings/AdvancedTab'
 import DangerTab from './settings/DangerTab'
 
 type Tab =
@@ -31,7 +31,7 @@ type Tab =
   | 'verification'
   | 'danger'
   | 'team'
-  | 'wallet'
+  | 'advanced'
   | 'staff'
 
 interface TabDef {
@@ -73,7 +73,7 @@ export default function Settings() {
       icon: <ShieldCheck size={15} />,
       contractorOnly: true,
     },
-    { id: 'wallet', label: 'Crypto Wallet', icon: <Wallet size={15} />, contractorOnly: true },
+    { id: 'advanced', label: 'Advanced', icon: <Wallet size={15} />, contractorOnly: true },
     { id: 'team', label: 'Team', icon: <Users size={15} />, ownerOnly: true },
     { id: 'staff', label: 'Staff', icon: <Shield size={15} />, adminOnly: true },
     { id: 'danger', label: 'Danger Zone', icon: <Trash2 size={15} /> },
@@ -209,7 +209,7 @@ export default function Settings() {
             {activeTab === 'privacy' && isContractor && <PrivacyTab />}
             {activeTab === 'billing' && !isContractor && <BillingTab />}
             {activeTab === 'verification' && isContractor && <VerificationTab />}
-            {activeTab === 'wallet' && isContractor && <WalletTab />}
+            {activeTab === 'advanced' && isContractor && <AdvancedTab />}
             {activeTab === 'staff' && isSuperAdminUser && (
               <div>
                 <h2
