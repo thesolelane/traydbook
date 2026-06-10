@@ -142,14 +142,32 @@ router.get('/stats', requireAuth, requireAnyStaff, async (req, res) => {
 router.get('/work-queue', requireServiceKeyOrStaff(['outreach:read']), async (req, res) => {
   const { limit = 50 } = req.query
 
+  // Fetch already-sent prospect IDs to exclude them from the work queue.
+  // This guards against duplicate sends when Bob crashes mid-batch or retries
+  // before the status flip lands (server-side dedup; DB-level UNIQUE constraint
+  // on outreach_send_log.prospect_id is the last line of defence).
+  const sentLogResult = await supabaseAdmin
+    .from('outreach_send_log')
+    .select('prospect_id')
+
+  if (sentLogResult.error) return res.status(500).json({ error: sentLogResult.error.message })
+
+  const sentProspectIds = (sentLogResult.data || []).map(r => r.prospect_id)
+
+  let prospectsQuery = supabaseAdmin
+    .from('outreach_prospects')
+    .select('id, prospect_type, first_name, last_name, business_name, city, state, license_number, type_class, general_type, email_found')
+    .eq('status', 'enriched')
+    .not('email_found', 'is', null)
+    .order('created_at', { ascending: true })
+    .limit(parseInt(limit))
+
+  if (sentProspectIds.length > 0) {
+    prospectsQuery = prospectsQuery.not('id', 'in', `(${sentProspectIds.join(',')})`)
+  }
+
   const [prospectsResult, templatesResult] = await Promise.all([
-    supabaseAdmin
-      .from('outreach_prospects')
-      .select('id, prospect_type, first_name, last_name, business_name, city, state, license_number, type_class, general_type, email_found')
-      .eq('status', 'enriched')
-      .not('email_found', 'is', null)
-      .order('created_at', { ascending: true })
-      .limit(parseInt(limit)),
+    prospectsQuery,
     supabaseAdmin
       .from('outreach_templates')
       .select('*')
