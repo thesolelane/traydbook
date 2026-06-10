@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { supabaseAdmin } from '../lib/clients.js'
 import { requireAuth, requireAnyStaff, requireAdminLevel, requireServiceKeyOrStaff } from '../lib/auth.js'
 import { generateUnsubscribeToken } from '../lib/unsubscribe-token.js'
+import { appendEmailFooter } from '../lib/email-footer.js'
 
 const router = Router()
 
@@ -147,7 +148,7 @@ router.get('/send-log', requireServiceKeyOrStaff(['outreach:read']), async (req,
 
 // POST /api/admin/outreach/send-log — Bob writes a send record
 router.post('/send-log', requireServiceKeyOrStaff(['outreach:write']), async (req, res) => {
-  const { prospect_id, template_id, rendered_subject, rendered_body_html, delivery_status, bob_job_id } = req.body
+  const { prospect_id, template_id, rendered_subject, rendered_body_html, rendered_body_text, delivery_status, bob_job_id } = req.body
   if (!prospect_id || !template_id || !rendered_subject || !rendered_body_html) {
     return res.status(400).json({ error: 'prospect_id, template_id, rendered_subject, and rendered_body_html are required' })
   }
@@ -178,13 +179,18 @@ router.post('/send-log', requireServiceKeyOrStaff(['outreach:write']), async (re
     }
   }
 
+  // Build unsubscribe URL and append CAN-SPAM footer to rendered body
+  const unsubUrl = prospect?.email_found ? buildUnsubscribeUrl(prospect.email_found) : ''
+  const { html: footeredHtml, text: footeredText } = appendEmailFooter(rendered_body_html, rendered_body_text || null, unsubUrl)
+
   const { data: logEntry, error: logError } = await supabaseAdmin
     .from('outreach_send_log')
     .insert({
       prospect_id,
       template_id,
       rendered_subject,
-      rendered_body_html,
+      rendered_body_html: footeredHtml,
+      rendered_body_text: footeredText || null,
       delivery_status: delivery_status || 'sent',
       bob_job_id: bob_job_id || null,
     })

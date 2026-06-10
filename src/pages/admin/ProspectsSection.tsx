@@ -572,14 +572,24 @@ function TemplateEditor({ initial, onSave, onClose, authHeaders }: TemplateEdito
     }
   }
 
+  const PHYSICAL_ADDRESS = 'TraydBook · 8 The Green, Suite A · Dover, DE 19901'
+  const PREVIEW_FOOTER_HTML = `<!-- traydbook-footer -->
+<div style="margin-top:32px;padding-top:16px;border-top:1px solid #e0e0e0;font-family:Arial,sans-serif;font-size:12px;color:#888;text-align:center;line-height:1.7;">
+  <p style="margin:0 0 6px 0;">This is a commercial message from TraydBook. You received this email because your contact information appears in licensed contractor public records.</p>
+  <p style="margin:0 0 6px 0;">${PHYSICAL_ADDRESS}</p>
+  <p style="margin:0;"><a href="#" style="color:#666;text-decoration:underline;">Unsubscribe</a> — to stop receiving emails from TraydBook, click the link above.</p>
+</div>`
+
   const sampleProspect = { first_name: 'Alex', trade: 'General Contractor', city: 'Austin', license_number: 'GC-12345', state: 'TX' }
-  function renderPreview(s: string) {
-    return s
+  function renderPreview(s: string, isHtml = false) {
+    const filled = s
       .replace(/\{\{first_name\}\}/g, sampleProspect.first_name)
       .replace(/\{\{trade\}\}/g, sampleProspect.trade)
       .replace(/\{\{city\}\}/g, sampleProspect.city)
       .replace(/\{\{license_number\}\}/g, sampleProspect.license_number)
       .replace(/\{\{state\}\}/g, sampleProspect.state)
+      .replace(/\{\{unsubscribe_url\}\}/g, '#')
+    return isHtml ? filled + PREVIEW_FOOTER_HTML : filled
   }
 
   return (
@@ -698,7 +708,7 @@ function TemplateEditor({ initial, onSave, onClose, authHeaders }: TemplateEdito
             </div>
             <iframe
               sandbox=""
-              srcDoc={renderPreview(bodyHtml) || '<em style="color:#999">No HTML content yet.</em>'}
+              srcDoc={renderPreview(bodyHtml, true) || '<em style="color:#999">No HTML content yet.</em>'}
               style={{ width: '100%', height: 200, border: 'none', background: '#fff' }}
               title="Email preview"
             />

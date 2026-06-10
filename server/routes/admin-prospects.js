@@ -4,6 +4,7 @@ import { parse } from 'csv-parse/sync'
 import { supabaseAdmin } from '../lib/clients.js'
 import { requireAuth, requireAnyStaff, requireAdminLevel, requireServiceKeyOrStaff } from '../lib/auth.js'
 import { generateUnsubscribeToken } from '../lib/unsubscribe-token.js'
+import { appendEmailFooter } from '../lib/email-footer.js'
 
 const APP_ORIGIN = () => process.env.APP_ORIGIN || 'https://app.traydbook.com'
 
@@ -219,12 +220,16 @@ router.get('/work-queue', requireServiceKeyOrStaff(['outreach:read']), async (re
     .map(p => {
       const tmpl = templateByType[p.prospect_type]
       if (!tmpl) return null
+      const unsubUrl = buildUnsubscribeUrl(p.email_found)
+      const rawHtml = fillTags(tmpl.body_html, p)
+      const rawText = tmpl.body_text ? fillTags(tmpl.body_text, p) : null
+      const { html: renderedHtml, text: renderedText } = appendEmailFooter(rawHtml, rawText, unsubUrl)
       return {
         prospect: p,
         template: { id: tmpl.id, name: tmpl.name, prospect_type: tmpl.prospect_type },
         rendered_subject: fillTags(tmpl.subject, p),
-        rendered_body_html: fillTags(tmpl.body_html, p),
-        rendered_body_text: tmpl.body_text ? fillTags(tmpl.body_text, p) : null,
+        rendered_body_html: renderedHtml,
+        rendered_body_text: renderedText,
       }
     })
     .filter(Boolean)
