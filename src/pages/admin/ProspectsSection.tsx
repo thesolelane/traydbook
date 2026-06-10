@@ -892,8 +892,8 @@ function TemplatesTab({ authHeaders }: SectionProps) {
     setErr('')
     try {
       const res = await fetch('/api/admin/outreach/templates', { headers: authHeaders() })
-      if (!res.ok) throw new Error('Failed to load templates')
       const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status} — Failed to load templates`)
       setTemplates(data.templates || [])
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Failed')
