@@ -70,6 +70,13 @@ function normalizeRow(row, prospectType, batchId, adminId) {
     status: 'pending',
     import_batch: batchId,
     imported_by: adminId || null,
+    // Dedup key: same first+last+zip = same person, even across multiple licenses
+    person_key:
+      (g('FIRST_NAME') || '').toLowerCase().trim() +
+      '|' +
+      (g('LAST_NAME') || '').toLowerCase().trim() +
+      '|' +
+      ((g('ZIP_CODE') || g('ZIP')) || '').trim(),
   }
 }
 
@@ -248,7 +255,14 @@ router.get('/stats', requireAuth, requireAnyStaff, async (req, res) => {
     by_type[t] = await headCount(tbl().eq('prospect_type', t))
   }
 
-  res.json({ total, by_status, by_type })
+  // Unique people — distinct person_key values (single column, so transfer is small)
+  const { data: keyRows } = await tbl()
+    .select('person_key')
+    .not('person_key', 'is', null)
+    .limit(250000)
+  const unique_people = new Set((keyRows || []).map(r => r.person_key)).size
+
+  res.json({ total, unique_people, by_status, by_type })
 })
 
 // GET /api/admin/prospects/work-queue — Bob fetches pending prospects + matching approved template
@@ -462,17 +476,25 @@ router.delete('/templates/:id', requireAuth, requireAdminLevel, async (req, res)
 router.get('/work-queue', requireAuth, requireAnyStaff, async (req, res) => {
   const limit = Math.min(parseInt(req.query.limit) || 25, 100)
 
-  const [prospectsResult, templatesResult, unsubscribesResult] = await Promise.all([
-    supabaseAdmin
-      .from('outreach_prospects')
-      .select('*')
-      .in('status', ['pending', 'enriched'])
-      .not('email_found', 'is', null)
-      .order('created_at', { ascending: true })
-      .limit(limit),
-    supabaseAdmin.from('outreach_templates').select('*').eq('status', 'approved'),
-    supabaseAdmin.from('outreach_unsubscribes').select('email'),
-  ])
+  const [prospectsResult, templatesResult, unsubscribesResult, contactedKeysResult] =
+    await Promise.all([
+      supabaseAdmin
+        .from('outreach_prospects')
+        .select('*')
+        .in('status', ['pending', 'enriched'])
+        .not('email_found', 'is', null)
+        .order('created_at', { ascending: true })
+        .limit(limit * 10), // fetch extra so person_key dedup still yields `limit` results
+      supabaseAdmin.from('outreach_templates').select('*').eq('status', 'approved'),
+      supabaseAdmin.from('outreach_unsubscribes').select('email'),
+      // All person_keys already contacted — used to skip duplicate people
+      supabaseAdmin
+        .from('outreach_prospects')
+        .select('person_key')
+        .in('status', ['sent', 'replied', 'bounced'])
+        .not('person_key', 'is', null)
+        .limit(250000),
+    ])
 
   if (prospectsResult.error) return res.status(500).json({ error: prospectsResult.error.message })
   if (templatesResult.error) return res.status(500).json({ error: templatesResult.error.message })
@@ -487,8 +509,15 @@ router.get('/work-queue', requireAuth, requireAnyStaff, async (req, res) => {
     (unsubscribesResult.data || []).map(r => r.email.toLowerCase())
   )
 
+  // Build the set of person_keys Bob has already reached out to
+  const contactedPersonKeys = new Set(
+    (contactedKeysResult.data || []).map(r => r.person_key).filter(Boolean)
+  )
+
   const items = (prospectsResult.data || [])
     .filter(p => !unsubscribedEmails.has((p.email_found || '').toLowerCase()))
+    .filter(p => !p.person_key || !contactedPersonKeys.has(p.person_key)) // skip already-contacted people
+    .slice(0, limit)
     .map(p => {
       const template = templateByType[p.prospect_type] || templateByType['other'] || null
       if (!template) return null

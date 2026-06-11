@@ -42,6 +42,7 @@ interface Prospect {
 
 interface Stats {
   total: number
+  unique_people: number
   by_status: Record<string, number>
   by_type: Record<string, number>
 }
@@ -381,7 +382,8 @@ function ProspectsTab({ authHeaders }: SectionProps) {
       {stats && (
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           {[
-            { label: 'Total', value: stats.total, color: 'var(--color-text)' },
+            { label: 'Total Records', value: stats.total, color: 'var(--color-text)' },
+            { label: 'Unique People', value: stats.unique_people || 0, color: '#38bdf8' },
             {
               label: 'Contractors',
               value: stats.by_type.contractor || 0,
