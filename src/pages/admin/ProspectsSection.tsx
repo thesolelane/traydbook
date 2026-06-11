@@ -265,7 +265,7 @@ function ProspectsTab({ authHeaders }: SectionProps) {
             if (job.error) {
               setErr(`Import error: ${job.error}`)
             } else {
-              setSuccess(`✓ Imported ${job.total.toLocaleString()} prospects (batch: ${batchId})`)
+              setSuccess(`✓ Imported ${(job.total ?? job.imported ?? 0).toLocaleString()} prospects (batch: ${batchId})`)
             }
             await loadStats()
             await loadTypeClasses(prospectType)
