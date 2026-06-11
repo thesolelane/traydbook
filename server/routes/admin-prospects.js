@@ -115,17 +115,30 @@ router.post('/upload', requireAuth, requireAdminLevel, handleUpload, async (req,
   ;(async () => {
     const job = importJobs.get(batchId)
     let totalInserted = 0
+    const sleep = ms => new Promise(r => setTimeout(r, ms))
     try {
       for (let i = 0; i < records.length; i += CHUNK_SIZE) {
         const chunk = records.slice(i, i + CHUNK_SIZE)
-        const { data: chunkData, error } = await supabaseAdmin
-          .from('outreach_prospects')
-          .upsert(chunk, { onConflict: 'license_number,prospect_type', ignoreDuplicates: false })
-          .select('id')
+        // Retry once on rate-limit (429) with a longer back-off
+        let chunkData, error
+        for (let attempt = 0; attempt < 3; attempt++) {
+          ;({ data: chunkData, error } = await supabaseAdmin
+            .from('outreach_prospects')
+            .upsert(chunk, { onConflict: 'license_number,prospect_type', ignoreDuplicates: false })
+            .select('id'))
+          if (!error) break
+          if (error.code === '429' || error.message?.includes('Too Many Requests')) {
+            await sleep(2000 * (attempt + 1))
+          } else {
+            break
+          }
+        }
         if (error) { job.error = error.message; job.done = true; return }
         totalInserted += chunkData?.length ?? chunk.length
         job.processed = Math.min(i + CHUNK_SIZE, records.length)
         job.imported = totalInserted
+        // 150ms pause between chunks — keeps us well under Supabase rate limits
+        if (i + CHUNK_SIZE < records.length) await sleep(150)
       }
       await supabaseAdmin.from('admin_audit_log').insert({
         action: 'PROSPECT_IMPORT',
