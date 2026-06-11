@@ -880,12 +880,80 @@ function MasterToggle({ on, toggling, onToggle }: { on: boolean; toggling: boole
   )
 }
 
+function TemplatePreviewModal({ subject, bodyHtml, onClose }: { subject: string; bodyHtml: string; onClose: () => void }) {
+  const overlayRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  return (
+    <div
+      ref={overlayRef}
+      onClick={e => { if (e.target === overlayRef.current) onClose() }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: 'rgba(0,0,0,0.72)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 24,
+      }}
+    >
+      <div style={{
+        background: 'var(--color-bg)',
+        border: '1px solid var(--color-border)',
+        borderRadius: 12,
+        display: 'flex', flexDirection: 'column',
+        width: '100%', maxWidth: 680,
+        maxHeight: '90vh',
+        overflow: 'hidden',
+        boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
+      }}>
+        {/* Header */}
+        <div style={{
+          display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+          padding: '14px 18px', borderBottom: '1px solid var(--color-border)', gap: 12, flexShrink: 0,
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-muted)' }}>
+              Email Preview
+            </span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text)', wordBreak: 'break-word' }}>
+              {subject || '(no subject)'}
+            </span>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'var(--color-text-muted)', fontSize: 20, lineHeight: 1,
+              padding: 4, flexShrink: 0, marginTop: -2,
+            }}
+            aria-label="Close preview"
+          >
+            ×
+          </button>
+        </div>
+        {/* Rendered email */}
+        <iframe
+          srcDoc={bodyHtml || '<p style="color:#999;font-family:sans-serif;padding:20px">No HTML content.</p>'}
+          sandbox="allow-same-origin"
+          title="Email preview"
+          style={{ flex: 1, border: 'none', minHeight: 400, background: '#fff' }}
+        />
+      </div>
+    </div>
+  )
+}
+
 function TemplatesTab({ authHeaders }: SectionProps) {
   const [templates, setTemplates]   = useState<Template[]>([])
   const [loading, setLoading]       = useState(true)
   const [err, setErr]               = useState('')
   const [editing, setEditing]       = useState<Partial<Template> | null | false>(false)
   const [toggling, setToggling]     = useState<string | null>(null)
+  const [previewing, setPreviewing] = useState<{ subject: string; bodyHtml: string } | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -1046,6 +1114,16 @@ function TemplatesTab({ authHeaders }: SectionProps) {
                       </div>
                       <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
                         <button
+                          onClick={() => setPreviewing({ subject: t.subject, bodyHtml: t.body_html || '' })}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 4,
+                            padding: '4px 10px', borderRadius: 5, border: '1px solid var(--color-border)',
+                            background: 'none', color: 'var(--color-text-muted)', fontSize: 12, cursor: 'pointer',
+                          }}
+                        >
+                          <Eye size={11} /> Preview
+                        </button>
+                        <button
                           onClick={() => setEditing(t)}
                           style={{
                             display: 'flex', alignItems: 'center', gap: 4,
@@ -1053,7 +1131,7 @@ function TemplatesTab({ authHeaders }: SectionProps) {
                             background: 'none', color: 'var(--color-text-muted)', fontSize: 12, cursor: 'pointer',
                           }}
                         >
-                          <Eye size={11} /> Edit / Preview
+                          Edit
                         </button>
                         {t.status !== 'approved' && (
                           <button
@@ -1117,6 +1195,14 @@ function TemplatesTab({ authHeaders }: SectionProps) {
           authHeaders={authHeaders}
           onClose={() => setEditing(false)}
           onSave={() => { setEditing(false); void load() }}
+        />
+      )}
+
+      {previewing && (
+        <TemplatePreviewModal
+          subject={previewing.subject}
+          bodyHtml={previewing.bodyHtml}
+          onClose={() => setPreviewing(null)}
         />
       )}
     </div>
