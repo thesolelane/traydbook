@@ -62,8 +62,19 @@ function normalizeRow(row, prospectType, batchId, adminId) {
   }
 }
 
+// Multer error → always return JSON (never HTML)
+function handleUpload(req, res, next) {
+  upload.single('file')(req, res, err => {
+    if (!err) return next()
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ error: `File too large — maximum 50MB allowed (your file exceeded the limit)` })
+    }
+    return res.status(400).json({ error: err.message || 'Upload error' })
+  })
+}
+
 // POST /api/admin/prospects/upload
-router.post('/upload', requireAuth, requireAdminLevel, upload.single('file'), async (req, res) => {
+router.post('/upload', requireAuth, requireAdminLevel, handleUpload, async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' })
 
   const prospectType = req.body.prospect_type || 'contractor'
