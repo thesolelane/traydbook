@@ -214,8 +214,8 @@ function ProspectsTab({ authHeaders }: SectionProps) {
       if (typeFilter)      params.set('prospect_type', typeFilter)
       if (typeClassFilter) params.set('type_class', typeClassFilter)
       const res = await fetch(`/api/admin/prospects?${params}`, { headers: authHeaders() })
-      if (!res.ok) throw new Error('Failed to load prospects')
       const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to load prospects')
       setProspects(data.prospects || [])
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Failed')
