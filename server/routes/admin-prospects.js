@@ -26,6 +26,10 @@ function escapeHtml(str) {
 const router = Router()
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } })
 
+// In-memory import job tracker (single-instance admin server)
+const importJobs = new Map()
+// { batchId: { total, processed, done, error, imported } }
+
 function normalizeRow(row, prospectType, batchId, adminId) {
   const g = k => {
     const key = Object.keys(row).find(r => r.trim().toUpperCase() === k.toUpperCase())
@@ -99,34 +103,56 @@ router.post('/upload', requireAuth, requireAdminLevel, handleUpload, async (req,
   const batchId = `batch_${Date.now()}`
   const adminId = req.user?.id || null
   const records = rows.map(r => normalizeRow(r, prospectType, batchId, adminId))
-
-  // Chunk into 500-row batches so large CSVs don't exceed Supabase's request size limit
   const CHUNK_SIZE = 500
-  let totalInserted = 0
-  for (let i = 0; i < records.length; i += CHUNK_SIZE) {
-    const chunk = records.slice(i, i + CHUNK_SIZE)
-    const { data: chunkData, error } = await supabaseAdmin
-      .from('outreach_prospects')
-      .upsert(chunk, {
-        onConflict: 'license_number,prospect_type',
-        ignoreDuplicates: false,
+
+  // Register the job immediately so the UI can start polling
+  importJobs.set(batchId, { total: records.length, processed: 0, imported: 0, done: false, error: null })
+
+  // Respond right away — don't wait for Supabase inserts (avoids Traefik timeout)
+  res.status(202).json({ batch_id: batchId, total: records.length, status: 'processing' })
+
+  // Process chunks in the background after the response is sent
+  ;(async () => {
+    const job = importJobs.get(batchId)
+    let totalInserted = 0
+    try {
+      for (let i = 0; i < records.length; i += CHUNK_SIZE) {
+        const chunk = records.slice(i, i + CHUNK_SIZE)
+        const { data: chunkData, error } = await supabaseAdmin
+          .from('outreach_prospects')
+          .upsert(chunk, { onConflict: 'license_number,prospect_type', ignoreDuplicates: false })
+          .select('id')
+        if (error) { job.error = error.message; job.done = true; return }
+        totalInserted += chunkData?.length ?? chunk.length
+        job.processed = Math.min(i + CHUNK_SIZE, records.length)
+        job.imported = totalInserted
+      }
+      await supabaseAdmin.from('admin_audit_log').insert({
+        action: 'PROSPECT_IMPORT',
+        target_type: 'outreach_prospects',
+        target_id: null,
+        reason: `Imported ${records.length} ${prospectType} prospects — batch ${batchId}`,
+        admin_id: adminId,
+        ip: req.ip,
+        timestamp: new Date().toISOString(),
       })
-      .select('id')
-    if (error) return res.status(500).json({ error: error.message, chunk_index: Math.floor(i / CHUNK_SIZE) })
-    totalInserted += chunkData?.length ?? chunk.length
-  }
+      job.processed = records.length
+      job.imported = totalInserted
+      job.done = true
+    } catch (e) {
+      job.error = e.message
+      job.done = true
+    }
+    // Clean up job state after 30 minutes
+    setTimeout(() => importJobs.delete(batchId), 30 * 60 * 1000)
+  })()
+})
 
-  await supabaseAdmin.from('admin_audit_log').insert({
-    action: 'PROSPECT_IMPORT',
-    target_type: 'outreach_prospects',
-    target_id: null,
-    reason: `Imported ${records.length} ${prospectType} prospects — batch ${batchId}`,
-    admin_id: adminId,
-    ip: req.ip,
-    timestamp: new Date().toISOString(),
-  })
-
-  res.json({ imported: records.length, batch_id: batchId, skipped: records.length - totalInserted })
+// GET /api/admin/prospects/import-status/:batchId — poll import progress
+router.get('/import-status/:batchId', requireAuth, requireAdminLevel, (req, res) => {
+  const job = importJobs.get(req.params.batchId)
+  if (!job) return res.status(404).json({ error: 'Job not found' })
+  res.json(job)
 })
 
 // GET /api/admin/prospects — list with filters

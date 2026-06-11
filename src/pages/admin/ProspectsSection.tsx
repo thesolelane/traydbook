@@ -179,6 +179,7 @@ function ProspectsTab({ authHeaders }: SectionProps) {
   const [prospects, setProspects]     = useState<Prospect[]>([])
   const [loading, setLoading]         = useState(true)
   const [uploading, setUploading]     = useState(false)
+  const [importJob, setImportJob]     = useState<{ batchId: string; total: number; processed: number; imported: number; done: boolean; error: string | null } | null>(null)
   const [err, setErr]                 = useState('')
   const [success, setSuccess]         = useState('')
   const [statusFilter, setStatusFilter]     = useState('pending')
@@ -232,6 +233,8 @@ function ProspectsTab({ authHeaders }: SectionProps) {
     setUploading(true)
     setErr('')
     setSuccess('')
+    setImportJob(null)
+    if (fileRef.current) fileRef.current.value = ''
     try {
       const form = new FormData()
       form.append('file', file)
@@ -243,15 +246,37 @@ function ProspectsTab({ authHeaders }: SectionProps) {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Upload failed')
-      setSuccess(`✓ Imported ${data.imported} prospects (batch: ${data.batch_id})`)
-      await loadStats()
-      await loadTypeClasses(prospectType)
-      await loadProspects()
+
+      // Server accepted — start polling for background progress
+      const batchId = data.batch_id
+      const total = data.total
+      setImportJob({ batchId, total, processed: 0, imported: 0, done: false, error: null })
+      setUploading(false)
+
+      const poll = async () => {
+        try {
+          const r = await fetch(`/api/admin/prospects/import-status/${batchId}`, { headers: authHeaders() })
+          if (!r.ok) return
+          const job = await r.json()
+          setImportJob({ batchId, total: job.total, processed: job.processed, imported: job.imported, done: job.done, error: job.error })
+          if (!job.done) {
+            setTimeout(poll, 2000)
+          } else {
+            if (job.error) {
+              setErr(`Import error: ${job.error}`)
+            } else {
+              setSuccess(`✓ Imported ${job.total.toLocaleString()} prospects (batch: ${batchId})`)
+            }
+            await loadStats()
+            await loadTypeClasses(prospectType)
+            await loadProspects()
+          }
+        } catch { setTimeout(poll, 3000) }
+      }
+      setTimeout(poll, 2000)
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Upload failed')
-    } finally {
       setUploading(false)
-      if (fileRef.current) fileRef.current.value = ''
     }
   }
 
@@ -380,9 +405,31 @@ function ProspectsTab({ authHeaders }: SectionProps) {
             Max 50MB · Deduplicates by license number
           </span>
         </div>
+        {importJob && !importJob.done && (
+          <div style={{ marginTop: 14 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 6 }}>
+              <span>Importing… {importJob.processed.toLocaleString()} / {importJob.total.toLocaleString()} rows</span>
+              <span>{importJob.total > 0 ? Math.round((importJob.processed / importJob.total) * 100) : 0}%</span>
+            </div>
+            <div style={{ height: 6, borderRadius: 4, background: 'var(--color-border)', overflow: 'hidden' }}>
+              <div style={{
+                height: '100%',
+                borderRadius: 4,
+                background: 'var(--color-brand)',
+                width: `${importJob.total > 0 ? Math.round((importJob.processed / importJob.total) * 100) : 0}%`,
+                transition: 'width 0.4s ease',
+              }} />
+            </div>
+          </div>
+        )}
         {success && (
           <div style={{ marginTop: 12, padding: '8px 12px', background: '#1a3a25', border: '1px solid #52c97a', borderRadius: 6, color: '#52c97a', fontSize: 13 }}>
             {success}
+          </div>
+        )}
+        {err && (
+          <div style={{ marginTop: 12, padding: '8px 12px', background: '#3a1a1a', border: '1px solid #e05252', borderRadius: 6, color: '#e05252', fontSize: 13 }}>
+            {err}
           </div>
         )}
       </div>
