@@ -10,6 +10,7 @@ import { loadSecrets } from './server/lib/vault.js'
 import { validateConnection } from './server/lib/connection-validator.js'
 import { activateSafeMode, isSafeMode, getSafeModeReason } from './server/lib/safe-mode.js'
 import { keyManager } from './server/lib/key-rotation.js'
+import { runProspectMatch, shouldRunMatch } from './server/lib/prospect-match.js'
 import { modeAwareMiddleware } from './server/lib/mode-middleware.js'
 
 import monitorRoutes from './server/routes/admin-monitor.js'
@@ -290,6 +291,22 @@ async function main() {
     console.log(`[admin-server] Allowed IPs: ${ips}`)
     console.log(`[admin-server] Mode: ${isSafeMode() ? '🛡️  SAFE (quarantine active)' : '✅ FULL'}`)
   })
+
+  // ── Prospect→User match scheduler (every 7 days) ─────────────────────────
+  const runMatchIfDue = async () => {
+    try {
+      if (await shouldRunMatch()) {
+        console.log('[admin] Running scheduled prospect→user match scan…')
+        const result = await runProspectMatch()
+        console.log(`[admin] Match scan complete — ${result.matched} prospect(s) converted`)
+      }
+    } catch (e) {
+      console.warn('[admin] Prospect match scan failed:', e.message)
+    }
+  }
+  // Check on startup, then every 24 h (daily check catches the 7-day threshold)
+  runMatchIfDue()
+  setInterval(runMatchIfDue, 24 * 60 * 60 * 1000)
 }
 
 main().catch(err => {

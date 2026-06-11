@@ -14,6 +14,7 @@ import {
   Trash2,
   ChevronDown,
   ChevronRight,
+  UserCheck,
 } from 'lucide-react'
 import { SectionProps } from './shared'
 
@@ -104,6 +105,7 @@ const STATUS_COLOR: Record<string, string> = {
   replied: '#10B981',
   skipped: '#888',
   bounced: '#e05252',
+  converted: '#34d399',
 }
 
 const STATUS_ICON: Record<string, React.ReactNode> = {
@@ -114,6 +116,7 @@ const STATUS_ICON: Record<string, React.ReactNode> = {
   replied: <CheckCircle size={12} />,
   skipped: <SkipForward size={12} />,
   bounced: <XCircle size={12} />,
+  converted: <UserCheck size={12} />,
 }
 
 const MERGE_TAGS = [
@@ -229,6 +232,35 @@ function ProspectsTab({ authHeaders }: SectionProps) {
   const [bounceLoading, setBounceLoading] = useState<Record<string, boolean>>({})
   const fileRef = useRef<HTMLInputElement>(null)
   const [prospectType, setProspectType] = useState<'contractor' | 'real_estate_agent'>('contractor')
+  const [matchStatus, setMatchStatus] = useState<{ last_run: string | null; next_run: string | null } | null>(null)
+  const [matchRunning, setMatchRunning] = useState(false)
+  const [matchResult, setMatchResult] = useState<{ matched: number; users_checked: number } | null>(null)
+
+  const loadMatchStatus = useCallback(async () => {
+    const res = await fetch('/api/admin/prospects/match-status', { headers: authHeaders() })
+    if (res.ok) setMatchStatus(await res.json())
+  }, [])
+
+  async function runMatch() {
+    setMatchRunning(true)
+    setMatchResult(null)
+    try {
+      const res = await fetch('/api/admin/prospects/run-match', {
+        method: 'POST',
+        headers: authHeaders(),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setMatchResult({ matched: data.matched, users_checked: data.users_checked })
+        await loadMatchStatus()
+        await loadStats()
+      } else {
+        setErr(data.error || 'Match scan failed')
+      }
+    } finally {
+      setMatchRunning(false)
+    }
+  }
 
   const loadStats = useCallback(async () => {
     const res = await fetch('/api/admin/prospects/stats', { headers: authHeaders() })
@@ -269,7 +301,8 @@ function ProspectsTab({ authHeaders }: SectionProps) {
     void loadStats()
     void loadProspects()
     void loadTypeClasses()
-  }, [loadStats, loadProspects, loadTypeClasses])
+    void loadMatchStatus()
+  }, [loadStats, loadProspects, loadTypeClasses, loadMatchStatus])
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -375,7 +408,7 @@ function ProspectsTab({ authHeaders }: SectionProps) {
     if (next && p.status === 'bounced') void fetchBounceLog(p.id)
   }
 
-  const statuses = ['pending', 'enriched', 'drafted', 'sent', 'replied', 'skipped', 'bounced']
+  const statuses = ['pending', 'enriched', 'drafted', 'sent', 'replied', 'skipped', 'bounced', 'converted']
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -394,6 +427,7 @@ function ProspectsTab({ authHeaders }: SectionProps) {
             { label: 'Drafted', value: stats.by_status.drafted || 0, color: '#7c70e8' },
             { label: 'Sent', value: stats.by_status.sent || 0, color: '#52c97a' },
             { label: 'Bounced', value: stats.by_status.bounced || 0, color: '#e05252' },
+            { label: 'Converted', value: stats.by_status.converted || 0, color: '#34d399' },
           ].map(s => (
             <div
               key={s.label}
@@ -415,6 +449,55 @@ function ProspectsTab({ authHeaders }: SectionProps) {
           ))}
         </div>
       )}
+
+      {/* ── Match Users panel ─────────────────────────────────────────── */}
+      <div
+        style={{
+          background: 'var(--color-surface)',
+          border: '1px solid var(--color-border)',
+          borderRadius: 10,
+          padding: '14px 18px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 16,
+          flexWrap: 'wrap',
+        }}
+      >
+        <UserCheck size={16} color="#34d399" />
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 600, fontSize: 13 }}>User Match Scan</div>
+          <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 2 }}>
+            {matchStatus?.last_run
+              ? `Last run: ${new Date(matchStatus.last_run).toLocaleString()} · Next auto-run: ${new Date(matchStatus.next_run!).toLocaleDateString()}`
+              : 'Never run — click to scan now'}
+          </div>
+          {matchResult && (
+            <div style={{ fontSize: 11, color: '#34d399', marginTop: 4 }}>
+              ✓ Scan complete — {matchResult.matched} prospect(s) converted across {matchResult.users_checked.toLocaleString()} users checked
+            </div>
+          )}
+        </div>
+        <button
+          onClick={runMatch}
+          disabled={matchRunning}
+          style={{
+            padding: '6px 14px',
+            borderRadius: 6,
+            border: '1px solid #34d399',
+            background: matchRunning ? 'var(--color-surface)' : '#34d39922',
+            color: '#34d399',
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: matchRunning ? 'not-allowed' : 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+          }}
+        >
+          {matchRunning ? <RefreshCw size={12} className="spin" /> : <UserCheck size={12} />}
+          {matchRunning ? 'Scanning…' : 'Run Now'}
+        </button>
+      </div>
 
       <div
         style={{

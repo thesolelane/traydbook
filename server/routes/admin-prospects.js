@@ -2,6 +2,7 @@ import { Router } from 'express'
 import multer from 'multer'
 import { parse } from 'csv-parse/sync'
 import { supabaseAdmin } from '../lib/clients.js'
+import { runProspectMatch, getMatchStatus } from '../lib/prospect-match.js'
 import {
   requireAuth,
   requireAnyStaff,
@@ -645,6 +646,28 @@ router.get('/send-log', requireAuth, requireAnyStaff, async (req, res) => {
   const { data, error, count } = await q
   if (error) return res.status(500).json({ error: error.message })
   res.json({ logs: data || [], total: count || 0 })
+})
+
+// ── Prospect → User matching ─────────────────────────────────────────────────
+
+// GET /api/admin/prospects/match-status
+router.get('/match-status', requireAuth, requireAnyStaff, async (_req, res) => {
+  try {
+    const status = await getMatchStatus()
+    res.json(status)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+// POST /api/admin/prospects/run-match — manually trigger a scan
+router.post('/run-match', requireAuth, requireAdminLevel, async (_req, res) => {
+  try {
+    const result = await runProspectMatch()
+    res.json(result)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
 })
 
 export default router
