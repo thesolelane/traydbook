@@ -16,7 +16,6 @@ import walletRoutes from './routes/wallet.js'
 import onboardingRoutes from './routes/onboarding.js'
 import uploadRoutes from './routes/upload.js'
 import postRoutes from './routes/posts.js'
-import simRoutes from './routes/sim.js'
 import trustScoreRoutes from './routes/trust-score.js'
 import queuePositionRoutes from './routes/queue-position.js'
 import passesRoutes from './routes/passes.js'
@@ -72,7 +71,6 @@ app.use('/api/admin/repair', adminRepairRoutes)
 app.use('/api/admin/revoke', adminRevokeRoutes)
 app.use('/api/admin/ai', adminAiRoutes)
 app.use('/api/admin/bob', adminBobRoutes)
-app.use(simRoutes)
 app.use(smsRoutes)
 app.use(walletRoutes)
 app.use(onboardingRoutes)
