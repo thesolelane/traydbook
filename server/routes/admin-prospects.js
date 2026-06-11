@@ -100,15 +100,21 @@ router.post('/upload', requireAuth, requireAdminLevel, handleUpload, async (req,
   const adminId = req.user?.id || null
   const records = rows.map(r => normalizeRow(r, prospectType, batchId, adminId))
 
-  const { data, error } = await supabaseAdmin
-    .from('outreach_prospects')
-    .upsert(records, {
-      onConflict: 'license_number,prospect_type',
-      ignoreDuplicates: false,
-    })
-    .select('id')
-
-  if (error) return res.status(500).json({ error: error.message })
+  // Chunk into 500-row batches so large CSVs don't exceed Supabase's request size limit
+  const CHUNK_SIZE = 500
+  let totalInserted = 0
+  for (let i = 0; i < records.length; i += CHUNK_SIZE) {
+    const chunk = records.slice(i, i + CHUNK_SIZE)
+    const { data: chunkData, error } = await supabaseAdmin
+      .from('outreach_prospects')
+      .upsert(chunk, {
+        onConflict: 'license_number,prospect_type',
+        ignoreDuplicates: false,
+      })
+      .select('id')
+    if (error) return res.status(500).json({ error: error.message, chunk_index: Math.floor(i / CHUNK_SIZE) })
+    totalInserted += chunkData?.length ?? chunk.length
+  }
 
   await supabaseAdmin.from('admin_audit_log').insert({
     action: 'PROSPECT_IMPORT',
@@ -120,7 +126,7 @@ router.post('/upload', requireAuth, requireAdminLevel, handleUpload, async (req,
     timestamp: new Date().toISOString(),
   })
 
-  res.json({ imported: records.length, batch_id: batchId, skipped: records.length - (data?.length || records.length) })
+  res.json({ imported: records.length, batch_id: batchId, skipped: records.length - totalInserted })
 })
 
 // GET /api/admin/prospects — list with filters
