@@ -215,6 +215,7 @@ router.get('/type-classes', requireAuth, requireAnyStaff, async (req, res) => {
     .select('type_class')
     .not('type_class', 'is', null)
     .neq('type_class', '')
+    .limit(250000) // override Supabase's 1000-row default — must scan all rows for distinct values
   if (prospect_type) q = q.eq('prospect_type', prospect_type)
   const { data, error } = await q
   if (error) return res.status(500).json({ error: error.message })
@@ -222,25 +223,32 @@ router.get('/type-classes', requireAuth, requireAnyStaff, async (req, res) => {
   res.json({ type_classes: classes })
 })
 
-// GET /api/admin/prospects/stats — single request, DB-side aggregation via RPC
+// HEAD count helper — returns exact count with zero rows transferred
+async function headCount(query) {
+  const { count, error } = await query.select('*', { count: 'exact', head: true })
+  return error ? 0 : (count ?? 0)
+}
+
+// GET /api/admin/prospects/stats — sequential HEAD counts (no row data transferred)
 router.get('/stats', requireAuth, requireAnyStaff, async (req, res) => {
-  // Use a single lightweight query: fetch only status + prospect_type columns
-  // with a server-side limit so Postgres only scans what it needs.
-  // PostgREST doesn't support GROUP BY natively, so we pull the minimal
-  // columns and aggregate in JS. For 100k+ rows this is fast because
-  // PostgREST streams small rows and we never materialise full records.
-  const { data, error, count } = await supabaseAdmin
-    .from('outreach_prospects')
-    .select('status, prospect_type', { count: 'exact' })
+  const tbl = () => supabaseAdmin.from('outreach_prospects')
 
-  if (error) return res.status(500).json({ error: error.message })
+  // Total first, then statuses + types sequentially to avoid request burst
+  const total = await headCount(tbl())
 
-  const stats = { total: count ?? data.length, by_status: {}, by_type: {} }
-  for (const row of data) {
-    stats.by_status[row.status] = (stats.by_status[row.status] || 0) + 1
-    stats.by_type[row.prospect_type] = (stats.by_type[row.prospect_type] || 0) + 1
+  const statuses = ['pending', 'enriched', 'drafted', 'sent', 'replied', 'skipped', 'bounced']
+  const by_status = {}
+  for (const s of statuses) {
+    by_status[s] = await headCount(tbl().eq('status', s))
   }
-  res.json(stats)
+
+  const types = ['contractor', 'real_estate_agent', 'other']
+  const by_type = {}
+  for (const t of types) {
+    by_type[t] = await headCount(tbl().eq('prospect_type', t))
+  }
+
+  res.json({ total, by_status, by_type })
 })
 
 // GET /api/admin/prospects/work-queue — Bob fetches pending prospects + matching approved template
