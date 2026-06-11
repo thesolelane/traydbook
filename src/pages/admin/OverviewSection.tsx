@@ -56,8 +56,8 @@ function eventLabel(e: ActivityEvent) {
     const status = e.onboarded
       ? `· ${e.account_type ?? 'onboarded'}`
       : e.confirmed
-      ? '· confirmed, not onboarded'
-      : '· unconfirmed'
+        ? '· confirmed, not onboarded'
+        : '· unconfirmed'
     return `New signup: ${who} ${status}`
   }
   if (e.type === 'post') return `New post · ${e.post_type ?? 'post'}`
@@ -81,9 +81,7 @@ function eventColor(e: ActivityEvent) {
 function EventIcon({ e }: { e: ActivityEvent }) {
   const size = 14
   if (e.type === 'signup') {
-    return e.onboarded
-      ? <CheckCircle2 size={size} />
-      : <UserPlus size={size} />
+    return e.onboarded ? <CheckCircle2 size={size} /> : <UserPlus size={size} />
   }
   return <Activity size={size} />
 }
@@ -324,7 +322,10 @@ export default function OverviewSection({ authHeaders }: SectionProps) {
               <option value={72}>Last 3d</option>
             </select>
             <button
-              onClick={() => { void loadStats(); void loadFeed(feedHours) }}
+              onClick={() => {
+                void loadStats()
+                void loadFeed(feedHours)
+              }}
               style={{
                 background: 'none',
                 border: 'none',
@@ -411,9 +412,8 @@ export default function OverviewSection({ authHeaders }: SectionProps) {
                   alignItems: 'center',
                   gap: 10,
                   padding: '8px 0',
-                  borderBottom: i < (feed?.events.length ?? 0) - 1
-                    ? '1px solid var(--color-border)'
-                    : 'none',
+                  borderBottom:
+                    i < (feed?.events.length ?? 0) - 1 ? '1px solid var(--color-border)' : 'none',
                 }}
               >
                 <span style={{ color: eventColor(e), flexShrink: 0 }}>
@@ -458,7 +458,8 @@ export default function OverviewSection({ authHeaders }: SectionProps) {
           }}
         >
           <RefreshCw size={10} />
-          Auto-refreshes every {POLL_INTERVAL / 1000}s · Signups include auth-level (even incomplete onboarding)
+          Auto-refreshes every {POLL_INTERVAL / 1000}s · Signups include auth-level (even incomplete
+          onboarding)
         </div>
       </SectionCard>
     </div>

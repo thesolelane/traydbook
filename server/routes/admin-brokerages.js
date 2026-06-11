@@ -37,7 +37,7 @@ router.get('/api/admin/brokerages', requireAuth, requireAdminLevel, async (req, 
   for (const t of transfers ?? []) {
     if (!totals[t.from_user_id]) totals[t.from_user_id] = { issued: 0, count: 0 }
     totals[t.from_user_id].issued += t.amount
-    totals[t.from_user_id].count  += 1
+    totals[t.from_user_id].count += 1
   }
 
   const result = brokerages.map(b => ({
@@ -50,24 +50,31 @@ router.get('/api/admin/brokerages', requireAuth, requireAdminLevel, async (req, 
 })
 
 // Transfer history for a single brokerage
-router.get('/api/admin/brokerages/:id/transfers', requireAuth, requireAdminLevel, async (req, res) => {
-  const { id } = req.params
-  const limit  = Math.min(parseInt(req.query.limit ?? '50', 10), 200)
+router.get(
+  '/api/admin/brokerages/:id/transfers',
+  requireAuth,
+  requireAdminLevel,
+  async (req, res) => {
+    const { id } = req.params
+    const limit = Math.min(parseInt(req.query.limit ?? '50', 10), 200)
 
-  const { data: transfers, error } = await supabaseAdmin
-    .from('credit_transfers')
-    .select(`
+    const { data: transfers, error } = await supabaseAdmin
+      .from('credit_transfers')
+      .select(
+        `
       id, amount, note, created_at,
       to_user:to_user_id ( id, display_name, handle, email )
-    `)
-    .eq('from_user_id', id)
-    .eq('transfer_type', 'brokerage_issue')
-    .order('created_at', { ascending: false })
-    .limit(limit)
+    `
+      )
+      .eq('from_user_id', id)
+      .eq('transfer_type', 'brokerage_issue')
+      .order('created_at', { ascending: false })
+      .limit(limit)
 
-  if (error) return res.status(500).json({ error: error.message })
+    if (error) return res.status(500).json({ error: error.message })
 
-  res.json({ transfers: transfers ?? [] })
-})
+    res.json({ transfers: transfers ?? [] })
+  }
+)
 
 export default router

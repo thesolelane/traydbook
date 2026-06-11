@@ -1,5 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Search, RefreshCw, CheckCircle, XCircle, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react'
+import {
+  Search,
+  RefreshCw,
+  CheckCircle,
+  XCircle,
+  ExternalLink,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react'
 import { getRoleLabel } from '../../lib/roles'
 import {
   SectionProps,
@@ -59,15 +67,21 @@ export default function UsersSection({ authHeaders }: SectionProps) {
   const PAGE_SIZE = 25
 
   async function toggleLedger(userId: string) {
-    if (ledgerUserId === userId) { setLedgerUserId(null); return }
+    if (ledgerUserId === userId) {
+      setLedgerUserId(null)
+      return
+    }
     setLedgerUserId(userId)
     setLedgerLoading(true)
     try {
       const res = await fetch(`/api/admin/users/${userId}/ledger`, { headers: authHeaders() })
       const json = await res.json()
       setLedgerData(json.ledger ?? [])
-    } catch { setLedgerData([]) }
-    finally { setLedgerLoading(false) }
+    } catch {
+      setLedgerData([])
+    } finally {
+      setLedgerLoading(false)
+    }
   }
 
   const loadUsers = useCallback(async () => {
@@ -271,15 +285,26 @@ export default function UsersSection({ authHeaders }: SectionProps) {
                           <img
                             src={u.avatar_url}
                             alt=""
-                            style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }}
+                            style={{
+                              width: 28,
+                              height: 28,
+                              borderRadius: '50%',
+                              objectFit: 'cover',
+                            }}
                           />
                         ) : (
                           <div
                             style={{
-                              width: 28, height: 28, borderRadius: '50%',
-                              background: 'var(--color-border)', display: 'flex',
-                              alignItems: 'center', justifyContent: 'center',
-                              fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)',
+                              width: 28,
+                              height: 28,
+                              borderRadius: '50%',
+                              background: 'var(--color-border)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: 11,
+                              fontWeight: 700,
+                              color: 'var(--color-text-muted)',
                             }}
                           >
                             {u.display_name.charAt(0).toUpperCase()}
@@ -288,7 +313,9 @@ export default function UsersSection({ authHeaders }: SectionProps) {
                         <span style={{ fontWeight: 600, fontSize: 13 }}>{u.display_name}</span>
                       </div>
                     </td>
-                    <td style={{ ...tableCellStyle, color: 'var(--color-text-muted)', fontSize: 12 }}>
+                    <td
+                      style={{ ...tableCellStyle, color: 'var(--color-text-muted)', fontSize: 12 }}
+                    >
                       {u.email ?? <span style={{ opacity: 0.35 }}>—</span>}
                     </td>
                     <td style={tableCellStyle}>
@@ -297,13 +324,19 @@ export default function UsersSection({ authHeaders }: SectionProps) {
                         onChange={e => void handleRoleChange(u.id, e.target.value)}
                         disabled={actionLoading === u.id + ':role'}
                         style={{
-                          fontSize: 12, padding: '3px 6px', borderRadius: 6,
+                          fontSize: 12,
+                          padding: '3px 6px',
+                          borderRadius: 6,
                           border: '1px solid var(--color-border)',
-                          background: 'var(--color-bg)', color: 'var(--color-text)', cursor: 'pointer',
+                          background: 'var(--color-bg)',
+                          color: 'var(--color-text)',
+                          cursor: 'pointer',
                         }}
                       >
                         {ALL_ROLES.map(r => (
-                          <option key={r} value={r}>{getRoleLabel(r)}</option>
+                          <option key={r} value={r}>
+                            {getRoleLabel(r)}
+                          </option>
                         ))}
                       </select>
                     </td>
@@ -315,11 +348,29 @@ export default function UsersSection({ authHeaders }: SectionProps) {
                     </td>
                     <td style={tableCellStyle}>
                       {u.deleted_at ? (
-                        <span style={{ fontSize: 11, color: '#DC2626', fontWeight: 700, background: 'rgba(220,38,38,0.1)', padding: '2px 8px', borderRadius: 20 }}>
+                        <span
+                          style={{
+                            fontSize: 11,
+                            color: '#DC2626',
+                            fontWeight: 700,
+                            background: 'rgba(220,38,38,0.1)',
+                            padding: '2px 8px',
+                            borderRadius: 20,
+                          }}
+                        >
                           Suspended
                         </span>
                       ) : (
-                        <span style={{ fontSize: 11, color: '#059669', fontWeight: 700, background: 'rgba(5,150,105,0.1)', padding: '2px 8px', borderRadius: 20 }}>
+                        <span
+                          style={{
+                            fontSize: 11,
+                            color: '#059669',
+                            fontWeight: 700,
+                            background: 'rgba(5,150,105,0.1)',
+                            padding: '2px 8px',
+                            borderRadius: 20,
+                          }}
+                        >
                           Active
                         </span>
                       )}
@@ -331,9 +382,17 @@ export default function UsersSection({ authHeaders }: SectionProps) {
                           target="_blank"
                           rel="noreferrer"
                           style={{
-                            padding: '4px 8px', borderRadius: 6, border: '1px solid var(--color-border)',
-                            background: 'none', cursor: 'pointer', color: 'var(--color-text-muted)',
-                            fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, textDecoration: 'none',
+                            padding: '4px 8px',
+                            borderRadius: 6,
+                            border: '1px solid var(--color-border)',
+                            background: 'none',
+                            cursor: 'pointer',
+                            color: 'var(--color-text-muted)',
+                            fontSize: 11,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            textDecoration: 'none',
                           }}
                         >
                           <ExternalLink size={11} /> Profile
@@ -341,28 +400,53 @@ export default function UsersSection({ authHeaders }: SectionProps) {
                         <button
                           onClick={() => void toggleLedger(u.id)}
                           style={{
-                            padding: '4px 8px', borderRadius: 6, border: '1px solid var(--color-border)',
+                            padding: '4px 8px',
+                            borderRadius: 6,
+                            border: '1px solid var(--color-border)',
                             background: ledgerUserId === u.id ? 'rgba(226,114,42,0.08)' : 'none',
                             cursor: 'pointer',
-                            color: ledgerUserId === u.id ? 'var(--color-brand)' : 'var(--color-text-muted)',
-                            fontSize: 11, display: 'flex', alignItems: 'center', gap: 4,
+                            color:
+                              ledgerUserId === u.id
+                                ? 'var(--color-brand)'
+                                : 'var(--color-text-muted)',
+                            fontSize: 11,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
                           }}
                         >
-                          {ledgerUserId === u.id ? <ChevronUp size={11} /> : <ChevronDown size={11} />} Ledger
+                          {ledgerUserId === u.id ? (
+                            <ChevronUp size={11} />
+                          ) : (
+                            <ChevronDown size={11} />
+                          )}{' '}
+                          Ledger
                         </button>
                         <button
                           onClick={() => void handleSuspend(u.id, !u.deleted_at)}
                           disabled={actionLoading === u.id + ':suspend'}
                           style={{
-                            padding: '4px 8px', borderRadius: 6, border: '1px solid var(--color-border)',
-                            background: 'none', cursor: 'pointer',
+                            padding: '4px 8px',
+                            borderRadius: 6,
+                            border: '1px solid var(--color-border)',
+                            background: 'none',
+                            cursor: 'pointer',
                             color: u.deleted_at ? '#059669' : '#DC2626',
-                            fontSize: 11, display: 'flex', alignItems: 'center', gap: 4,
+                            fontSize: 11,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
                           }}
                         >
-                          {u.deleted_at
-                            ? <><CheckCircle size={11} /> Reinstate</>
-                            : <><XCircle size={11} /> Suspend</>}
+                          {u.deleted_at ? (
+                            <>
+                              <CheckCircle size={11} /> Reinstate
+                            </>
+                          ) : (
+                            <>
+                              <XCircle size={11} /> Suspend
+                            </>
+                          )}
                         </button>
                       </div>
                     </td>
@@ -374,45 +458,127 @@ export default function UsersSection({ authHeaders }: SectionProps) {
                 const ledgerRow = (
                   <tr key={u.id + '-ledger'}>
                     <td colSpan={7} style={{ padding: 0, background: 'var(--color-bg)' }}>
-                      <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-border)' }}>
-                        <div style={{ fontFamily: 'var(--font-condensed)', fontWeight: 700, fontSize: 12, letterSpacing: '0.5px', textTransform: 'uppercase', color: 'var(--color-text-muted)', marginBottom: 10 }}>
+                      <div
+                        style={{
+                          padding: '16px 20px',
+                          borderBottom: '1px solid var(--color-border)',
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontFamily: 'var(--font-condensed)',
+                            fontWeight: 700,
+                            fontSize: 12,
+                            letterSpacing: '0.5px',
+                            textTransform: 'uppercase',
+                            color: 'var(--color-text-muted)',
+                            marginBottom: 10,
+                          }}
+                        >
                           Credit Ledger — {u.display_name}
                         </div>
                         {ledgerLoading ? (
-                          <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Loading…</div>
+                          <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+                            Loading…
+                          </div>
                         ) : ledgerData.length === 0 ? (
-                          <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>No ledger entries found.</div>
+                          <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+                            No ledger entries found.
+                          </div>
                         ) : (
-                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                          <table
+                            style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}
+                          >
                             <thead>
                               <tr style={{ background: 'var(--color-surface)' }}>
-                                {['Date', 'Type', 'Delta', 'Balance After', 'Description'].map(h => (
-                                  <th key={h} style={{ ...tableHeaderStyle, fontSize: 11, padding: '6px 10px' }}>{h}</th>
-                                ))}
+                                {['Date', 'Type', 'Delta', 'Balance After', 'Description'].map(
+                                  h => (
+                                    <th
+                                      key={h}
+                                      style={{
+                                        ...tableHeaderStyle,
+                                        fontSize: 11,
+                                        padding: '6px 10px',
+                                      }}
+                                    >
+                                      {h}
+                                    </th>
+                                  )
+                                )}
                               </tr>
                             </thead>
                             <tbody>
                               {ledgerData.map(row => (
                                 <tr key={row.id}>
-                                  <td style={{ ...tableCellStyle, fontSize: 11, padding: '5px 10px', color: 'var(--color-text-muted)' }}>
+                                  <td
+                                    style={{
+                                      ...tableCellStyle,
+                                      fontSize: 11,
+                                      padding: '5px 10px',
+                                      color: 'var(--color-text-muted)',
+                                    }}
+                                  >
                                     {new Date(row.created_at).toLocaleString()}
                                   </td>
-                                  <td style={{ ...tableCellStyle, fontSize: 11, padding: '5px 10px' }}>
-                                    <span style={{
-                                      background: row.transaction_type === 'purchase' ? 'rgba(5,150,105,0.1)' : row.delta < 0 ? 'rgba(220,38,38,0.08)' : 'rgba(226,114,42,0.08)',
-                                      color: row.transaction_type === 'purchase' ? '#059669' : row.delta < 0 ? '#DC2626' : 'var(--color-brand)',
-                                      borderRadius: 4, padding: '1px 6px', fontWeight: 700,
-                                    }}>
+                                  <td
+                                    style={{ ...tableCellStyle, fontSize: 11, padding: '5px 10px' }}
+                                  >
+                                    <span
+                                      style={{
+                                        background:
+                                          row.transaction_type === 'purchase'
+                                            ? 'rgba(5,150,105,0.1)'
+                                            : row.delta < 0
+                                              ? 'rgba(220,38,38,0.08)'
+                                              : 'rgba(226,114,42,0.08)',
+                                        color:
+                                          row.transaction_type === 'purchase'
+                                            ? '#059669'
+                                            : row.delta < 0
+                                              ? '#DC2626'
+                                              : 'var(--color-brand)',
+                                        borderRadius: 4,
+                                        padding: '1px 6px',
+                                        fontWeight: 700,
+                                      }}
+                                    >
                                       {row.transaction_type}
                                     </span>
                                   </td>
-                                  <td style={{ ...tableCellStyle, fontSize: 11, padding: '5px 10px', fontVariantNumeric: 'tabular-nums', color: row.delta >= 0 ? '#059669' : '#DC2626', fontWeight: 700 }}>
+                                  <td
+                                    style={{
+                                      ...tableCellStyle,
+                                      fontSize: 11,
+                                      padding: '5px 10px',
+                                      fontVariantNumeric: 'tabular-nums',
+                                      color: row.delta >= 0 ? '#059669' : '#DC2626',
+                                      fontWeight: 700,
+                                    }}
+                                  >
                                     {row.delta >= 0 ? `+${row.delta}` : row.delta}
                                   </td>
-                                  <td style={{ ...tableCellStyle, fontSize: 11, padding: '5px 10px', fontVariantNumeric: 'tabular-nums' }}>
+                                  <td
+                                    style={{
+                                      ...tableCellStyle,
+                                      fontSize: 11,
+                                      padding: '5px 10px',
+                                      fontVariantNumeric: 'tabular-nums',
+                                    }}
+                                  >
                                     {row.balance_after}
                                   </td>
-                                  <td style={{ ...tableCellStyle, fontSize: 11, padding: '5px 10px', color: 'var(--color-text-muted)', maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  <td
+                                    style={{
+                                      ...tableCellStyle,
+                                      fontSize: 11,
+                                      padding: '5px 10px',
+                                      color: 'var(--color-text-muted)',
+                                      maxWidth: 280,
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap',
+                                    }}
+                                  >
                                     {row.description ?? <span style={{ opacity: 0.35 }}>—</span>}
                                   </td>
                                 </tr>

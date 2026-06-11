@@ -4,7 +4,7 @@ import { verifyUnsubscribeToken } from '../lib/unsubscribe-token.js'
 
 const router = Router()
 
-const CONFIRMATION_HTML = (email) => `<!DOCTYPE html>
+const CONFIRMATION_HTML = email => `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -114,7 +114,11 @@ router.get('/api/outreach/unsubscribe', async (req, res) => {
   const { error } = await supabaseAdmin
     .from('outreach_unsubscribes')
     .upsert(
-      { email: email.toLowerCase(), source: 'email_link', unsubscribed_at: new Date().toISOString() },
+      {
+        email: email.toLowerCase(),
+        source: 'email_link',
+        unsubscribed_at: new Date().toISOString(),
+      },
       { onConflict: 'email', ignoreDuplicates: false }
     )
 

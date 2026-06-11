@@ -21,7 +21,12 @@ const onboardingLimiter = rateLimit({
 })
 
 const VALID_ACCOUNT_TYPES = [
-  'contractor', 'project_owner', 'agent', 'homeowner', 'investor', 'brokerage',
+  'contractor',
+  'project_owner',
+  'agent',
+  'homeowner',
+  'investor',
+  'brokerage',
 ]
 
 function slugify(name) {
@@ -41,7 +46,7 @@ router.post('/api/onboarding/complete', onboardingLimiter, requireAuth, async (r
     location_city,
     location_state,
     trade,
-    referral_code_used,   // optional — code from the referrer's link
+    referral_code_used, // optional — code from the referrer's link
   } = req.body
   const userId = req.user.id
 
@@ -65,15 +70,15 @@ router.post('/api/onboarding/complete', onboardingLimiter, requireAuth, async (r
   const handle = slugify(display_name.trim())
 
   // ── Referral system ───────────────────────────────────────────────────────
-  let referralCode     = null
-  let welcomeCredits   = 0
+  let referralCode = null
+  let welcomeCredits = 0
   const referralEnabled = await isReferralEnabled()
 
   if (referralEnabled) {
     // Generate a referral code for eligible account types
     if (REFERRAL_ELIGIBLE_TYPES.includes(account_type)) {
       try {
-        referralCode   = await generateUniqueCode()
+        referralCode = await generateUniqueCode()
         welcomeCredits = await calcWelcomeCredits(account_type)
       } catch (err) {
         console.error('[onboarding] referral code generation error:', err)
@@ -89,11 +94,11 @@ router.post('/api/onboarding/complete', onboardingLimiter, requireAuth, async (r
     display_name: display_name.trim(),
     handle,
     account_type,
-    location_city:   location_city?.trim() || null,
-    location_state:  location_state || null,
-    credit_balance:  welcomeCredits,
+    location_city: location_city?.trim() || null,
+    location_state: location_state || null,
+    credit_balance: welcomeCredits,
     onboarding_complete: true,
-    referral_code:   referralCode,
+    referral_code: referralCode,
   })
 
   if (userErr) {
@@ -103,7 +108,7 @@ router.post('/api/onboarding/complete', onboardingLimiter, requireAuth, async (r
 
   if (account_type === 'contractor') {
     const { error: cpErr } = await supabaseAdmin.from('contractor_profiles').insert({
-      user_id:      userId,
+      user_id: userId,
       primary_trade: trade || 'General Contractor',
     })
     if (cpErr) {
@@ -120,7 +125,7 @@ router.post('/api/onboarding/complete', onboardingLimiter, requireAuth, async (r
     } else {
       console.log(
         `[onboarding] referral credited — referrer earned ${result.credits} cr`,
-        result.held ? '(held until balance exhausted)' : '(added to balance)',
+        result.held ? '(held until balance exhausted)' : '(added to balance)'
       )
     }
   }
@@ -128,7 +133,7 @@ router.post('/api/onboarding/complete', onboardingLimiter, requireAuth, async (r
 
   res.json({
     ok: true,
-    referral_code:   referralCode,
+    referral_code: referralCode,
     welcome_credits: welcomeCredits,
   })
 })

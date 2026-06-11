@@ -367,7 +367,9 @@ router.get('/api/admin/purchases', requireAuth, requireAdminLevel, async (req, r
     const totals = {
       completed: all.filter(r => r.status === 'completed').length,
       failed: all.filter(r => r.status === 'failed').length,
-      totalCents: all.filter(r => r.status === 'completed').reduce((s, r) => s + Math.round((r.amount_usd ?? 0) * 100), 0),
+      totalCents: all
+        .filter(r => r.status === 'completed')
+        .reduce((s, r) => s + Math.round((r.amount_usd ?? 0) * 100), 0),
     }
 
     const purchases = (data ?? []).map(p => ({
@@ -496,24 +498,33 @@ router.get('/api/admin/platform-settings', requireAuth, requireAdminLevel, async
   }
 })
 
-router.patch('/api/admin/platform-settings/:key', requireAuth, requireAdminLevel, async (req, res) => {
-  const { key } = req.params
-  const { value } = req.body ?? {}
-  if (value === undefined) return res.status(400).json({ error: 'value is required' })
+router.patch(
+  '/api/admin/platform-settings/:key',
+  requireAuth,
+  requireAdminLevel,
+  async (req, res) => {
+    const { key } = req.params
+    const { value } = req.body ?? {}
+    if (value === undefined) return res.status(400).json({ error: 'value is required' })
 
-  try {
-    const { error } = await supabaseAdmin
-      .from('platform_settings')
-      .update({ value: String(value), updated_at: new Date().toISOString(), updated_by: req.user.id })
-      .eq('key', key)
-    if (error) return res.status(500).json({ error: error.message })
-    console.log(`[platform-settings] ${key} = ${value} by ${req.user.id}`)
-    void pushToBob('/platform-setting', { key, value })
-    res.json({ ok: true, key, value })
-  } catch (err) {
-    res.status(500).json({ error: err.message })
+    try {
+      const { error } = await supabaseAdmin
+        .from('platform_settings')
+        .update({
+          value: String(value),
+          updated_at: new Date().toISOString(),
+          updated_by: req.user.id,
+        })
+        .eq('key', key)
+      if (error) return res.status(500).json({ error: error.message })
+      console.log(`[platform-settings] ${key} = ${value} by ${req.user.id}`)
+      void pushToBob('/platform-setting', { key, value })
+      res.json({ ok: true, key, value })
+    } catch (err) {
+      res.status(500).json({ error: err.message })
+    }
   }
-})
+)
 
 // ── Secrets Management ────────────────────────────────────────────────────────
 

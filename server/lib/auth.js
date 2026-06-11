@@ -3,7 +3,12 @@ import { supabaseAdmin, supabaseAnon } from './clients.js'
 
 export const STAFF_ROLES = ['admin', 'admin_2', 'hired_dev', 'moderator']
 export const PLATFORM_ROLES = [
-  'contractor', 'project_owner', 'agent', 'homeowner', 'investor', 'brokerage',
+  'contractor',
+  'project_owner',
+  'agent',
+  'homeowner',
+  'investor',
+  'brokerage',
 ]
 export const ALL_INVITE_ROLES = [...STAFF_ROLES, ...PLATFORM_ROLES]
 

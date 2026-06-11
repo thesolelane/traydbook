@@ -20,10 +20,10 @@ function getAllowedRoles(callerRole: string) {
 }
 
 const ROLE_PERMISSION_LABEL: Record<string, string> = {
-  admin:       'You can invite any role including other Admins.',
-  admin_2:     'You can invite Hired Dev, Moderator, and platform users. Not Admin 1 or Admin 2.',
-  hired_dev:   'You can invite Moderator and platform users only.',
-  moderator:   'You can invite platform users (Contractor, Project Owner, Agent, Homeowner) only.',
+  admin: 'You can invite any role including other Admins.',
+  admin_2: 'You can invite Hired Dev, Moderator, and platform users. Not Admin 1 or Admin 2.',
+  hired_dev: 'You can invite Moderator and platform users only.',
+  moderator: 'You can invite platform users (Contractor, Project Owner, Agent, Homeowner) only.',
 }
 
 interface AdminInvite {
@@ -169,20 +169,24 @@ export default function StaffPanel({
       </div>
 
       {currentUserRole && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: 8,
-          padding: '10px 14px',
-          borderRadius: 8,
-          background: 'rgba(232,93,4,0.06)',
-          border: '1px solid rgba(232,93,4,0.2)',
-          marginBottom: 20,
-          fontSize: 12,
-          color: 'var(--color-text-muted)',
-        }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 8,
+            padding: '10px 14px',
+            borderRadius: 8,
+            background: 'rgba(232,93,4,0.06)',
+            border: '1px solid rgba(232,93,4,0.2)',
+            marginBottom: 20,
+            fontSize: 12,
+            color: 'var(--color-text-muted)',
+          }}
+        >
           <Shield size={13} style={{ flexShrink: 0, marginTop: 1, color: 'var(--color-brand)' }} />
-          <span>{ROLE_PERMISSION_LABEL[currentUserRole] ?? 'Contact Admin 1 for invite permissions.'}</span>
+          <span>
+            {ROLE_PERMISSION_LABEL[currentUserRole] ?? 'Contact Admin 1 for invite permissions.'}
+          </span>
         </div>
       )}
 

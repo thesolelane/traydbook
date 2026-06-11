@@ -100,14 +100,22 @@ export default function ErrorLogSection({ authHeaders }: SectionProps) {
             </button>
             {confirmClear ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Clear all logs?</span>
+                <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+                  Clear all logs?
+                </span>
                 <button
                   onClick={() => void handleClear()}
                   disabled={clearing}
                   style={{
-                    padding: '4px 10px', fontSize: 12, fontWeight: 600,
-                    background: '#e05252', border: 'none', borderRadius: 6,
-                    cursor: 'pointer', color: '#fff', opacity: clearing ? 0.6 : 1,
+                    padding: '4px 10px',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    background: '#e05252',
+                    border: 'none',
+                    borderRadius: 6,
+                    cursor: 'pointer',
+                    color: '#fff',
+                    opacity: clearing ? 0.6 : 1,
                   }}
                 >
                   {clearing ? 'Clearing…' : 'Yes, clear'}
@@ -116,9 +124,14 @@ export default function ErrorLogSection({ authHeaders }: SectionProps) {
                   onClick={() => setConfirmClear(false)}
                   disabled={clearing}
                   style={{
-                    padding: '4px 10px', fontSize: 12, fontWeight: 600,
-                    background: 'var(--color-bg)', border: '1px solid var(--color-border)',
-                    borderRadius: 6, cursor: 'pointer', color: 'var(--color-text)',
+                    padding: '4px 10px',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    background: 'var(--color-bg)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 6,
+                    cursor: 'pointer',
+                    color: 'var(--color-text)',
                   }}
                 >
                   Cancel
@@ -129,11 +142,16 @@ export default function ErrorLogSection({ authHeaders }: SectionProps) {
                 onClick={() => setConfirmClear(true)}
                 disabled={entries.length === 0}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  padding: '6px 12px', fontSize: 12, fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '6px 12px',
+                  fontSize: 12,
+                  fontWeight: 600,
                   background: entries.length === 0 ? 'var(--color-bg)' : '#e0525220',
                   border: `1px solid ${entries.length === 0 ? 'var(--color-border)' : '#e05252'}`,
-                  borderRadius: 6, cursor: entries.length === 0 ? 'not-allowed' : 'pointer',
+                  borderRadius: 6,
+                  cursor: entries.length === 0 ? 'not-allowed' : 'pointer',
                   color: entries.length === 0 ? 'var(--color-text-muted)' : '#e05252',
                 }}
               >

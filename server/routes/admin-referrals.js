@@ -12,12 +12,14 @@ const router = Router()
 
 // Search users that have a referral_code or held credits
 router.get('/api/admin/referrals', requireAuth, requireAdminLevel, async (req, res) => {
-  const q     = (req.query.q ?? '').trim()
+  const q = (req.query.q ?? '').trim()
   const limit = Math.min(parseInt(req.query.limit ?? '50', 10), 200)
 
   let query = supabaseAdmin
     .from('users')
-    .select('id, display_name, handle, email, account_type, referral_code, referral_credits_held, credit_balance, created_at')
+    .select(
+      'id, display_name, handle, email, account_type, referral_code, referral_credits_held, credit_balance, created_at'
+    )
     .order('created_at', { ascending: false })
     .limit(limit)
 
@@ -44,15 +46,15 @@ router.get('/api/admin/referrals', requireAuth, requireAdminLevel, async (req, r
   const counts = {}
   for (const s of signups ?? []) {
     if (!counts[s.referrer_id]) counts[s.referrer_id] = { total: 0, held: 0, released: 0 }
-    counts[s.referrer_id].total    += 1
-    if (s.held)  counts[s.referrer_id].held     += 1
-    else         counts[s.referrer_id].released += 1
+    counts[s.referrer_id].total += 1
+    if (s.held) counts[s.referrer_id].held += 1
+    else counts[s.referrer_id].released += 1
   }
 
   const result = users.map(u => ({
     ...u,
-    referral_count:    counts[u.id]?.total    ?? 0,
-    referrals_held:    counts[u.id]?.held     ?? 0,
+    referral_count: counts[u.id]?.total ?? 0,
+    referrals_held: counts[u.id]?.held ?? 0,
     referrals_released: counts[u.id]?.released ?? 0,
   }))
 
@@ -66,21 +68,25 @@ router.get('/api/admin/referrals/:userId', requireAuth, requireAdminLevel, async
   const [{ data: user, error: userErr }, { data: signups, error: sigErr }] = await Promise.all([
     supabaseAdmin
       .from('users')
-      .select('id, display_name, handle, email, account_type, referral_code, referral_credits_held, credit_balance, created_at')
+      .select(
+        'id, display_name, handle, email, account_type, referral_code, referral_credits_held, credit_balance, created_at'
+      )
       .eq('id', userId)
       .single(),
     supabaseAdmin
       .from('referral_signups')
-      .select(`
+      .select(
+        `
         id, credits_earned, held, released_at, created_at,
         referred_user:referred_user_id ( id, display_name, handle, email, account_type )
-      `)
+      `
+      )
       .eq('referrer_id', userId)
       .order('created_at', { ascending: false }),
   ])
 
   if (userErr) return res.status(404).json({ error: 'User not found' })
-  if (sigErr)  return res.status(500).json({ error: sigErr.message })
+  if (sigErr) return res.status(500).json({ error: sigErr.message })
 
   res.json({ user, signups: signups ?? [] })
 })

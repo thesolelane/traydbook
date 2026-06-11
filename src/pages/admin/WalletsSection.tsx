@@ -227,7 +227,9 @@ export default function WalletsSection({ authHeaders }: SectionProps) {
                           {w.solana_pubkey.slice(0, 8)}…{w.solana_pubkey.slice(-6)}
                         </span>
                       ) : (
-                        <span style={{ opacity: 0.4, color: 'var(--color-text-muted)' }}>not set</span>
+                        <span style={{ opacity: 0.4, color: 'var(--color-text-muted)' }}>
+                          not set
+                        </span>
                       )}
                     </td>
                   </tr>

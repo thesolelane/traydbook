@@ -39,10 +39,10 @@ const labelStyle: React.CSSProperties = {
 }
 
 export default function BundlesSection({ authHeaders }: SectionProps) {
-  const [bundles, setBundles]   = useState<Bundle[]>([])
-  const [loading, setLoading]   = useState(true)
-  const [err, setErr]           = useState('')
-  const [saving, setSaving]     = useState(false)
+  const [bundles, setBundles] = useState<Bundle[]>([])
+  const [loading, setLoading] = useState(true)
+  const [err, setErr] = useState('')
+  const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
 
   const [form, setForm] = useState({ name: '', credits: '', price_dollars: '', sort_order: '0' })
@@ -63,17 +63,19 @@ export default function BundlesSection({ authHeaders }: SectionProps) {
     }
   }
 
-  useEffect(() => { void load() }, [])
+  useEffect(() => {
+    void load()
+  }, [])
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     setFormErr('')
-    const credits    = parseInt(form.credits, 10)
+    const credits = parseInt(form.credits, 10)
     const price_cents = Math.round(parseFloat(form.price_dollars) * 100)
-    const sort_order  = parseInt(form.sort_order, 10)
+    const sort_order = parseInt(form.sort_order, 10)
 
-    if (!form.name.trim())        return setFormErr('Name is required')
-    if (isNaN(credits) || credits <= 0)       return setFormErr('Credits must be a positive number')
+    if (!form.name.trim()) return setFormErr('Name is required')
+    if (isNaN(credits) || credits <= 0) return setFormErr('Credits must be a positive number')
     if (isNaN(price_cents) || price_cents <= 0) return setFormErr('Price must be a positive amount')
 
     setSaving(true)
@@ -115,7 +117,16 @@ export default function BundlesSection({ authHeaders }: SectionProps) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {err && (
-        <div style={{ padding: '10px 14px', background: '#2a1515', border: '1px solid #e05252', borderRadius: 8, color: '#e05252', fontSize: 13 }}>
+        <div
+          style={{
+            padding: '10px 14px',
+            background: '#2a1515',
+            border: '1px solid #e05252',
+            borderRadius: 8,
+            color: '#e05252',
+            fontSize: 13,
+          }}
+        >
           {err}
         </div>
       )}
@@ -126,14 +137,36 @@ export default function BundlesSection({ authHeaders }: SectionProps) {
         action={
           <button
             onClick={() => setShowForm(v => !v)}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: 'var(--color-brand)', border: 'none', borderRadius: 6, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '7px 14px',
+              background: 'var(--color-brand)',
+              border: 'none',
+              borderRadius: 6,
+              color: '#fff',
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
           >
             <Plus size={14} /> New Bundle
           </button>
         }
       >
         {showForm && (
-          <form onSubmit={handleCreate} style={{ padding: '16px 20px', background: '#111', borderBottom: '1px solid #222', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <form
+            onSubmit={handleCreate}
+            style={{
+              padding: '16px 20px',
+              background: '#111',
+              borderBottom: '1px solid #222',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 14,
+            }}
+          >
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 80px', gap: 12 }}>
               <div>
                 <label style={labelStyle}>Bundle Name</label>
@@ -183,20 +216,42 @@ export default function BundlesSection({ authHeaders }: SectionProps) {
               <button
                 type="submit"
                 disabled={saving}
-                style={{ padding: '7px 16px', background: 'var(--color-brand)', border: 'none', borderRadius: 6, color: '#fff', fontSize: 13, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}
+                style={{
+                  padding: '7px 16px',
+                  background: 'var(--color-brand)',
+                  border: 'none',
+                  borderRadius: 6,
+                  color: '#fff',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: saving ? 'not-allowed' : 'pointer',
+                  opacity: saving ? 0.7 : 1,
+                }}
               >
                 {saving ? 'Creating…' : 'Create Bundle'}
               </button>
               <button
                 type="button"
-                onClick={() => { setShowForm(false); setFormErr('') }}
-                style={{ padding: '7px 16px', background: 'transparent', border: '1px solid #333', borderRadius: 6, color: '#999', fontSize: 13, cursor: 'pointer' }}
+                onClick={() => {
+                  setShowForm(false)
+                  setFormErr('')
+                }}
+                style={{
+                  padding: '7px 16px',
+                  background: 'transparent',
+                  border: '1px solid #333',
+                  borderRadius: 6,
+                  color: '#999',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                }}
               >
                 Cancel
               </button>
             </div>
             <p style={{ margin: 0, fontSize: 11, color: '#666' }}>
-              This will create a Stripe product and price. Prices cannot be edited after creation — deactivate and create a new bundle to change pricing.
+              This will create a Stripe product and price. Prices cannot be edited after creation —
+              deactivate and create a new bundle to change pricing.
             </p>
           </form>
         )}
@@ -212,31 +267,53 @@ export default function BundlesSection({ authHeaders }: SectionProps) {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                {['Name', 'Credits', 'Price', 'Per credit', 'Stripe price', 'Order', 'Status', ''].map(h => (
-                  <th key={h} style={tableHeaderStyle}>{h}</th>
+                {[
+                  'Name',
+                  'Credits',
+                  'Price',
+                  'Per credit',
+                  'Stripe price',
+                  'Order',
+                  'Status',
+                  '',
+                ].map(h => (
+                  <th key={h} style={tableHeaderStyle}>
+                    {h}
+                  </th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {bundles.map(b => (
                 <tr key={b.id} style={{ opacity: b.active ? 1 : 0.45 }}>
-                  <td style={tableCellStyle}><span style={{ fontWeight: 600 }}>{b.name}</span></td>
+                  <td style={tableCellStyle}>
+                    <span style={{ fontWeight: 600 }}>{b.name}</span>
+                  </td>
                   <td style={tableCellStyle}>{b.credits.toLocaleString()}</td>
                   <td style={tableCellStyle}>{formatDollars(b.price_cents)}</td>
                   <td style={tableCellStyle}>{centsPerCredit(b)}</td>
-                  <td style={{ ...tableCellStyle, fontFamily: 'monospace', fontSize: 11, color: '#888' }}>
+                  <td
+                    style={{
+                      ...tableCellStyle,
+                      fontFamily: 'monospace',
+                      fontSize: 11,
+                      color: '#888',
+                    }}
+                  >
                     {b.stripe_price_id ?? <span style={{ color: '#e05252' }}>none</span>}
                   </td>
                   <td style={tableCellStyle}>{b.sort_order}</td>
                   <td style={tableCellStyle}>
-                    <span style={{
-                      padding: '2px 8px',
-                      borderRadius: 10,
-                      fontSize: 11,
-                      fontWeight: 600,
-                      background: b.active ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.06)',
-                      color: b.active ? '#4ade80' : '#666',
-                    }}>
+                    <span
+                      style={{
+                        padding: '2px 8px',
+                        borderRadius: 10,
+                        fontSize: 11,
+                        fontWeight: 600,
+                        background: b.active ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.06)',
+                        color: b.active ? '#4ade80' : '#666',
+                      }}
+                    >
                       {b.active ? 'Active' : 'Inactive'}
                     </span>
                   </td>
@@ -244,7 +321,13 @@ export default function BundlesSection({ authHeaders }: SectionProps) {
                     <button
                       onClick={() => toggleActive(b)}
                       title={b.active ? 'Deactivate' : 'Activate'}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: b.active ? '#4ade80' : '#555', padding: 4 }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: b.active ? '#4ade80' : '#555',
+                        padding: 4,
+                      }}
                     >
                       {b.active ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
                     </button>
@@ -256,9 +339,19 @@ export default function BundlesSection({ authHeaders }: SectionProps) {
         )}
       </SectionCard>
 
-      <div style={{ padding: '12px 16px', background: '#111', border: '1px solid #222', borderRadius: 8, fontSize: 12, color: '#666' }}>
-        <strong style={{ color: '#888' }}>Note:</strong> To change a bundle's price or credit count, deactivate it and create a new one.
-        Stripe prices are immutable once created. Active bundles appear in the checkout UI automatically.
+      <div
+        style={{
+          padding: '12px 16px',
+          background: '#111',
+          border: '1px solid #222',
+          borderRadius: 8,
+          fontSize: 12,
+          color: '#666',
+        }}
+      >
+        <strong style={{ color: '#888' }}>Note:</strong> To change a bundle's price or credit count,
+        deactivate it and create a new one. Stripe prices are immutable once created. Active bundles
+        appear in the checkout UI automatically.
       </div>
     </div>
   )

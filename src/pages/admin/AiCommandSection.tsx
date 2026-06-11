@@ -170,7 +170,9 @@ export default function AiCommandSection({ authHeaders }: SectionProps) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
       {/* Tab bar */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--color-border)', marginBottom: 20 }}>
+      <div
+        style={{ display: 'flex', borderBottom: '1px solid var(--color-border)', marginBottom: 20 }}
+      >
         <button style={TAB_STYLE(tab === 'command')} onClick={() => setTab('command')}>
           <Terminal size={14} /> AI Command
         </button>
@@ -193,8 +195,19 @@ export default function AiCommandSection({ authHeaders }: SectionProps) {
             {EXAMPLES.map(ex => (
               <button
                 key={ex}
-                onClick={() => { setCommand(ex); inputRef.current?.focus() }}
-                style={{ padding: '4px 10px', borderRadius: 20, fontSize: 11, border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text-muted)', cursor: 'pointer' }}
+                onClick={() => {
+                  setCommand(ex)
+                  inputRef.current?.focus()
+                }}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: 20,
+                  fontSize: 11,
+                  border: '1px solid var(--color-border)',
+                  background: 'var(--color-surface)',
+                  color: 'var(--color-text-muted)',
+                  cursor: 'pointer',
+                }}
               >
                 {ex}
               </button>
@@ -206,72 +219,256 @@ export default function AiCommandSection({ authHeaders }: SectionProps) {
               ref={inputRef}
               value={command}
               onChange={e => setCommand(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void runCommand() } }}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  void runCommand()
+                }
+              }}
               rows={2}
               placeholder="Type a command... (Enter to send)"
-              style={{ flex: 1, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8, color: 'var(--color-text)', padding: '10px 14px', fontSize: 13, resize: 'none', fontFamily: 'var(--font-sans)' }}
+              style={{
+                flex: 1,
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 8,
+                color: 'var(--color-text)',
+                padding: '10px 14px',
+                fontSize: 13,
+                resize: 'none',
+                fontFamily: 'var(--font-sans)',
+              }}
             />
             <button
               onClick={() => void runCommand()}
               disabled={loading || command.length < 3}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px', borderRadius: 8, border: 'none', background: 'var(--color-brand)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading || command.length < 3 ? 0.6 : 1 }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '10px 18px',
+                borderRadius: 8,
+                border: 'none',
+                background: 'var(--color-brand)',
+                color: '#fff',
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading || command.length < 3 ? 0.6 : 1,
+              }}
             >
               {loading ? <Loader size={14} /> : <Send size={14} />}
               {loading ? 'Thinking...' : 'Run'}
             </button>
           </div>
 
-          {err && <div style={{ padding: 12, background: '#2a1515', border: '1px solid #e05252', borderRadius: 8, color: '#e05252', fontSize: 13 }}>{err}</div>}
+          {err && (
+            <div
+              style={{
+                padding: 12,
+                background: '#2a1515',
+                border: '1px solid #e05252',
+                borderRadius: 8,
+                color: '#e05252',
+                fontSize: 13,
+              }}
+            >
+              {err}
+            </div>
+          )}
 
           {result && (
-            <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 10, padding: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div
+              style={{
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 10,
+                padding: 18,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 14,
+              }}
+            >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text)' }}>{result.plan?.intent}</span>
-                <span style={{ fontSize: 11, color: confColor, fontWeight: 700 }}>{Math.round(confidence * 100)}% confident</span>
-                <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--color-text-muted)', background: 'var(--color-bg)', padding: '2px 8px', borderRadius: 4 }}>via {result.provider}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text)' }}>
+                  {result.plan?.intent}
+                </span>
+                <span style={{ fontSize: 11, color: confColor, fontWeight: 700 }}>
+                  {Math.round(confidence * 100)}% confident
+                </span>
+                <span
+                  style={{
+                    marginLeft: 'auto',
+                    fontSize: 11,
+                    color: 'var(--color-text-muted)',
+                    background: 'var(--color-bg)',
+                    padding: '2px 8px',
+                    borderRadius: 4,
+                  }}
+                >
+                  via {result.provider}
+                </span>
               </div>
-              <div style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{result.explanation}</div>
+              <div style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
+                {result.explanation}
+              </div>
               {result.plan?.parameters && Object.keys(result.plan.parameters).length > 0 && (
                 <div style={{ background: 'var(--color-bg)', borderRadius: 6, padding: 10 }}>
-                  <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Parameters</div>
-                  <pre style={{ margin: 0, fontSize: 11, color: 'var(--color-text)', fontFamily: 'monospace' }}>{JSON.stringify(result.plan.parameters, null, 2)}</pre>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: 'var(--color-text-muted)',
+                      marginBottom: 6,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                    }}
+                  >
+                    Parameters
+                  </div>
+                  <pre
+                    style={{
+                      margin: 0,
+                      fontSize: 11,
+                      color: 'var(--color-text)',
+                      fontFamily: 'monospace',
+                    }}
+                  >
+                    {JSON.stringify(result.plan.parameters, null, 2)}
+                  </pre>
                 </div>
               )}
               {result.preview && result.preview.length > 0 && (
                 <div style={{ background: 'var(--color-bg)', borderRadius: 6, padding: 10 }}>
-                  <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Preview ({result.preview.length})</div>
-                  <pre style={{ margin: 0, fontSize: 11, color: 'var(--color-text)', fontFamily: 'monospace', maxHeight: 200, overflow: 'auto' }}>{JSON.stringify(result.preview, null, 2)}</pre>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: 'var(--color-text-muted)',
+                      marginBottom: 6,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                    }}
+                  >
+                    Preview ({result.preview.length})
+                  </div>
+                  <pre
+                    style={{
+                      margin: 0,
+                      fontSize: 11,
+                      color: 'var(--color-text)',
+                      fontFamily: 'monospace',
+                      maxHeight: 200,
+                      overflow: 'auto',
+                    }}
+                  >
+                    {JSON.stringify(result.preview, null, 2)}
+                  </pre>
                 </div>
               )}
               {result.requiresConfirmation ? (
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                   <AlertTriangle size={14} color="#e0b852" />
-                  <span style={{ fontSize: 12, color: '#e0b852', flex: 1 }}>This action requires confirmation before executing</span>
-                  <button onClick={() => setResult(null)} style={{ padding: '7px 14px', borderRadius: 6, border: '1px solid var(--color-border)', background: 'none', color: 'var(--color-text-muted)', fontSize: 12, cursor: 'pointer' }}>Cancel</button>
-                  <button onClick={executeConfirmed} disabled={executing} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px', borderRadius: 6, border: 'none', background: 'var(--color-brand)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                  <span style={{ fontSize: 12, color: '#e0b852', flex: 1 }}>
+                    This action requires confirmation before executing
+                  </span>
+                  <button
+                    onClick={() => setResult(null)}
+                    style={{
+                      padding: '7px 14px',
+                      borderRadius: 6,
+                      border: '1px solid var(--color-border)',
+                      background: 'none',
+                      color: 'var(--color-text-muted)',
+                      fontSize: 12,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={executeConfirmed}
+                    disabled={executing}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '7px 16px',
+                      borderRadius: 6,
+                      border: 'none',
+                      background: 'var(--color-brand)',
+                      color: '#fff',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
                     {executing ? <Loader size={12} /> : <CheckCircle size={12} />}
                     {executing ? 'Executing...' : 'Confirm & Execute'}
                   </button>
                 </div>
               ) : (
-                <div style={{ fontSize: 12, color: '#52c97a' }}>✓ Read-only — no confirmation needed</div>
+                <div style={{ fontSize: 12, color: '#52c97a' }}>
+                  ✓ Read-only — no confirmation needed
+                </div>
               )}
             </div>
           )}
 
           {executed && (
-            <div style={{ padding: 14, background: '#1a3a25', border: '1px solid #52c97a', borderRadius: 8 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#52c97a', marginBottom: 8 }}>✓ Executed</div>
-              <pre style={{ margin: 0, fontSize: 11, color: 'var(--color-text)', fontFamily: 'monospace' }}>{JSON.stringify(executed, null, 2)}</pre>
+            <div
+              style={{
+                padding: 14,
+                background: '#1a3a25',
+                border: '1px solid #52c97a',
+                borderRadius: 8,
+              }}
+            >
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#52c97a', marginBottom: 8 }}>
+                ✓ Executed
+              </div>
+              <pre
+                style={{
+                  margin: 0,
+                  fontSize: 11,
+                  color: 'var(--color-text)',
+                  fontFamily: 'monospace',
+                }}
+              >
+                {JSON.stringify(executed, null, 2)}
+              </pre>
             </div>
           )}
 
           {history.length > 0 && (
             <div>
-              <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Recent Commands</div>
+              <div
+                style={{
+                  fontSize: 11,
+                  color: 'var(--color-text-muted)',
+                  marginBottom: 6,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                }}
+              >
+                Recent Commands
+              </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {history.map((h, i) => (
-                  <button key={i} onClick={() => setCommand(h)} style={{ textAlign: 'left', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 6, padding: '6px 10px', fontSize: 12, color: 'var(--color-text-muted)', cursor: 'pointer' }}>{h}</button>
+                  <button
+                    key={i}
+                    onClick={() => setCommand(h)}
+                    style={{
+                      textAlign: 'left',
+                      background: 'var(--color-surface)',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: 6,
+                      padding: '6px 10px',
+                      fontSize: 12,
+                      color: 'var(--color-text-muted)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {h}
+                  </button>
                 ))}
               </div>
             </div>
@@ -289,8 +486,22 @@ export default function AiCommandSection({ authHeaders }: SectionProps) {
             </span>
             {messages.length > 0 && (
               <button
-                onClick={() => { setMessages([]); setLastSources([]); setLastMeta(null); setChatErr('') }}
-                style={{ marginLeft: 'auto', fontSize: 11, background: 'none', border: '1px solid #333', borderRadius: 4, color: '#666', padding: '3px 8px', cursor: 'pointer' }}
+                onClick={() => {
+                  setMessages([])
+                  setLastSources([])
+                  setLastMeta(null)
+                  setChatErr('')
+                }}
+                style={{
+                  marginLeft: 'auto',
+                  fontSize: 11,
+                  background: 'none',
+                  border: '1px solid #333',
+                  borderRadius: 4,
+                  color: '#666',
+                  padding: '3px 8px',
+                  cursor: 'pointer',
+                }}
               >
                 Clear chat
               </button>
@@ -298,10 +509,23 @@ export default function AiCommandSection({ authHeaders }: SectionProps) {
           </div>
 
           {/* Message thread */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minHeight: 120, maxHeight: 520, overflowY: 'auto', padding: '4px 0' }}>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 12,
+              minHeight: 120,
+              maxHeight: 520,
+              overflowY: 'auto',
+              padding: '4px 0',
+            }}
+          >
             {messages.length === 0 && !chatLoading && (
               <div style={{ textAlign: 'center', padding: '40px 0', color: '#555', fontSize: 13 }}>
-                <Bot size={28} style={{ marginBottom: 8, opacity: 0.3, display: 'block', margin: '0 auto 10px' }} />
+                <Bot
+                  size={28}
+                  style={{ marginBottom: 8, opacity: 0.3, display: 'block', margin: '0 auto 10px' }}
+                />
                 Ask Bob anything — construction code, TraydBook context, general questions
               </div>
             )}
@@ -316,33 +540,37 @@ export default function AiCommandSection({ authHeaders }: SectionProps) {
                   alignItems: 'flex-start',
                 }}
               >
-                <div style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: '50%',
-                  background: m.role === 'user' ? 'var(--color-brand)' : '#333',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: '#fff',
-                }}>
+                <div
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: '50%',
+                    background: m.role === 'user' ? 'var(--color-brand)' : '#333',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: '#fff',
+                  }}
+                >
                   {m.role === 'user' ? 'You' : <Bot size={14} />}
                 </div>
-                <div style={{
-                  maxWidth: '78%',
-                  background: m.role === 'user' ? 'rgba(232,93,4,0.12)' : 'var(--color-surface)',
-                  border: `1px solid ${m.role === 'user' ? 'rgba(232,93,4,0.25)' : 'var(--color-border)'}`,
-                  borderRadius: m.role === 'user' ? '12px 4px 12px 12px' : '4px 12px 12px 12px',
-                  padding: '10px 14px',
-                  fontSize: 13,
-                  lineHeight: 1.6,
-                  color: 'var(--color-text)',
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word',
-                }}>
+                <div
+                  style={{
+                    maxWidth: '78%',
+                    background: m.role === 'user' ? 'rgba(232,93,4,0.12)' : 'var(--color-surface)',
+                    border: `1px solid ${m.role === 'user' ? 'rgba(232,93,4,0.25)' : 'var(--color-border)'}`,
+                    borderRadius: m.role === 'user' ? '12px 4px 12px 12px' : '4px 12px 12px 12px',
+                    padding: '10px 14px',
+                    fontSize: 13,
+                    lineHeight: 1.6,
+                    color: 'var(--color-text)',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                  }}
+                >
                   {m.content}
                 </div>
               </div>
@@ -350,13 +578,41 @@ export default function AiCommandSection({ authHeaders }: SectionProps) {
 
             {chatLoading && (
               <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#333', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: '50%',
+                    background: '#333',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
                   <Bot size={14} color="#fff" />
                 </div>
-                <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '4px 12px 12px 12px', padding: '10px 14px' }}>
+                <div
+                  style={{
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: '4px 12px 12px 12px',
+                    padding: '10px 14px',
+                  }}
+                >
                   <span style={{ display: 'inline-flex', gap: 4 }}>
                     {[0, 1, 2].map(i => (
-                      <span key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: '#555', display: 'inline-block', animation: `pulse 1.2s ${i * 0.2}s infinite` }} />
+                      <span
+                        key={i}
+                        style={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: '50%',
+                          background: '#555',
+                          display: 'inline-block',
+                          animation: `pulse 1.2s ${i * 0.2}s infinite`,
+                        }}
+                      />
                     ))}
                   </span>
                 </div>
@@ -368,8 +624,26 @@ export default function AiCommandSection({ authHeaders }: SectionProps) {
 
           {/* Sources */}
           {lastSources.length > 0 && (
-            <div style={{ background: '#0d0d0d', border: '1px solid #222', borderRadius: 8, padding: '10px 14px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, fontSize: 11, color: '#666', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            <div
+              style={{
+                background: '#0d0d0d',
+                border: '1px solid #222',
+                borderRadius: 8,
+                padding: '10px 14px',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  marginBottom: 8,
+                  fontSize: 11,
+                  color: '#666',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                }}
+              >
                 <BookOpen size={12} /> Sources used
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -392,7 +666,16 @@ export default function AiCommandSection({ authHeaders }: SectionProps) {
           )}
 
           {chatErr && (
-            <div style={{ padding: '10px 14px', background: '#2a1515', border: '1px solid #e05252', borderRadius: 8, color: '#e05252', fontSize: 13 }}>
+            <div
+              style={{
+                padding: '10px 14px',
+                background: '#2a1515',
+                border: '1px solid #e05252',
+                borderRadius: 8,
+                color: '#e05252',
+                fontSize: 13,
+              }}
+            >
               {chatErr}
             </div>
           )}
@@ -402,16 +685,45 @@ export default function AiCommandSection({ authHeaders }: SectionProps) {
             <textarea
               value={chatInput}
               onChange={e => setChatInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void sendChat() } }}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  void sendChat()
+                }
+              }}
               rows={2}
               placeholder="Ask Bob anything… (Enter to send, Shift+Enter for new line)"
               disabled={chatLoading}
-              style={{ flex: 1, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8, color: 'var(--color-text)', padding: '10px 14px', fontSize: 13, resize: 'none', fontFamily: 'var(--font-sans)', opacity: chatLoading ? 0.6 : 1 }}
+              style={{
+                flex: 1,
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 8,
+                color: 'var(--color-text)',
+                padding: '10px 14px',
+                fontSize: 13,
+                resize: 'none',
+                fontFamily: 'var(--font-sans)',
+                opacity: chatLoading ? 0.6 : 1,
+              }}
             />
             <button
               onClick={() => void sendChat()}
               disabled={chatLoading || !chatInput.trim()}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 18px', borderRadius: 8, border: 'none', background: 'var(--color-brand)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: chatLoading || !chatInput.trim() ? 'not-allowed' : 'pointer', opacity: chatLoading || !chatInput.trim() ? 0.6 : 1 }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '10px 18px',
+                borderRadius: 8,
+                border: 'none',
+                background: 'var(--color-brand)',
+                color: '#fff',
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: chatLoading || !chatInput.trim() ? 'not-allowed' : 'pointer',
+                opacity: chatLoading || !chatInput.trim() ? 0.6 : 1,
+              }}
             >
               {chatLoading ? <Loader size={14} /> : <Send size={14} />}
               {chatLoading ? 'Thinking…' : 'Send'}

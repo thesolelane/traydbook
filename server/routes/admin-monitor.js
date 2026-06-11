@@ -84,11 +84,36 @@ router.get('/audit', async (req, res) => {
 
 // GET /api/admin/monitor/domains
 const PING_TARGETS = [
-  { domain: 'traydbook.com',       label: 'Marketing Site', url: 'https://traydbook.com',            note: 'Public-facing landing page.' },
-  { domain: 'app.traydbook.com',   label: 'Web App',        url: 'https://app.traydbook.com',         note: 'Main application. React + Supabase.' },
-  { domain: 'admin.traydbook.com', label: 'Admin Panel',    url: 'https://admin.traydbook.com/healthz', note: 'Admin control center. Deployed on Coolify.' },
-  { domain: 'bob.traydbook.com',   label: 'Bob (AI Agent)', url: 'https://bob.traydbook.com',         note: 'Autonomous AI agent. Deployed on Coolify.' },
-  { domain: 'secure.traydbook.com',label: 'Auth / API',     url: 'https://secure.traydbook.com',      note: 'Supabase auth and API endpoint.' },
+  {
+    domain: 'traydbook.com',
+    label: 'Marketing Site',
+    url: 'https://traydbook.com',
+    note: 'Public-facing landing page.',
+  },
+  {
+    domain: 'app.traydbook.com',
+    label: 'Web App',
+    url: 'https://app.traydbook.com',
+    note: 'Main application. React + Supabase.',
+  },
+  {
+    domain: 'admin.traydbook.com',
+    label: 'Admin Panel',
+    url: 'https://admin.traydbook.com/healthz',
+    note: 'Admin control center. Deployed on Coolify.',
+  },
+  {
+    domain: 'bob.traydbook.com',
+    label: 'Bob (AI Agent)',
+    url: 'https://bob.traydbook.com',
+    note: 'Autonomous AI agent. Deployed on Coolify.',
+  },
+  {
+    domain: 'secure.traydbook.com',
+    label: 'Auth / API',
+    url: 'https://secure.traydbook.com',
+    note: 'Supabase auth and API endpoint.',
+  },
 ]
 
 router.get('/domains', async (_req, res) => {
@@ -119,7 +144,7 @@ router.get('/domains', async (_req, res) => {
       }
     })
   )
-  const isDevEnv = !!(process.env.REPLIT_DEV_DOMAIN)
+  const isDevEnv = !!process.env.REPLIT_DEV_DOMAIN
   res.json({ domains: results, checkedAt: new Date().toISOString(), devEnv: isDevEnv })
 })
 
@@ -133,8 +158,9 @@ router.get('/activity', async (req, res) => {
 
   try {
     // Auth-level signups (includes users who never finished onboarding)
-    const { data: authData, error: authErr } =
-      await supabaseAdmin.auth.admin.listUsers({ perPage: 200 })
+    const { data: authData, error: authErr } = await supabaseAdmin.auth.admin.listUsers({
+      perPage: 200,
+    })
     if (authErr) return res.status(500).json({ error: authErr.message })
 
     const recentAuth = (authData?.users ?? [])
@@ -158,27 +184,26 @@ router.get('/activity', async (req, res) => {
     }
 
     // Recent posts / bids / jobs for activity pulse
-    const [{ data: recentPosts }, { data: recentBids }, { data: recentJobs }] =
-      await Promise.all([
-        supabaseAdmin
-          .from('posts')
-          .select('id, author_id, post_type, created_at')
-          .gte('created_at', since)
-          .order('created_at', { ascending: false })
-          .limit(20),
-        supabaseAdmin
-          .from('bids')
-          .select('id, contractor_id, created_at')
-          .gte('created_at', since)
-          .order('created_at', { ascending: false })
-          .limit(20),
-        supabaseAdmin
-          .from('job_listings')
-          .select('id, poster_id, created_at')
-          .gte('created_at', since)
-          .order('created_at', { ascending: false })
-          .limit(20),
-      ])
+    const [{ data: recentPosts }, { data: recentBids }, { data: recentJobs }] = await Promise.all([
+      supabaseAdmin
+        .from('posts')
+        .select('id, author_id, post_type, created_at')
+        .gte('created_at', since)
+        .order('created_at', { ascending: false })
+        .limit(20),
+      supabaseAdmin
+        .from('bids')
+        .select('id, contractor_id, created_at')
+        .gte('created_at', since)
+        .order('created_at', { ascending: false })
+        .limit(20),
+      supabaseAdmin
+        .from('job_listings')
+        .select('id, poster_id, created_at')
+        .gte('created_at', since)
+        .order('created_at', { ascending: false })
+        .limit(20),
+    ])
 
     const signups = recentAuth.map(u => ({
       type: 'signup',
@@ -193,7 +218,11 @@ router.get('/activity', async (req, res) => {
 
     const events = [
       ...signups,
-      ...(recentPosts ?? []).map(p => ({ type: 'post', post_type: p.post_type, created_at: p.created_at })),
+      ...(recentPosts ?? []).map(p => ({
+        type: 'post',
+        post_type: p.post_type,
+        created_at: p.created_at,
+      })),
       ...(recentBids ?? []).map(b => ({ type: 'bid', created_at: b.created_at })),
       ...(recentJobs ?? []).map(j => ({ type: 'job', created_at: j.created_at })),
     ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))

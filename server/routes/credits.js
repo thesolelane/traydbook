@@ -37,7 +37,9 @@ router.post('/api/credits/transfer', transferLimiter, requireAuth, async (req, r
     return res.status(400).json({ error: 'amount exceeds single-transfer limit (100,000)' })
   }
   if (!VALID_TRANSFER_TYPES.includes(transfer_type)) {
-    return res.status(400).json({ error: `Invalid transfer_type. Must be one of: ${VALID_TRANSFER_TYPES.join(', ')}` })
+    return res
+      .status(400)
+      .json({ error: `Invalid transfer_type. Must be one of: ${VALID_TRANSFER_TYPES.join(', ')}` })
   }
 
   // Check recipient exists before hitting the RPC
@@ -52,10 +54,10 @@ router.post('/api/credits/transfer', transferLimiter, requireAuth, async (req, r
   }
 
   const { data, error } = await supabaseAdmin.rpc('transfer_credits', {
-    p_from_user_id:  fromUserId,
-    p_to_user_id:    to_user_id,
-    p_amount:        parsed,
-    p_note:          note?.trim() || null,
+    p_from_user_id: fromUserId,
+    p_to_user_id: to_user_id,
+    p_amount: parsed,
+    p_note: note?.trim() || null,
     p_transfer_type: transfer_type,
   })
 
@@ -88,11 +90,13 @@ router.get('/api/credits/transfers', requireAuth, async (req, res) => {
 
   let query = supabaseAdmin
     .from('credit_transfers')
-    .select(`
+    .select(
+      `
       id, amount, note, transfer_type, created_at,
       from_user:from_user_id ( id, display_name, account_type ),
       to_user:to_user_id     ( id, display_name, account_type )
-    `)
+    `
+    )
     .order('created_at', { ascending: false })
     .limit(limit)
 
@@ -123,7 +127,7 @@ router.get('/api/credits/balance', requireAuth, async (req, res) => {
 
   res.json({
     balance: data.credit_balance,
-    held:    data.referral_credits_held,
+    held: data.referral_credits_held,
   })
 })
 

@@ -1005,13 +1005,28 @@ export default function Jobs() {
                 Loading jobs...
               </div>
             ) : listings.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '60px 24px', color: 'var(--color-text-muted)' }}>
+              <div
+                style={{
+                  textAlign: 'center',
+                  padding: '60px 24px',
+                  color: 'var(--color-text-muted)',
+                }}
+              >
                 {hasActiveFilters ? (
                   <>
                     <p style={{ fontSize: 16, fontWeight: 600 }}>No jobs match your filters</p>
                     <p style={{ fontSize: 13, marginTop: 6 }}>
                       Try adjusting your filters or{' '}
-                      <button onClick={clearFilters} style={{ color: 'var(--color-brand)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13 }}>
+                      <button
+                        onClick={clearFilters}
+                        style={{
+                          color: 'var(--color-brand)',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: 13,
+                        }}
+                      >
                         clear all
                       </button>
                     </p>
@@ -1019,7 +1034,14 @@ export default function Jobs() {
                 ) : (
                   <>
                     <p style={{ fontSize: 28, marginBottom: 8 }}>🏗️</p>
-                    <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--color-text)', margin: '0 0 8px' }}>
+                    <p
+                      style={{
+                        fontSize: 16,
+                        fontWeight: 700,
+                        color: 'var(--color-text)',
+                        margin: '0 0 8px',
+                      }}
+                    >
                       {isContractor ? 'No jobs in your area yet' : 'No jobs posted yet'}
                     </p>
                     <p style={{ fontSize: 13, margin: '0 0 20px', lineHeight: 1.6 }}>
@@ -1030,11 +1052,19 @@ export default function Jobs() {
                     <Link
                       to="/jobs/post"
                       style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 6,
-                        padding: '10px 20px', borderRadius: 8,
-                        background: 'var(--color-brand)', color: '#fff',
-                        fontFamily: 'var(--font-condensed)', fontSize: 14, fontWeight: 700,
-                        textDecoration: 'none', letterSpacing: '0.3px', textTransform: 'uppercase',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '10px 20px',
+                        borderRadius: 8,
+                        background: 'var(--color-brand)',
+                        color: '#fff',
+                        fontFamily: 'var(--font-condensed)',
+                        fontSize: 14,
+                        fontWeight: 700,
+                        textDecoration: 'none',
+                        letterSpacing: '0.3px',
+                        textTransform: 'uppercase',
                       }}
                     >
                       Post a Job — Free

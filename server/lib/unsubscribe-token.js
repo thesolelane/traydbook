@@ -5,8 +5,8 @@ function getSecret() {
   if (!secret) {
     throw new Error(
       'UNSUBSCRIBE_TOKEN_SECRET is not set. ' +
-      'Set it in your environment secrets before sending outreach emails. ' +
-      'Generate one with: openssl rand -base64 32'
+        'Set it in your environment secrets before sending outreach emails. ' +
+        'Generate one with: openssl rand -base64 32'
     )
   }
   return secret

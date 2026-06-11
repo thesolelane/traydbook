@@ -6,13 +6,13 @@ function resolvePhysicalAddress() {
     if (process.env.NODE_ENV === 'production') {
       throw new Error(
         '[email-footer] PHYSICAL_ADDRESS env var is not set. ' +
-        'A valid postal address is required by CAN-SPAM before sending outreach emails. ' +
-        'Set PHYSICAL_ADDRESS to TraydBook\'s confirmed mailing address.'
+          'A valid postal address is required by CAN-SPAM before sending outreach emails. ' +
+          "Set PHYSICAL_ADDRESS to TraydBook's confirmed mailing address."
       )
     }
     console.warn(
       '[email-footer] PHYSICAL_ADDRESS env var is not set — using placeholder address. ' +
-      'This must be set before sending emails to real recipients.'
+        'This must be set before sending emails to real recipients.'
     )
     return PLACEHOLDER_ADDRESS
   }
@@ -21,12 +21,12 @@ function resolvePhysicalAddress() {
     if (process.env.NODE_ENV === 'production') {
       throw new Error(
         '[email-footer] PHYSICAL_ADDRESS is still set to the placeholder value. ' +
-        'Replace it with TraydBook\'s real confirmed mailing address before sending outreach emails.'
+          "Replace it with TraydBook's real confirmed mailing address before sending outreach emails."
       )
     }
     console.warn(
       '[email-footer] PHYSICAL_ADDRESS is still the placeholder value — emails will show a fake address. ' +
-      'Set PHYSICAL_ADDRESS to TraydBook\'s confirmed mailing address before sending to real recipients.'
+        "Set PHYSICAL_ADDRESS to TraydBook's confirmed mailing address before sending to real recipients."
     )
   }
   return trimmed
@@ -60,7 +60,9 @@ export function appendEmailFooter(html, text, unsubscribeUrl) {
   return {
     html: htmlNeedsFooter ? safeHtml + buildFooterHtml(unsubscribeUrl) : safeHtml,
     text: textNeedsFooter
-      ? (safeText ? safeText + buildFooterText(unsubscribeUrl) : buildFooterText(unsubscribeUrl))
+      ? safeText
+        ? safeText + buildFooterText(unsubscribeUrl)
+        : buildFooterText(unsubscribeUrl)
       : safeText,
   }
 }

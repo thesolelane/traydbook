@@ -2,7 +2,12 @@ import { Router } from 'express'
 import multer from 'multer'
 import { parse } from 'csv-parse/sync'
 import { supabaseAdmin } from '../lib/clients.js'
-import { requireAuth, requireAnyStaff, requireAdminLevel, requireServiceKeyOrStaff } from '../lib/auth.js'
+import {
+  requireAuth,
+  requireAnyStaff,
+  requireAdminLevel,
+  requireServiceKeyOrStaff,
+} from '../lib/auth.js'
 import { generateUnsubscribeToken } from '../lib/unsubscribe-token.js'
 import { appendEmailFooter } from '../lib/email-footer.js'
 
@@ -43,26 +48,28 @@ function normalizeRow(row, prospectType, batchId, adminId) {
   }
 
   return {
-    prospect_type:      prospectType,
-    board_code:         g('BOARD_CODE'),
-    type_class:         g('TYPE_CLASS'),
-    business_name:      g('BUSINESS_NAME') || g('BUSINESS_N'),
-    first_name:         g('FIRST_NAME'),
-    middle_initial:     g('MI') || g('MIDDLE_INITIAL'),
-    last_name:          g('LAST_NAME'),
-    general_type:       g('GENERAL') || g('GENERA') || g('GENERAL_TYPE'),
-    address1:           g('ADDRESS1'),
-    address2:           g('ADDRESS2'),
-    city:               g('CITY'),
-    state:              g('STATE'),
-    zip_code:           g('ZIP_CODE') || g('ZIP'),
-    license_number:     g('LICENSE_NUMBER') || g('LICENSE_NU') || g('LIC_NUM'),
-    license_issued:     parseDate(g('ISSUED') || g('LICENSE_ISSUED')),
-    license_expiration: parseDate(g('EXPIRATION') || g('LICENSE_EXPIRATION') || g('EXPIRATION_DATE')),
+    prospect_type: prospectType,
+    board_code: g('BOARD_CODE'),
+    type_class: g('TYPE_CLASS'),
+    business_name: g('BUSINESS_NAME') || g('BUSINESS_N'),
+    first_name: g('FIRST_NAME'),
+    middle_initial: g('MI') || g('MIDDLE_INITIAL'),
+    last_name: g('LAST_NAME'),
+    general_type: g('GENERAL') || g('GENERA') || g('GENERAL_TYPE'),
+    address1: g('ADDRESS1'),
+    address2: g('ADDRESS2'),
+    city: g('CITY'),
+    state: g('STATE'),
+    zip_code: g('ZIP_CODE') || g('ZIP'),
+    license_number: g('LICENSE_NUMBER') || g('LICENSE_NU') || g('LIC_NUM'),
+    license_issued: parseDate(g('ISSUED') || g('LICENSE_ISSUED')),
+    license_expiration: parseDate(
+      g('EXPIRATION') || g('LICENSE_EXPIRATION') || g('EXPIRATION_DATE')
+    ),
     status_description: g('STATUS_DESCRIPTION') || g('STATUS_DESC') || g('STATUS'),
-    status:             'pending',
-    import_batch:       batchId,
-    imported_by:        adminId || null,
+    status: 'pending',
+    import_batch: batchId,
+    imported_by: adminId || null,
   }
 }
 
@@ -71,7 +78,9 @@ function handleUpload(req, res, next) {
   upload.single('file')(req, res, err => {
     if (!err) return next()
     if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(413).json({ error: `File too large — maximum 50MB allowed (your file exceeded the limit)` })
+      return res
+        .status(413)
+        .json({ error: `File too large — maximum 50MB allowed (your file exceeded the limit)` })
     }
     return res.status(400).json({ error: err.message || 'Upload error' })
   })
@@ -106,7 +115,13 @@ router.post('/upload', requireAuth, requireAdminLevel, handleUpload, async (req,
   const CHUNK_SIZE = 1000
 
   // Register the job immediately so the UI can start polling
-  importJobs.set(batchId, { total: records.length, processed: 0, imported: 0, done: false, error: null })
+  importJobs.set(batchId, {
+    total: records.length,
+    processed: 0,
+    imported: 0,
+    done: false,
+    error: null,
+  })
 
   // Respond right away — don't wait for Supabase inserts (avoids Traefik timeout)
   res.status(202).json({ batch_id: batchId, total: records.length, status: 'processing' })
@@ -132,7 +147,11 @@ router.post('/upload', requireAuth, requireAdminLevel, handleUpload, async (req,
             break
           }
         }
-        if (error) { job.error = error.message; job.done = true; return }
+        if (error) {
+          job.error = error.message
+          job.done = true
+          return
+        }
         totalInserted += chunkData?.length ?? chunk.length
         job.processed = Math.min(i + CHUNK_SIZE, records.length)
         job.imported = totalInserted
@@ -177,11 +196,11 @@ router.get('/', requireAuth, requireAnyStaff, async (req, res) => {
     .order('created_at', { ascending: false })
     .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1)
 
-  if (status)        q = q.eq('status', status)
+  if (status) q = q.eq('status', status)
   if (prospect_type) q = q.eq('prospect_type', prospect_type)
-  if (type_class)    q = q.eq('type_class', type_class)
-  if (state)         q = q.eq('state', state)
-  if (batch)         q = q.eq('import_batch', batch)
+  if (type_class) q = q.eq('type_class', type_class)
+  if (state) q = q.eq('state', state)
+  if (batch) q = q.eq('import_batch', batch)
 
   const { data, error, count } = await q
   if (error) return res.status(500).json({ error: error.message })
@@ -232,9 +251,7 @@ router.get('/work-queue', requireServiceKeyOrStaff(['outreach:read']), async (re
   // This guards against duplicate sends when Bob crashes mid-batch or retries
   // before the status flip lands (server-side dedup; DB-level UNIQUE constraint
   // on outreach_send_log.prospect_id is the last line of defence).
-  const sentLogResult = await supabaseAdmin
-    .from('outreach_send_log')
-    .select('prospect_id')
+  const sentLogResult = await supabaseAdmin.from('outreach_send_log').select('prospect_id')
 
   if (sentLogResult.error) return res.status(500).json({ error: sentLogResult.error.message })
 
@@ -248,7 +265,9 @@ router.get('/work-queue', requireServiceKeyOrStaff(['outreach:read']), async (re
   // served again if a record is ever reset to a sendable status.
   let prospectsQuery = supabaseAdmin
     .from('outreach_prospects')
-    .select('id, prospect_type, first_name, last_name, business_name, city, state, license_number, type_class, general_type, email_found')
+    .select(
+      'id, prospect_type, first_name, last_name, business_name, city, state, license_number, type_class, general_type, email_found'
+    )
     .eq('status', 'enriched')
     .not('status', 'in', '("bounced","skipped")')
     .not('email_found', 'is', null)
@@ -266,9 +285,7 @@ router.get('/work-queue', requireServiceKeyOrStaff(['outreach:read']), async (re
       .select('*')
       .eq('status', 'approved')
       .order('updated_at', { ascending: false }),
-    supabaseAdmin
-      .from('outreach_unsubscribes')
-      .select('email'),
+    supabaseAdmin.from('outreach_unsubscribes').select('email'),
   ])
 
   if (prospectsResult.error) return res.status(500).json({ error: prospectsResult.error.message })
@@ -306,7 +323,11 @@ router.get('/work-queue', requireServiceKeyOrStaff(['outreach:read']), async (re
       const unsubUrl = buildUnsubscribeUrl(p.email_found)
       const rawHtml = fillTags(tmpl.body_html, p)
       const rawText = tmpl.body_text ? fillTags(tmpl.body_text, p) : null
-      const { html: renderedHtml, text: renderedText } = appendEmailFooter(rawHtml, rawText, unsubUrl)
+      const { html: renderedHtml, text: renderedText } = appendEmailFooter(
+        rawHtml,
+        rawText,
+        unsubUrl
+      )
       return {
         prospect: p,
         template: { id: tmpl.id, name: tmpl.name, prospect_type: tmpl.prospect_type },
@@ -323,7 +344,17 @@ router.get('/work-queue', requireServiceKeyOrStaff(['outreach:read']), async (re
 // PATCH /api/admin/prospects/:id — update a single prospect
 router.patch('/:id', requireAuth, requireAdminLevel, async (req, res) => {
   const { id } = req.params
-  const allowed = ['status', 'email_found', 'email_subject', 'email_body', 'skip_reason', 'bob_notes', 'sent_at', 'replied_at', 'reply_notes']
+  const allowed = [
+    'status',
+    'email_found',
+    'email_subject',
+    'email_body',
+    'skip_reason',
+    'bob_notes',
+    'sent_at',
+    'replied_at',
+    'reply_notes',
+  ]
   const updates = {}
   for (const k of allowed) {
     if (req.body[k] !== undefined) updates[k] = req.body[k]
@@ -410,10 +441,7 @@ router.patch('/templates/:id', requireAuth, requireAdminLevel, async (req, res) 
 // DELETE /api/admin/prospects/templates/:id
 router.delete('/templates/:id', requireAuth, requireAdminLevel, async (req, res) => {
   const { id } = req.params
-  const { error } = await supabaseAdmin
-    .from('outreach_templates')
-    .delete()
-    .eq('id', id)
+  const { error } = await supabaseAdmin.from('outreach_templates').delete().eq('id', id)
   if (error) return res.status(500).json({ error: error.message })
   res.json({ deleted: id })
 })
@@ -434,13 +462,8 @@ router.get('/work-queue', requireAuth, requireAnyStaff, async (req, res) => {
       .not('email_found', 'is', null)
       .order('created_at', { ascending: true })
       .limit(limit),
-    supabaseAdmin
-      .from('outreach_templates')
-      .select('*')
-      .eq('status', 'approved'),
-    supabaseAdmin
-      .from('outreach_unsubscribes')
-      .select('email'),
+    supabaseAdmin.from('outreach_templates').select('*').eq('status', 'approved'),
+    supabaseAdmin.from('outreach_unsubscribes').select('email'),
   ])
 
   if (prospectsResult.error) return res.status(500).json({ error: prospectsResult.error.message })
@@ -476,7 +499,15 @@ router.get('/work-queue', requireAuth, requireAnyStaff, async (req, res) => {
 
 // POST /api/admin/prospects/send-log — Bob logs a completed send
 router.post('/send-log', requireAuth, requireAnyStaff, async (req, res) => {
-  const { prospect_id, template_id, rendered_subject, rendered_body, delivery_status, bob_job_id, notes } = req.body
+  const {
+    prospect_id,
+    template_id,
+    rendered_subject,
+    rendered_body,
+    delivery_status,
+    bob_job_id,
+    notes,
+  } = req.body
   if (!prospect_id) return res.status(400).json({ error: 'prospect_id is required' })
 
   // Suppression guard — reject if the prospect's email is in outreach_unsubscribes
@@ -487,7 +518,8 @@ router.post('/send-log', requireAuth, requireAnyStaff, async (req, res) => {
     .eq('id', prospect_id)
     .single()
 
-  if (prospectErr) return res.status(500).json({ error: 'Failed to look up prospect: ' + prospectErr.message })
+  if (prospectErr)
+    return res.status(500).json({ error: 'Failed to look up prospect: ' + prospectErr.message })
 
   if (prospect && prospect.email_found) {
     const { data: suppressed } = await supabaseAdmin
@@ -499,7 +531,8 @@ router.post('/send-log', requireAuth, requireAnyStaff, async (req, res) => {
     if (suppressed) {
       return res.status(422).json({
         error: 'Suppressed address',
-        reason: suppressed.source === 'bounce' ? 'Email has previously bounced' : 'Email has opted out',
+        reason:
+          suppressed.source === 'bounce' ? 'Email has previously bounced' : 'Email has opted out',
         email: prospect.email_found,
       })
     }
@@ -524,7 +557,11 @@ router.post('/send-log', requireAuth, requireAnyStaff, async (req, res) => {
   // Mark the prospect as sent
   await supabaseAdmin
     .from('outreach_prospects')
-    .update({ status: 'sent', sent_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+    .update({
+      status: 'sent',
+      sent_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
     .eq('id', prospect_id)
 
   res.status(201).json(data)
@@ -536,7 +573,9 @@ router.get('/:id/send-log', requireAuth, requireAnyStaff, async (req, res) => {
 
   const { data, error } = await supabaseAdmin
     .from('outreach_send_log')
-    .select('id, prospect_id, template_id, rendered_subject, delivery_status, bob_job_id, sent_at, updated_at, delivery_events, notes')
+    .select(
+      'id, prospect_id, template_id, rendered_subject, delivery_status, bob_job_id, sent_at, updated_at, delivery_events, notes'
+    )
     .eq('prospect_id', id)
     .order('sent_at', { ascending: false })
     .limit(1)
@@ -552,11 +591,14 @@ router.get('/send-log', requireAuth, requireAnyStaff, async (req, res) => {
 
   let q = supabaseAdmin
     .from('outreach_send_log')
-    .select(`
+    .select(
+      `
       *,
       outreach_prospects ( first_name, last_name, business_name, email_found, prospect_type ),
       outreach_templates ( name, prospect_type )
-    `, { count: 'exact' })
+    `,
+      { count: 'exact' }
+    )
     .order('sent_at', { ascending: false })
     .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1)
 

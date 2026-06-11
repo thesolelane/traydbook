@@ -225,7 +225,9 @@ export default function Settings() {
                 >
                   Staff
                 </h2>
-                <StaffPanel authHeaders={() => ({ Authorization: `Bearer ${session?.access_token ?? ''}` })} />
+                <StaffPanel
+                  authHeaders={() => ({ Authorization: `Bearer ${session?.access_token ?? ''}` })}
+                />
               </div>
             )}
             {activeTab === 'danger' && <DangerTab />}

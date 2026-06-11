@@ -516,7 +516,10 @@ export default function Navbar() {
                       </div>
                     </div>
                     {[
-                      { label: 'My Profile', to: profile?.handle ? `/profile/${profile.handle}` : '/profile' },
+                      {
+                        label: 'My Profile',
+                        to: profile?.handle ? `/profile/${profile.handle}` : '/profile',
+                      },
                       { label: 'Settings', to: '/settings' },
                       ...(!isContractor && !isAdmin
                         ? [{ label: 'Buy Credits', to: '/credits' }]
@@ -811,7 +814,12 @@ export default function Navbar() {
             {[
               { label: 'Messages', Icon: MessageSquare, to: '/messages', dot: hasUnreadMessages },
               { label: 'Notifications', Icon: Bell, to: '/notifications', dot: hasUnreadNotifs },
-              { label: 'My Profile', Icon: User, to: profile?.handle ? `/profile/${profile.handle}` : '/profile', dot: false },
+              {
+                label: 'My Profile',
+                Icon: User,
+                to: profile?.handle ? `/profile/${profile.handle}` : '/profile',
+                dot: false,
+              },
               ...(!isContractor && !isAdmin
                 ? [{ label: 'Buy Credits', Icon: CreditCard, to: '/credits', dot: false }]
                 : []),

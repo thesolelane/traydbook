@@ -1,12 +1,24 @@
 import { Router } from 'express'
 import { supabaseAdmin } from '../lib/clients.js'
-import { requireAuth, requireAnyStaff, requireAdminLevel, requireServiceKeyOrStaff } from '../lib/auth.js'
+import {
+  requireAuth,
+  requireAnyStaff,
+  requireAdminLevel,
+  requireServiceKeyOrStaff,
+} from '../lib/auth.js'
 import { generateUnsubscribeToken } from '../lib/unsubscribe-token.js'
 import { appendEmailFooter } from '../lib/email-footer.js'
 
 const router = Router()
 
-const MERGE_TAGS = ['{{first_name}}', '{{trade}}', '{{city}}', '{{license_number}}', '{{state}}', '{{unsubscribe_url}}']
+const MERGE_TAGS = [
+  '{{first_name}}',
+  '{{trade}}',
+  '{{city}}',
+  '{{license_number}}',
+  '{{state}}',
+  '{{unsubscribe_url}}',
+]
 
 const APP_ORIGIN = () => process.env.APP_ORIGIN || 'https://app.traydbook.com'
 
@@ -44,7 +56,7 @@ router.get('/templates', requireAuth, requireAnyStaff, async (req, res) => {
     .from('outreach_templates')
     .select('*')
     .order('created_at', { ascending: false })
-  if (status)        q = q.eq('status', status)
+  if (status) q = q.eq('status', status)
   if (prospect_type) q = q.eq('prospect_type', prospect_type)
   const { data, error } = await q
   if (error) return res.status(500).json({ error: error.message })
@@ -66,11 +78,22 @@ router.get('/templates/:id', requireAuth, requireAnyStaff, async (req, res) => {
 router.post('/templates', requireAuth, requireAdminLevel, async (req, res) => {
   const { name, prospect_type, subject, body_html, body_text } = req.body
   if (!name || !prospect_type || !subject || !body_html) {
-    return res.status(400).json({ error: 'name, prospect_type, subject, and body_html are required' })
+    return res
+      .status(400)
+      .json({ error: 'name, prospect_type, subject, and body_html are required' })
   }
-  const VALID_TYPES = ['contractor', 'homeowner', 'real_estate_agent', 'investor_flipper', 'investor_buy_hold', 'other']
+  const VALID_TYPES = [
+    'contractor',
+    'homeowner',
+    'real_estate_agent',
+    'investor_flipper',
+    'investor_buy_hold',
+    'other',
+  ]
   if (!VALID_TYPES.includes(prospect_type)) {
-    return res.status(400).json({ error: `prospect_type must be one of: ${VALID_TYPES.join(', ')}` })
+    return res
+      .status(400)
+      .json({ error: `prospect_type must be one of: ${VALID_TYPES.join(', ')}` })
   }
   const { data, error } = await supabaseAdmin
     .from('outreach_templates')
@@ -96,9 +119,18 @@ router.patch('/templates/:id', requireAuth, requireAdminLevel, async (req, res) 
   for (const k of allowed) {
     if (req.body[k] !== undefined) updates[k] = req.body[k]
   }
-  const VALID_TYPES = ['contractor', 'homeowner', 'real_estate_agent', 'investor_flipper', 'investor_buy_hold', 'other']
+  const VALID_TYPES = [
+    'contractor',
+    'homeowner',
+    'real_estate_agent',
+    'investor_flipper',
+    'investor_buy_hold',
+    'other',
+  ]
   if (updates.prospect_type && !VALID_TYPES.includes(updates.prospect_type)) {
-    return res.status(400).json({ error: `Invalid prospect_type. Must be one of: ${VALID_TYPES.join(', ')}` })
+    return res
+      .status(400)
+      .json({ error: `Invalid prospect_type. Must be one of: ${VALID_TYPES.join(', ')}` })
   }
   if (updates.status && !['draft', 'approved', 'paused'].includes(updates.status)) {
     return res.status(400).json({ error: 'Invalid status' })
@@ -115,10 +147,7 @@ router.patch('/templates/:id', requireAuth, requireAdminLevel, async (req, res) 
 
 // DELETE /api/admin/outreach/templates/:id
 router.delete('/templates/:id', requireAuth, requireAdminLevel, async (req, res) => {
-  const { error } = await supabaseAdmin
-    .from('outreach_templates')
-    .delete()
-    .eq('id', req.params.id)
+  const { error } = await supabaseAdmin.from('outreach_templates').delete().eq('id', req.params.id)
   if (error) return res.status(500).json({ error: error.message })
   res.json({ ok: true })
 })
@@ -131,16 +160,19 @@ router.get('/send-log', requireServiceKeyOrStaff(['outreach:read']), async (req,
 
   let q = supabaseAdmin
     .from('outreach_send_log')
-    .select(`
+    .select(
+      `
       *,
       prospect:outreach_prospects(id, first_name, last_name, business_name, email_found, prospect_type, city, state),
       template:outreach_templates(id, name, prospect_type)
-    `, { count: 'exact' })
+    `,
+      { count: 'exact' }
+    )
     .order('sent_at', { ascending: false })
     .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1)
 
-  if (prospect_id)     q = q.eq('prospect_id', prospect_id)
-  if (template_id)     q = q.eq('template_id', template_id)
+  if (prospect_id) q = q.eq('prospect_id', prospect_id)
+  if (template_id) q = q.eq('template_id', template_id)
   if (delivery_status) q = q.eq('delivery_status', delivery_status)
 
   const { data, error, count } = await q
@@ -150,9 +182,21 @@ router.get('/send-log', requireServiceKeyOrStaff(['outreach:read']), async (req,
 
 // POST /api/admin/outreach/send-log — Bob writes a send record
 router.post('/send-log', requireServiceKeyOrStaff(['outreach:write']), async (req, res) => {
-  const { prospect_id, template_id, rendered_subject, rendered_body_html, rendered_body_text, delivery_status, bob_job_id } = req.body
+  const {
+    prospect_id,
+    template_id,
+    rendered_subject,
+    rendered_body_html,
+    rendered_body_text,
+    delivery_status,
+    bob_job_id,
+  } = req.body
   if (!prospect_id || !template_id || !rendered_subject || !rendered_body_html) {
-    return res.status(400).json({ error: 'prospect_id, template_id, rendered_subject, and rendered_body_html are required' })
+    return res
+      .status(400)
+      .json({
+        error: 'prospect_id, template_id, rendered_subject, and rendered_body_html are required',
+      })
   }
 
   // Suppression guard — reject if the prospect's email is in outreach_unsubscribes
@@ -163,7 +207,8 @@ router.post('/send-log', requireServiceKeyOrStaff(['outreach:write']), async (re
     .eq('id', prospect_id)
     .single()
 
-  if (prospectErr) return res.status(500).json({ error: 'Failed to look up prospect: ' + prospectErr.message })
+  if (prospectErr)
+    return res.status(500).json({ error: 'Failed to look up prospect: ' + prospectErr.message })
 
   if (prospect && prospect.email_found) {
     const { data: suppressed } = await supabaseAdmin
@@ -175,7 +220,8 @@ router.post('/send-log', requireServiceKeyOrStaff(['outreach:write']), async (re
     if (suppressed) {
       return res.status(422).json({
         error: 'Suppressed address',
-        reason: suppressed.source === 'bounce' ? 'Email has previously bounced' : 'Email has opted out',
+        reason:
+          suppressed.source === 'bounce' ? 'Email has previously bounced' : 'Email has opted out',
         email: prospect.email_found,
       })
     }
@@ -183,7 +229,11 @@ router.post('/send-log', requireServiceKeyOrStaff(['outreach:write']), async (re
 
   // Build unsubscribe URL and append CAN-SPAM footer to rendered body
   const unsubUrl = prospect?.email_found ? buildUnsubscribeUrl(prospect.email_found) : ''
-  const { html: footeredHtml, text: footeredText } = appendEmailFooter(rendered_body_html, rendered_body_text || null, unsubUrl)
+  const { html: footeredHtml, text: footeredText } = appendEmailFooter(
+    rendered_body_html,
+    rendered_body_text || null,
+    unsubUrl
+  )
 
   const { data: logEntry, error: logError } = await supabaseAdmin
     .from('outreach_send_log')
@@ -203,7 +253,11 @@ router.post('/send-log', requireServiceKeyOrStaff(['outreach:write']), async (re
 
   const { error: patchError } = await supabaseAdmin
     .from('outreach_prospects')
-    .update({ status: 'sent', sent_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+    .update({
+      status: 'sent',
+      sent_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
     .eq('id', prospect_id)
 
   if (patchError) console.warn('[send-log] Failed to update prospect status:', patchError.message)
@@ -218,7 +272,9 @@ router.patch('/send-log/:id', requireServiceKeyOrStaff(['outreach:write']), asyn
 
   const VALID_STATUSES = ['sent', 'delivered', 'bounced', 'failed', 'opened', 'clicked']
   if (delivery_status && !VALID_STATUSES.includes(delivery_status)) {
-    return res.status(400).json({ error: `Invalid delivery_status. Must be one of: ${VALID_STATUSES.join(', ')}` })
+    return res
+      .status(400)
+      .json({ error: `Invalid delivery_status. Must be one of: ${VALID_STATUSES.join(', ')}` })
   }
 
   const { data: existing, error: fetchErr } = await supabaseAdmin
@@ -264,7 +320,10 @@ router.patch('/send-log/:id', requireServiceKeyOrStaff(['outreach:write']), asyn
       const email = prospect.email_found.toLowerCase()
       const { error: upsertErr } = await supabaseAdmin
         .from('outreach_unsubscribes')
-        .upsert({ email, source: 'bounce', unsubscribed_at: new Date().toISOString() }, { onConflict: 'email' })
+        .upsert(
+          { email, source: 'bounce', unsubscribed_at: new Date().toISOString() },
+          { onConflict: 'email' }
+        )
       if (upsertErr) {
         console.warn('[send-log] Failed to suppress bounced email:', upsertErr.message)
       }
@@ -299,10 +358,7 @@ router.get('/unsubscribes', requireAuth, requireAnyStaff, async (req, res) => {
 // DELETE /api/admin/outreach/unsubscribes/:email — remove a single opt-out
 router.delete('/unsubscribes/:email', requireAuth, requireAdminLevel, async (req, res) => {
   const email = decodeURIComponent(req.params.email).toLowerCase()
-  const { error } = await supabaseAdmin
-    .from('outreach_unsubscribes')
-    .delete()
-    .eq('email', email)
+  const { error } = await supabaseAdmin.from('outreach_unsubscribes').delete().eq('email', email)
   if (error) return res.status(500).json({ error: error.message })
   res.json({ ok: true, email })
 })

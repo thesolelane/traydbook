@@ -14,7 +14,8 @@ router.get('/api/admin/contractors', requireAuth, requireAdminLevel, async (req,
 
   let query = supabaseAdmin
     .from('contractor_profiles')
-    .select(`
+    .select(
+      `
       user_id,
       primary_trade,
       secondary_trades,
@@ -33,7 +34,8 @@ router.get('/api/admin/contractors', requireAuth, requireAdminLevel, async (req,
         created_at,
         deleted_at
       )
-    `)
+    `
+    )
     .order('trust_score', { ascending: false })
     .range(offset, offset + PAGE_SIZE - 1)
 

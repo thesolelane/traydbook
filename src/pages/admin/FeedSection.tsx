@@ -242,13 +242,49 @@ export default function FeedSection({ authHeaders }: SectionProps) {
                         </button>
                         {confirmDeletePost === p.id ? (
                           <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <button onClick={() => void deletePost(p.id)} style={{ padding: '3px 8px', borderRadius: 6, border: 'none', background: '#DC2626', color: '#fff', fontSize: 11, cursor: 'pointer' }}>Confirm</button>
-                            <button onClick={() => setConfirmDeletePost(null)} style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid var(--color-border)', background: 'var(--color-bg)', fontSize: 11, cursor: 'pointer' }}>Cancel</button>
+                            <button
+                              onClick={() => void deletePost(p.id)}
+                              style={{
+                                padding: '3px 8px',
+                                borderRadius: 6,
+                                border: 'none',
+                                background: '#DC2626',
+                                color: '#fff',
+                                fontSize: 11,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              Confirm
+                            </button>
+                            <button
+                              onClick={() => setConfirmDeletePost(null)}
+                              style={{
+                                padding: '3px 8px',
+                                borderRadius: 6,
+                                border: '1px solid var(--color-border)',
+                                background: 'var(--color-bg)',
+                                fontSize: 11,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              Cancel
+                            </button>
                           </span>
                         ) : (
                           <button
                             onClick={() => setConfirmDeletePost(p.id)}
-                            style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid rgba(220,38,38,0.3)', background: 'rgba(220,38,38,0.06)', cursor: 'pointer', color: '#DC2626', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}
+                            style={{
+                              padding: '4px 8px',
+                              borderRadius: 6,
+                              border: '1px solid rgba(220,38,38,0.3)',
+                              background: 'rgba(220,38,38,0.06)',
+                              cursor: 'pointer',
+                              color: '#DC2626',
+                              fontSize: 11,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
+                            }}
                           >
                             <Trash2 size={11} /> Delete
                           </button>
@@ -362,13 +398,49 @@ export default function FeedSection({ authHeaders }: SectionProps) {
                         </button>
                         {confirmDeletePost === p.id ? (
                           <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <button onClick={() => void deletePost(p.id)} style={{ padding: '3px 8px', borderRadius: 6, border: 'none', background: '#DC2626', color: '#fff', fontSize: 11, cursor: 'pointer' }}>Confirm</button>
-                            <button onClick={() => setConfirmDeletePost(null)} style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid var(--color-border)', background: 'var(--color-bg)', fontSize: 11, cursor: 'pointer' }}>Cancel</button>
+                            <button
+                              onClick={() => void deletePost(p.id)}
+                              style={{
+                                padding: '3px 8px',
+                                borderRadius: 6,
+                                border: 'none',
+                                background: '#DC2626',
+                                color: '#fff',
+                                fontSize: 11,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              Confirm
+                            </button>
+                            <button
+                              onClick={() => setConfirmDeletePost(null)}
+                              style={{
+                                padding: '3px 8px',
+                                borderRadius: 6,
+                                border: '1px solid var(--color-border)',
+                                background: 'var(--color-bg)',
+                                fontSize: 11,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              Cancel
+                            </button>
                           </span>
                         ) : (
                           <button
                             onClick={() => setConfirmDeletePost(p.id)}
-                            style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid rgba(220,38,38,0.3)', background: 'rgba(220,38,38,0.06)', cursor: 'pointer', color: '#DC2626', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}
+                            style={{
+                              padding: '4px 8px',
+                              borderRadius: 6,
+                              border: '1px solid rgba(220,38,38,0.3)',
+                              background: 'rgba(220,38,38,0.06)',
+                              cursor: 'pointer',
+                              color: '#DC2626',
+                              fontSize: 11,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
+                            }}
                           >
                             <Trash2 size={11} /> Delete
                           </button>
@@ -448,13 +520,49 @@ export default function FeedSection({ authHeaders }: SectionProps) {
                     <td style={tableCellStyle}>
                       {confirmDeleteComment === c.id ? (
                         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <button onClick={() => void deleteComment(c.id)} style={{ padding: '3px 8px', borderRadius: 6, border: 'none', background: '#DC2626', color: '#fff', fontSize: 11, cursor: 'pointer' }}>Confirm</button>
-                          <button onClick={() => setConfirmDeleteComment(null)} style={{ padding: '3px 8px', borderRadius: 6, border: '1px solid var(--color-border)', background: 'var(--color-bg)', fontSize: 11, cursor: 'pointer' }}>Cancel</button>
+                          <button
+                            onClick={() => void deleteComment(c.id)}
+                            style={{
+                              padding: '3px 8px',
+                              borderRadius: 6,
+                              border: 'none',
+                              background: '#DC2626',
+                              color: '#fff',
+                              fontSize: 11,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Confirm
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteComment(null)}
+                            style={{
+                              padding: '3px 8px',
+                              borderRadius: 6,
+                              border: '1px solid var(--color-border)',
+                              background: 'var(--color-bg)',
+                              fontSize: 11,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Cancel
+                          </button>
                         </span>
                       ) : (
                         <button
                           onClick={() => setConfirmDeleteComment(c.id)}
-                          style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid rgba(220,38,38,0.3)', background: 'rgba(220,38,38,0.06)', cursor: 'pointer', color: '#DC2626', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}
+                          style={{
+                            padding: '4px 8px',
+                            borderRadius: 6,
+                            border: '1px solid rgba(220,38,38,0.3)',
+                            background: 'rgba(220,38,38,0.06)',
+                            cursor: 'pointer',
+                            color: '#DC2626',
+                            fontSize: 11,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
+                          }}
                         >
                           <Trash2 size={11} /> Delete
                         </button>

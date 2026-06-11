@@ -26,20 +26,24 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: string |
   render() {
     if (this.state.error) {
       return (
-        <div style={{
-          padding: 20,
-          background: '#2a1515',
-          border: '1px solid #e05252',
-          borderRadius: 10,
-          color: '#e05252',
-          fontSize: 13,
-          display: 'flex',
-          gap: 10,
-          alignItems: 'flex-start',
-        }}>
+        <div
+          style={{
+            padding: 20,
+            background: '#2a1515',
+            border: '1px solid #e05252',
+            borderRadius: 10,
+            color: '#e05252',
+            fontSize: 13,
+            display: 'flex',
+            gap: 10,
+            alignItems: 'flex-start',
+          }}
+        >
           <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: 1 }} />
           <div>
-            <div style={{ fontWeight: 700, marginBottom: 4 }}>Render error in Platform Controls</div>
+            <div style={{ fontWeight: 700, marginBottom: 4 }}>
+              Render error in Platform Controls
+            </div>
             <code style={{ fontSize: 11, opacity: 0.85 }}>{this.state.error}</code>
           </div>
         </div>
@@ -49,7 +53,15 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: string |
   }
 }
 
-function Toggle({ enabled, onChange, disabled }: { enabled: boolean; onChange: () => void; disabled?: boolean }) {
+function Toggle({
+  enabled,
+  onChange,
+  disabled,
+}: {
+  enabled: boolean
+  onChange: () => void
+  disabled?: boolean
+}) {
   return (
     <button
       type="button"
@@ -110,7 +122,9 @@ export default function ControlsSection({ authHeaders, currentUserRole }: Contro
     }
   }, [authHeaders])
 
-  useEffect(() => { void loadFlags() }, [loadFlags])
+  useEffect(() => {
+    void loadFlags()
+  }, [loadFlags])
 
   async function handleToggle(flag: PlatformFlag) {
     setToggling(flag.key)
@@ -124,7 +138,7 @@ export default function ControlsSection({ authHeaders, currentUserRole }: Contro
         body: JSON.stringify({ value: newValue }),
       })
       if (!res.ok) throw new Error((await res.json()).error ?? 'Failed')
-      setFlags(prev => prev.map(f => f.key === flag.key ? { ...f, value: newValue } : f))
+      setFlags(prev => prev.map(f => (f.key === flag.key ? { ...f, value: newValue } : f)))
       setFlagMsg(`${flag.label} ${newValue === 'true' ? 'enabled' : 'disabled'}.`)
       setTimeout(() => setFlagMsg(''), 3000)
     } catch (e) {
@@ -180,9 +194,7 @@ export default function ControlsSection({ authHeaders, currentUserRole }: Contro
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       padding: '12px 16px',
-                      background: flag.value === 'true'
-                        ? 'rgba(232,93,4,0.06)'
-                        : 'var(--color-bg)',
+                      background: flag.value === 'true' ? 'rgba(232,93,4,0.06)' : 'var(--color-bg)',
                       borderRadius: 8,
                       border: `1px solid ${flag.value === 'true' ? 'rgba(232,93,4,0.25)' : 'var(--color-border)'}`,
                       gap: 16,
@@ -205,23 +217,37 @@ export default function ControlsSection({ authHeaders, currentUserRole }: Contro
         </SectionCard>
 
         <SectionCard title="Platform Announcement">
-          <form onSubmit={handleAnnouncement} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <form
+            onSubmit={handleAnnouncement}
+            style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+          >
             <textarea
               value={announcement}
               onChange={e => setAnnouncement(e.target.value)}
               placeholder="Write a platform-wide announcement…"
               rows={4}
               style={{
-                padding: '10px 12px', borderRadius: 8, fontSize: 13,
-                border: '1.5px solid var(--color-border)', background: 'var(--color-bg)',
-                color: 'var(--color-text)', resize: 'vertical', fontFamily: 'var(--font-sans)',
+                padding: '10px 12px',
+                borderRadius: 8,
+                fontSize: 13,
+                border: '1.5px solid var(--color-border)',
+                background: 'var(--color-bg)',
+                color: 'var(--color-text)',
+                resize: 'vertical',
+                fontFamily: 'var(--font-sans)',
               }}
             />
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <button type="submit" className="btn btn-primary" style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}
+              >
                 <Megaphone size={13} /> Send Announcement
               </button>
-              {announcementMsg && <span style={{ fontSize: 12, color: '#059669' }}>{announcementMsg}</span>}
+              {announcementMsg && (
+                <span style={{ fontSize: 12, color: '#059669' }}>{announcementMsg}</span>
+              )}
             </div>
           </form>
         </SectionCard>

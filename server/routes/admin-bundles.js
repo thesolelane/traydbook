@@ -25,12 +25,14 @@ router.get('/api/admin/bundles', requireAuth, requireAdminLevel, async (req, res
 router.post('/api/admin/bundles', requireAuth, requireAdminLevel, async (req, res) => {
   const { name, credits, price_cents, sort_order = 0 } = req.body ?? {}
 
-  if (!name?.trim())           return res.status(400).json({ error: 'name is required' })
-  if (!Number.isInteger(credits)    || credits    <= 0) return res.status(400).json({ error: 'credits must be a positive integer' })
-  if (!Number.isInteger(price_cents) || price_cents <= 0) return res.status(400).json({ error: 'price_cents must be a positive integer' })
+  if (!name?.trim()) return res.status(400).json({ error: 'name is required' })
+  if (!Number.isInteger(credits) || credits <= 0)
+    return res.status(400).json({ error: 'credits must be a positive integer' })
+  if (!Number.isInteger(price_cents) || price_cents <= 0)
+    return res.status(400).json({ error: 'price_cents must be a positive integer' })
 
   let stripeProductId = null
-  let stripePriceId   = null
+  let stripePriceId = null
 
   if (stripe) {
     try {
@@ -42,10 +44,10 @@ router.post('/api/admin/bundles', requireAuth, requireAdminLevel, async (req, re
       stripeProductId = product.id
 
       const price = await stripe.prices.create({
-        product:     product.id,
+        product: product.id,
         unit_amount: price_cents,
-        currency:    'usd',
-        metadata:    { credits: String(credits), bundle_name: name },
+        currency: 'usd',
+        metadata: { credits: String(credits), bundle_name: name },
       })
       stripePriceId = price.id
     } catch (stripeErr) {
@@ -59,13 +61,13 @@ router.post('/api/admin/bundles', requireAuth, requireAdminLevel, async (req, re
   const { data, error } = await supabaseAdmin
     .from('credit_bundles')
     .insert({
-      name:               name.trim(),
+      name: name.trim(),
       credits,
       price_cents,
-      stripe_product_id:  stripeProductId,
-      stripe_price_id:    stripePriceId,
+      stripe_product_id: stripeProductId,
+      stripe_price_id: stripePriceId,
       sort_order,
-      active:             true,
+      active: true,
     })
     .select()
     .single()
@@ -86,9 +88,9 @@ router.patch('/api/admin/bundles/:id', requireAuth, requireAdminLevel, async (re
   const { name, active, sort_order } = req.body ?? {}
 
   const patch = { updated_at: new Date().toISOString() }
-  if (name       !== undefined) patch.name       = name.trim()
-  if (active     !== undefined) patch.active      = Boolean(active)
-  if (sort_order !== undefined) patch.sort_order  = sort_order
+  if (name !== undefined) patch.name = name.trim()
+  if (active !== undefined) patch.active = Boolean(active)
+  if (sort_order !== undefined) patch.sort_order = sort_order
 
   if (Object.keys(patch).length === 1) {
     return res.status(400).json({ error: 'Nothing to update' })
@@ -102,7 +104,7 @@ router.patch('/api/admin/bundles/:id', requireAuth, requireAdminLevel, async (re
     .single()
 
   if (error) return res.status(500).json({ error: error.message })
-  if (!data)  return res.status(404).json({ error: 'Bundle not found' })
+  if (!data) return res.status(404).json({ error: 'Bundle not found' })
 
   // Sync name change to Stripe product if possible
   if (name && data.stripe_product_id && stripe) {

@@ -6,10 +6,10 @@
 import { supabaseAdmin } from './clients.js'
 
 export const REFERRAL_ELIGIBLE_TYPES = ['homeowner', 'investor']
-const WELCOME_CREDITS     = 50
-const REFERRAL_CREDITS    = 10
-const WELCOME_COHORT_LIMIT = 100   // first N of each type get welcome bonus
-const SUNSET_THRESHOLD    = 500    // total subscribed users after which bonuses stop
+const WELCOME_CREDITS = 50
+const REFERRAL_CREDITS = 10
+const WELCOME_COHORT_LIMIT = 100 // first N of each type get welcome bonus
+const SUNSET_THRESHOLD = 500 // total subscribed users after which bonuses stop
 
 // ── Platform flag check ───────────────────────────────────────────────────────
 
@@ -98,10 +98,10 @@ export async function awardReferralCredit(referralCodeUsed, referredUserId) {
   const held = referrer.credit_balance > 0
 
   const { error: logErr } = await supabaseAdmin.from('referral_signups').insert({
-    referral_code:    referralCodeUsed,
-    referrer_id:      referrer.id,
+    referral_code: referralCodeUsed,
+    referrer_id: referrer.id,
     referred_user_id: referredUserId,
-    credits_earned:   REFERRAL_CREDITS,
+    credits_earned: REFERRAL_CREDITS,
     held,
   })
 

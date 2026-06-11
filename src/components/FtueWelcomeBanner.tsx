@@ -76,10 +76,26 @@ export default function FtueWelcomeBanner() {
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: 'var(--font-condensed)', fontWeight: 800, fontSize: 15, color: 'var(--color-text)', letterSpacing: '0.2px', marginBottom: 4 }}>
+          <div
+            style={{
+              fontFamily: 'var(--font-condensed)',
+              fontWeight: 800,
+              fontSize: 15,
+              color: 'var(--color-text)',
+              letterSpacing: '0.2px',
+              marginBottom: 4,
+            }}
+          >
             Welcome to TraydBook, {firstName}! Here's how to get started
           </div>
-          <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: '0 0 12px', lineHeight: 1.5 }}>
+          <p
+            style={{
+              fontSize: 12,
+              color: 'var(--color-text-muted)',
+              margin: '0 0 12px',
+              lineHeight: 1.5,
+            }}
+          >
             Complete these steps to earn your first credits and unlock the full platform.
           </p>
 
@@ -91,17 +107,41 @@ export default function FtueWelcomeBanner() {
                 onClick={dismiss}
                 style={{ textDecoration: 'none' }}
               >
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '8px 12px',
-                  background: 'var(--color-surface)',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: 7,
-                  transition: 'border-color 0.15s',
-                }}>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-brand)', minWidth: 18 }}>{step.icon}</span>
-                  <span style={{ fontSize: 13, color: 'var(--color-text)', flex: 1 }}>{step.action}</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: step.reward.startsWith('+') ? 'var(--color-brand)' : 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '8px 12px',
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 7,
+                    transition: 'border-color 0.15s',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 700,
+                      color: 'var(--color-brand)',
+                      minWidth: 18,
+                    }}
+                  >
+                    {step.icon}
+                  </span>
+                  <span style={{ fontSize: 13, color: 'var(--color-text)', flex: 1 }}>
+                    {step.action}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: step.reward.startsWith('+')
+                        ? 'var(--color-brand)'
+                        : 'var(--color-text-muted)',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
                     {step.reward}
                   </span>
                   <ArrowRight size={12} color="var(--color-text-muted)" />
@@ -113,7 +153,15 @@ export default function FtueWelcomeBanner() {
 
         <button
           onClick={dismiss}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'var(--color-text-muted)', flexShrink: 0, lineHeight: 1 }}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: 2,
+            color: 'var(--color-text-muted)',
+            flexShrink: 0,
+            lineHeight: 1,
+          }}
           title="Dismiss"
           aria-label="Dismiss welcome banner"
         >

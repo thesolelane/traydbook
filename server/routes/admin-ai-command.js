@@ -153,7 +153,10 @@ router.post('/command', async (req, res) => {
 
   try {
     const raw = await callLLM(SYSTEM_PROMPT, command)
-    const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim()
+    const cleaned = raw
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/\s*```$/, '')
+      .trim()
     const plan = JSON.parse(cleaned)
 
     let preview = null

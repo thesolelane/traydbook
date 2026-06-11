@@ -96,7 +96,14 @@ function InviteCard({ handle }: { handle?: string | null }) {
       >
         <Share2 size={13} color="var(--color-brand)" /> Invite a Trade Pro
       </h3>
-      <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 12, lineHeight: 1.5 }}>
+      <p
+        style={{
+          fontSize: 12,
+          color: 'var(--color-text-muted)',
+          marginBottom: 12,
+          lineHeight: 1.5,
+        }}
+      >
         Know a contractor, sub, or estimator? Send them your link — you earn credits when they join.
       </p>
       <button
@@ -809,20 +816,42 @@ export default function Feed() {
                 connectedAuthorIds.size === 0 ? (
                   <>
                     <p style={{ fontSize: 24, marginBottom: 8 }}>🤝</p>
-                    <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text)', margin: '0 0 6px' }}>
+                    <p
+                      style={{
+                        fontSize: 15,
+                        fontWeight: 700,
+                        color: 'var(--color-text)',
+                        margin: '0 0 6px',
+                      }}
+                    >
                       No connections yet
                     </p>
-                    <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '0 0 18px', lineHeight: 1.6 }}>
+                    <p
+                      style={{
+                        fontSize: 13,
+                        color: 'var(--color-text-muted)',
+                        margin: '0 0 18px',
+                        lineHeight: 1.6,
+                      }}
+                    >
                       Follow trade professionals to see their updates here.
                     </p>
                     <Link
                       to="/explore"
                       style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 6,
-                        padding: '9px 18px', borderRadius: 8,
-                        background: 'var(--color-brand)', color: '#fff',
-                        fontFamily: 'var(--font-condensed)', fontSize: 13, fontWeight: 700,
-                        textDecoration: 'none', letterSpacing: '0.3px', textTransform: 'uppercase',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '9px 18px',
+                        borderRadius: 8,
+                        background: 'var(--color-brand)',
+                        color: '#fff',
+                        fontFamily: 'var(--font-condensed)',
+                        fontSize: 13,
+                        fontWeight: 700,
+                        textDecoration: 'none',
+                        letterSpacing: '0.3px',
+                        textTransform: 'uppercase',
                       }}
                     >
                       Find Contractors to Follow
@@ -831,20 +860,44 @@ export default function Feed() {
                 ) : (
                   <>
                     <p style={{ fontSize: 24, marginBottom: 8 }}>📭</p>
-                    <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text)', margin: '0 0 6px' }}>
+                    <p
+                      style={{
+                        fontSize: 15,
+                        fontWeight: 700,
+                        color: 'var(--color-text)',
+                        margin: '0 0 6px',
+                      }}
+                    >
                       Nothing from your network yet
                     </p>
-                    <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '0 0 18px', lineHeight: 1.6 }}>
-                      Your connections haven't posted recently. Check the For You feed or be the first to post.
+                    <p
+                      style={{
+                        fontSize: 13,
+                        color: 'var(--color-text-muted)',
+                        margin: '0 0 18px',
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      Your connections haven't posted recently. Check the For You feed or be the
+                      first to post.
                     </p>
                     <button
                       onClick={() => setComposeOpen(true)}
                       style={{
-                        display: 'inline-flex', alignItems: 'center', gap: 6,
-                        padding: '9px 18px', borderRadius: 8,
-                        background: 'var(--color-brand)', color: '#fff',
-                        fontFamily: 'var(--font-condensed)', fontSize: 13, fontWeight: 700,
-                        border: 'none', cursor: 'pointer', letterSpacing: '0.3px', textTransform: 'uppercase',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '9px 18px',
+                        borderRadius: 8,
+                        background: 'var(--color-brand)',
+                        color: '#fff',
+                        fontFamily: 'var(--font-condensed)',
+                        fontSize: 13,
+                        fontWeight: 700,
+                        border: 'none',
+                        cursor: 'pointer',
+                        letterSpacing: '0.3px',
+                        textTransform: 'uppercase',
                       }}
                     >
                       Post Something
@@ -854,20 +907,43 @@ export default function Feed() {
               ) : (
                 <>
                   <p style={{ fontSize: 24, marginBottom: 8 }}>🏗️</p>
-                  <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text)', margin: '0 0 6px' }}>
+                  <p
+                    style={{
+                      fontSize: 15,
+                      fontWeight: 700,
+                      color: 'var(--color-text)',
+                      margin: '0 0 6px',
+                    }}
+                  >
                     Be the first to post
                   </p>
-                  <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '0 0 18px', lineHeight: 1.6 }}>
+                  <p
+                    style={{
+                      fontSize: 13,
+                      color: 'var(--color-text-muted)',
+                      margin: '0 0 18px',
+                      lineHeight: 1.6,
+                    }}
+                  >
                     Share a project update, tip, or job opening with the TraydBook community.
                   </p>
                   <button
                     onClick={() => setComposeOpen(true)}
                     style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 6,
-                      padding: '9px 18px', borderRadius: 8,
-                      background: 'var(--color-brand)', color: '#fff',
-                      fontFamily: 'var(--font-condensed)', fontSize: 13, fontWeight: 700,
-                      border: 'none', cursor: 'pointer', letterSpacing: '0.3px', textTransform: 'uppercase',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '9px 18px',
+                      borderRadius: 8,
+                      background: 'var(--color-brand)',
+                      color: '#fff',
+                      fontFamily: 'var(--font-condensed)',
+                      fontSize: 13,
+                      fontWeight: 700,
+                      border: 'none',
+                      cursor: 'pointer',
+                      letterSpacing: '0.3px',
+                      textTransform: 'uppercase',
                     }}
                   >
                     <Plus size={13} /> Create a Post

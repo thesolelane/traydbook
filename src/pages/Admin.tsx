@@ -246,27 +246,27 @@ export default function Admin() {
           </p>
         </div>
 
-        {section === 'overview'     && <OverviewSection authHeaders={authHeaders} />}
-        {section === 'users'        && <UsersSection authHeaders={authHeaders} />}
-        {section === 'wallets'      && <WalletsSection authHeaders={authHeaders} />}
-        {section === 'contractors'  && <ContractorsSection authHeaders={authHeaders} />}
-        {section === 'feed'         && <FeedSection authHeaders={authHeaders} />}
-        {section === 'controls'     && <ControlsSection authHeaders={authHeaders} />}
-        {section === 'payments'     && <PaymentsSection authHeaders={authHeaders} />}
-        {section === 'bundles'      && <BundlesSection authHeaders={authHeaders} />}
-        {section === 'brokerages'   && <BrokeragesSection authHeaders={authHeaders} />}
-        {section === 'referrals'    && <ReferralsSection authHeaders={authHeaders} />}
-        {section === 'domains'      && <DomainsSection authHeaders={authHeaders} />}
-        {section === 'secrets'      && <SecretsSection authHeaders={authHeaders} />}
-        {section === 'errors'       && <ErrorLogSection authHeaders={authHeaders} />}
-        {section === 'threats'      && <ThreatMonitorSection authHeaders={authHeaders} />}
-        {section === 'moderation'   && <ModerationQueueSection authHeaders={authHeaders} />}
-        {section === 'audit'        && <AuditLogSection authHeaders={authHeaders} />}
-        {section === 'revoke'       && <SessionRevokeSection authHeaders={authHeaders} />}
-        {section === 'ai'           && <AiCommandSection authHeaders={authHeaders} />}
-        {section === 'bob'          && <BobMonitorSection authHeaders={authHeaders} />}
-        {section === 'prospects'    && <ProspectsSection authHeaders={authHeaders} />}
-        {section === 'code-scan'    && <SecurityScanSection authHeaders={authHeaders} />}
+        {section === 'overview' && <OverviewSection authHeaders={authHeaders} />}
+        {section === 'users' && <UsersSection authHeaders={authHeaders} />}
+        {section === 'wallets' && <WalletsSection authHeaders={authHeaders} />}
+        {section === 'contractors' && <ContractorsSection authHeaders={authHeaders} />}
+        {section === 'feed' && <FeedSection authHeaders={authHeaders} />}
+        {section === 'controls' && <ControlsSection authHeaders={authHeaders} />}
+        {section === 'payments' && <PaymentsSection authHeaders={authHeaders} />}
+        {section === 'bundles' && <BundlesSection authHeaders={authHeaders} />}
+        {section === 'brokerages' && <BrokeragesSection authHeaders={authHeaders} />}
+        {section === 'referrals' && <ReferralsSection authHeaders={authHeaders} />}
+        {section === 'domains' && <DomainsSection authHeaders={authHeaders} />}
+        {section === 'secrets' && <SecretsSection authHeaders={authHeaders} />}
+        {section === 'errors' && <ErrorLogSection authHeaders={authHeaders} />}
+        {section === 'threats' && <ThreatMonitorSection authHeaders={authHeaders} />}
+        {section === 'moderation' && <ModerationQueueSection authHeaders={authHeaders} />}
+        {section === 'audit' && <AuditLogSection authHeaders={authHeaders} />}
+        {section === 'revoke' && <SessionRevokeSection authHeaders={authHeaders} />}
+        {section === 'ai' && <AiCommandSection authHeaders={authHeaders} />}
+        {section === 'bob' && <BobMonitorSection authHeaders={authHeaders} />}
+        {section === 'prospects' && <ProspectsSection authHeaders={authHeaders} />}
+        {section === 'code-scan' && <SecurityScanSection authHeaders={authHeaders} />}
       </main>
     </div>
   )

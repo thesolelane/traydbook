@@ -70,9 +70,7 @@ function rateLimitKey(req) {
   const auth = req.headers.authorization
   if (auth?.startsWith('Bearer ')) {
     try {
-      const payload = JSON.parse(
-        Buffer.from(auth.slice(7).split('.')[1], 'base64url').toString()
-      )
+      const payload = JSON.parse(Buffer.from(auth.slice(7).split('.')[1], 'base64url').toString())
       if (payload?.sub) return `user:${payload.sub}`
     } catch {}
   }
@@ -235,10 +233,14 @@ app.use(destructiveRateLimit, webhookRoutes)
 // ── Bob agent push commands ───────────────────────────────────────────────────
 // GET (ping, control, logs) → monitor limit (400/15 min).
 // POST (commands, approvals) → AI command limit (20/15 min).
-app.use('/api/admin/bob', (req, res, next) => {
-  const limiter = req.method === 'GET' ? bobMonitorRateLimit : bobRateLimit
-  limiter(req, res, next)
-}, bobRoutes)
+app.use(
+  '/api/admin/bob',
+  (req, res, next) => {
+    const limiter = req.method === 'GET' ? bobMonitorRateLimit : bobRateLimit
+    limiter(req, res, next)
+  },
+  bobRoutes
+)
 
 // ── Outreach Prospects (CSV import + Bob enrichment) ─────────────────────────
 app.use('/api/admin/prospects', prospectsRateLimit, prospectsRoutes)

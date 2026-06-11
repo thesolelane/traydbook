@@ -56,7 +56,9 @@ function loadDismissed(): Set<string> {
 function saveDismissed(ids: Set<string>) {
   try {
     localStorage.setItem(DISMISSED_KEY, JSON.stringify([...ids]))
-  } catch { /* silent — localStorage unavailable */ }
+  } catch {
+    /* silent — localStorage unavailable */
+  }
 }
 
 // Full action vocabulary from Bob's contract + suggestions
@@ -121,7 +123,12 @@ export default function BobMonitorSection({ authHeaders }: SectionProps) {
   const [controlLoading, setControlLoading] = useState(false)
   const [err, setErr] = useState('')
   const [controlMsg, setControlMsg] = useState('')
-  const [pingResult, setPingResult] = useState<{ reachable: boolean; status?: number; reason?: string; endpoint?: string } | null>(null)
+  const [pingResult, setPingResult] = useState<{
+    reachable: boolean
+    status?: number
+    reason?: string
+    endpoint?: string
+  } | null>(null)
   const [pinging, setPinging] = useState(false)
   const [providerOverride, setProviderOverride] = useState('')
   const [maxLeads, setMaxLeads] = useState('')
@@ -248,17 +255,22 @@ export default function BobMonitorSection({ authHeaders }: SectionProps) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-
       {/* Ping Bob */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <button
           onClick={pingBob}
           disabled={pinging}
           style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            padding: '8px 16px', borderRadius: 6, border: '1px solid var(--color-border)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '8px 16px',
+            borderRadius: 6,
+            border: '1px solid var(--color-border)',
             background: pinging ? 'var(--color-surface-2)' : 'var(--color-surface)',
-            color: 'var(--color-text)', fontSize: 13, fontWeight: 600,
+            color: 'var(--color-text)',
+            fontSize: 13,
+            fontWeight: 600,
             cursor: pinging ? 'not-allowed' : 'pointer',
           }}
         >
@@ -266,7 +278,13 @@ export default function BobMonitorSection({ authHeaders }: SectionProps) {
           {pinging ? 'Pinging…' : 'Ping Bob'}
         </button>
         {pingResult && (
-          <span style={{ fontSize: 13, fontWeight: 600, color: pingResult.reachable ? '#10B981' : '#EF4444' }}>
+          <span
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: pingResult.reachable ? '#10B981' : '#EF4444',
+            }}
+          >
             {pingResult.reachable
               ? `✓ Reachable (HTTP ${pingResult.status})`
               : `✗ ${pingResult.reason ?? 'Unreachable'}${pingResult.endpoint ? ` — ${pingResult.endpoint}` : ''}`}

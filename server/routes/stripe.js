@@ -19,7 +19,14 @@ async function lookupBundle(bundleId) {
     .eq('id', bundleId)
     .eq('active', true)
     .maybeSingle()
-  if (data) return { id: data.id, name: data.name, credits: data.credits, cents: data.price_cents, priceId: data.stripe_price_id }
+  if (data)
+    return {
+      id: data.id,
+      name: data.name,
+      credits: data.credits,
+      cents: data.price_cents,
+      priceId: data.stripe_price_id,
+    }
   // Fall back to legacy hardcoded array (string IDs like 'starter', 'builder')
   const legacy = BUNDLES.find(b => b.id === bundleId)
   return legacy ?? null
@@ -28,7 +35,7 @@ async function lookupBundle(bundleId) {
 const router = express.Router()
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const MAX_PURCHASES_PER_DAY = 5   // per user, across all bundles
+const MAX_PURCHASES_PER_DAY = 5 // per user, across all bundles
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -123,7 +130,12 @@ router.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), a
 
       const creditsNum = parseInt(credits, 10)
       if (!Number.isInteger(creditsNum) || creditsNum <= 0) {
-        console.error('[webhook] Invalid credits value in metadata:', credits, 'session:', session.id)
+        console.error(
+          '[webhook] Invalid credits value in metadata:',
+          credits,
+          'session:',
+          session.id
+        )
         return res.status(400).json({ error: 'Invalid credits metadata' })
       }
 
@@ -135,7 +147,7 @@ router.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), a
         // Payment was taken — still fulfil, but flag loudly for investigation
         console.error(
           `[webhook] UNKNOWN bundle "${bundleId}" on session ${session.id} — ` +
-          `issuing ${creditsNum} credits based on metadata. Manual review advised.`
+            `issuing ${creditsNum} credits based on metadata. Manual review advised.`
         )
       }
 
@@ -157,10 +169,10 @@ router.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), a
         'fulfill_stripe_purchase',
         {
           p_stripe_session_id: session.id,
-          p_user_id:           userId,
-          p_credits:           creditsNum,
-          p_amount_cents:      amountCents,
-          p_bundle_id:         bundleId ?? '',
+          p_user_id: userId,
+          p_credits: creditsNum,
+          p_amount_cents: amountCents,
+          p_bundle_id: bundleId ?? '',
         }
       )
       if (fulfillErr) {
@@ -279,11 +291,11 @@ router.post('/api/create-checkout-session', checkoutLimiter, requireAuth, async 
     })
 
     const { error: purchaseErr } = await supabaseAdmin.from('purchases').insert({
-      user_id:           userId,
+      user_id: userId,
       stripe_session_id: session.id,
-      credits:           bundle.credits,
-      amount_cents:      bundle.cents,
-      status:            'pending',
+      credits: bundle.credits,
+      amount_cents: bundle.cents,
+      status: 'pending',
     })
     if (purchaseErr) console.error('[checkout] Purchase pre-insert failed:', purchaseErr.message)
 
