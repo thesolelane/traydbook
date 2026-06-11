@@ -114,7 +114,7 @@ router.post('/upload', requireAuth, requireAdminLevel, upload.single('file'), as
 
 // GET /api/admin/prospects — list with filters
 router.get('/', requireAuth, requireAnyStaff, async (req, res) => {
-  const { status, prospect_type, state, batch, limit = 100, offset = 0 } = req.query
+  const { status, prospect_type, type_class, state, batch, limit = 100, offset = 0 } = req.query
 
   let q = supabaseAdmin
     .from('outreach_prospects')
@@ -124,12 +124,28 @@ router.get('/', requireAuth, requireAnyStaff, async (req, res) => {
 
   if (status)        q = q.eq('status', status)
   if (prospect_type) q = q.eq('prospect_type', prospect_type)
+  if (type_class)    q = q.eq('type_class', type_class)
   if (state)         q = q.eq('state', state)
   if (batch)         q = q.eq('import_batch', batch)
 
   const { data, error, count } = await q
   if (error) return res.status(500).json({ error: error.message })
   res.json({ prospects: data || [], total: count || 0 })
+})
+
+// GET /api/admin/prospects/type-classes — distinct type_class values for filter dropdown
+router.get('/type-classes', requireAuth, requireAnyStaff, async (req, res) => {
+  const { prospect_type } = req.query
+  let q = supabaseAdmin
+    .from('outreach_prospects')
+    .select('type_class')
+    .not('type_class', 'is', null)
+    .neq('type_class', '')
+  if (prospect_type) q = q.eq('prospect_type', prospect_type)
+  const { data, error } = await q
+  if (error) return res.status(500).json({ error: error.message })
+  const classes = [...new Set((data || []).map(r => r.type_class).filter(Boolean))].sort()
+  res.json({ type_classes: classes })
 })
 
 // GET /api/admin/prospects/stats

@@ -181,25 +181,38 @@ function ProspectsTab({ authHeaders }: SectionProps) {
   const [uploading, setUploading]     = useState(false)
   const [err, setErr]                 = useState('')
   const [success, setSuccess]         = useState('')
-  const [statusFilter, setStatusFilter] = useState('pending')
-  const [typeFilter, setTypeFilter]   = useState('')
-  const [expanded, setExpanded]       = useState<string | null>(null)
-  const [bounceLogs, setBounceLogs]   = useState<Record<string, SendLogEntry | null>>({})
-  const [bounceLoading, setBounceLoading] = useState<Record<string, boolean>>({})
-  const fileRef                       = useRef<HTMLInputElement>(null)
-  const [prospectType, setProspectType] = useState<'contractor' | 'real_estate_agent'>('contractor')
+  const [statusFilter, setStatusFilter]     = useState('pending')
+  const [typeFilter, setTypeFilter]         = useState('')
+  const [typeClassFilter, setTypeClassFilter] = useState('')
+  const [typeClasses, setTypeClasses]       = useState<string[]>([])
+  const [expanded, setExpanded]             = useState<string | null>(null)
+  const [bounceLogs, setBounceLogs]         = useState<Record<string, SendLogEntry | null>>({})
+  const [bounceLoading, setBounceLoading]   = useState<Record<string, boolean>>({})
+  const fileRef                             = useRef<HTMLInputElement>(null)
+  const [prospectType, setProspectType]     = useState<'contractor' | 'real_estate_agent'>('contractor')
 
   const loadStats = useCallback(async () => {
     const res = await fetch('/api/admin/prospects/stats', { headers: authHeaders() })
     if (res.ok) setStats(await res.json())
   }, [])
 
+  const loadTypeClasses = useCallback(async (pt?: string) => {
+    const params = new URLSearchParams()
+    if (pt) params.set('prospect_type', pt)
+    const res = await fetch(`/api/admin/prospects/type-classes?${params}`, { headers: authHeaders() })
+    if (res.ok) {
+      const data = await res.json()
+      setTypeClasses(data.type_classes || [])
+    }
+  }, [])
+
   const loadProspects = useCallback(async () => {
     setLoading(true)
     setErr('')
     try {
-      const params = new URLSearchParams({ limit: '50', status: statusFilter })
-      if (typeFilter) params.set('prospect_type', typeFilter)
+      const params = new URLSearchParams({ limit: '100', status: statusFilter })
+      if (typeFilter)      params.set('prospect_type', typeFilter)
+      if (typeClassFilter) params.set('type_class', typeClassFilter)
       const res = await fetch(`/api/admin/prospects?${params}`, { headers: authHeaders() })
       if (!res.ok) throw new Error('Failed to load prospects')
       const data = await res.json()
@@ -209,9 +222,9 @@ function ProspectsTab({ authHeaders }: SectionProps) {
     } finally {
       setLoading(false)
     }
-  }, [statusFilter, typeFilter])
+  }, [statusFilter, typeFilter, typeClassFilter])
 
-  useEffect(() => { void loadStats(); void loadProspects() }, [loadStats, loadProspects])
+  useEffect(() => { void loadStats(); void loadProspects(); void loadTypeClasses() }, [loadStats, loadProspects, loadTypeClasses])
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -232,6 +245,7 @@ function ProspectsTab({ authHeaders }: SectionProps) {
       if (!res.ok) throw new Error(data.error || 'Upload failed')
       setSuccess(`✓ Imported ${data.imported} prospects (batch: ${data.batch_id})`)
       await loadStats()
+      await loadTypeClasses(prospectType)
       await loadProspects()
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Upload failed')
@@ -363,7 +377,7 @@ function ProspectsTab({ authHeaders }: SectionProps) {
             />
           </label>
           <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
-            Max 10MB · Deduplicates by license number
+            Max 50MB · Deduplicates by license number
           </span>
         </div>
         {success && (
@@ -394,7 +408,14 @@ function ProspectsTab({ authHeaders }: SectionProps) {
           </button>
         ))}
         <button
-          onClick={() => setTypeFilter(t => t === 'contractor' ? 'real_estate_agent' : t === 'real_estate_agent' ? '' : 'contractor')}
+          onClick={() => {
+            setTypeFilter(t => {
+              const next = t === 'contractor' ? 'real_estate_agent' : t === 'real_estate_agent' ? '' : 'contractor'
+              setTypeClassFilter('')
+              void loadTypeClasses(next || undefined)
+              return next
+            })
+          }}
           style={{
             marginLeft: 8,
             padding: '5px 12px',
@@ -408,8 +429,29 @@ function ProspectsTab({ authHeaders }: SectionProps) {
         >
           {typeFilter ? (typeFilter === 'contractor' ? '🔨 Contractors' : '🏠 RE Agents') : 'All Types'}
         </button>
+        {typeClasses.length > 0 && (
+          <select
+            value={typeClassFilter}
+            onChange={e => setTypeClassFilter(e.target.value)}
+            style={{
+              padding: '5px 10px',
+              borderRadius: 20,
+              fontSize: 12,
+              border: typeClassFilter ? '1px solid #7c70e8' : '1px solid var(--color-border)',
+              background: typeClassFilter ? 'rgba(124,112,232,0.1)' : 'var(--color-surface)',
+              color: typeClassFilter ? '#7c70e8' : 'var(--color-text-muted)',
+              cursor: 'pointer',
+              maxWidth: 200,
+            }}
+          >
+            <option value="">All License Types</option>
+            {typeClasses.map(tc => (
+              <option key={tc} value={tc}>{tc}</option>
+            ))}
+          </select>
+        )}
         <button
-          onClick={() => { void loadStats(); void loadProspects() }}
+          onClick={() => { void loadStats(); void loadTypeClasses(typeFilter || undefined); void loadProspects() }}
           style={{
             marginLeft: 'auto',
             display: 'flex', alignItems: 'center', gap: 6,
@@ -436,7 +478,7 @@ function ProspectsTab({ authHeaders }: SectionProps) {
         <div style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>Loading...</div>
       ) : prospects.length === 0 ? (
         <div style={{ color: 'var(--color-text-muted)', fontSize: 13, textAlign: 'center', padding: 40 }}>
-          No {statusFilter} prospects{typeFilter ? ` (${typeFilter})` : ''}
+          No {statusFilter} prospects{typeFilter ? ` (${typeFilter})` : ''}{typeClassFilter ? ` · ${typeClassFilter}` : ''}
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
