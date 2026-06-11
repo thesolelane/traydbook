@@ -36,6 +36,17 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 
 const importJobs = new Map()
 // { batchId: { total, processed, done, error, imported } }
 
+const BOARD_TO_GENERAL = {
+  EL: 'Electrical',
+  PL: 'Plumbing',
+  EN: 'Engineering',
+  SM: 'Sheet Metal',
+  GF: 'Gas',
+  FA: 'Fire Alarm',
+  HI: 'Home Inspection',
+  AR: 'Architecture',
+}
+
 function normalizeRow(row, prospectType, batchId, adminId) {
   const g = k => {
     const key = Object.keys(row).find(r => r.trim().toUpperCase() === k.toUpperCase())
@@ -56,7 +67,9 @@ function normalizeRow(row, prospectType, batchId, adminId) {
     first_name: g('FIRST_NAME'),
     middle_initial: g('MI') || g('MIDDLE_INITIAL'),
     last_name: g('LAST_NAME'),
-    general_type: g('GENERAL') || g('GENERA') || g('GENERAL_TYPE'),
+    general_type:
+      g('GENERAL') || g('GENERA') || g('GENERAL_TYPE') ||
+      BOARD_TO_GENERAL[g('BOARD_CODE').toUpperCase()] || '',
     address1: g('ADDRESS1'),
     address2: g('ADDRESS2'),
     city: g('CITY'),
