@@ -103,7 +103,7 @@ router.post('/upload', requireAuth, requireAdminLevel, handleUpload, async (req,
   const batchId = `batch_${Date.now()}`
   const adminId = req.user?.id || null
   const records = rows.map(r => normalizeRow(r, prospectType, batchId, adminId))
-  const CHUNK_SIZE = 500
+  const CHUNK_SIZE = 1000
 
   // Register the job immediately so the UI can start polling
   importJobs.set(batchId, { total: records.length, processed: 0, imported: 0, done: false, error: null })
