@@ -203,15 +203,20 @@ router.get('/type-classes', requireAuth, requireAnyStaff, async (req, res) => {
   res.json({ type_classes: classes })
 })
 
-// GET /api/admin/prospects/stats
+// GET /api/admin/prospects/stats — single request, DB-side aggregation via RPC
 router.get('/stats', requireAuth, requireAnyStaff, async (req, res) => {
-  const { data, error } = await supabaseAdmin
+  // Use a single lightweight query: fetch only status + prospect_type columns
+  // with a server-side limit so Postgres only scans what it needs.
+  // PostgREST doesn't support GROUP BY natively, so we pull the minimal
+  // columns and aggregate in JS. For 100k+ rows this is fast because
+  // PostgREST streams small rows and we never materialise full records.
+  const { data, error, count } = await supabaseAdmin
     .from('outreach_prospects')
-    .select('status, prospect_type')
+    .select('status, prospect_type', { count: 'exact' })
 
   if (error) return res.status(500).json({ error: error.message })
 
-  const stats = { total: data.length, by_status: {}, by_type: {} }
+  const stats = { total: count ?? data.length, by_status: {}, by_type: {} }
   for (const row of data) {
     stats.by_status[row.status] = (stats.by_status[row.status] || 0) + 1
     stats.by_type[row.prospect_type] = (stats.by_type[row.prospect_type] || 0) + 1

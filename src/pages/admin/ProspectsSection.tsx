@@ -260,7 +260,7 @@ function ProspectsTab({ authHeaders }: SectionProps) {
           const job = await r.json()
           setImportJob({ batchId, total: job.total, processed: job.processed, imported: job.imported, done: job.done, error: job.error })
           if (!job.done) {
-            setTimeout(poll, 2000)
+            setTimeout(poll, 4000)
           } else {
             if (job.error) {
               setErr(`Import error: ${job.error}`)

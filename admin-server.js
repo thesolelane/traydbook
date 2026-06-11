@@ -141,6 +141,20 @@ const bobMonitorRateLimit = rateLimit({
 
 // Tier 4 — General admin API (read-heavy: lists, dashboards, monitor, contractors).
 // 120 requests per 15 minutes per IP.
+// Higher cap for prospects routes — polling + bulk ops need more headroom
+const prospectsRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 600,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: rateLimitKey,
+  handler: (_req, res) =>
+    res.status(429).json({
+      error: 'TOO_MANY_REQUESTS',
+      message: 'Rate limit exceeded — please slow down.',
+    }),
+})
+
 const generalRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 120,
@@ -227,7 +241,7 @@ app.use('/api/admin/bob', (req, res, next) => {
 }, bobRoutes)
 
 // ── Outreach Prospects (CSV import + Bob enrichment) ─────────────────────────
-app.use('/api/admin/prospects', generalRateLimit, prospectsRoutes)
+app.use('/api/admin/prospects', prospectsRateLimit, prospectsRoutes)
 app.use('/api/admin/outreach', generalRateLimit, outreachTemplatesRoutes)
 
 // ── Code Security Scanner (expensive — shell + FS scan) ──────────────────────
