@@ -1,4 +1,4 @@
--- Seed: 15 outreach email templates — 3 touches × 5 audiences
+-- Seed: 15 outreach email templates (3 touches x 5 audiences)
 -- Status: touch 1 = approved (Bob uses immediately), touches 2 & 3 = draft (admin reviews before activating)
 -- Run this in the Supabase SQL editor.
 
