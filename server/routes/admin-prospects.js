@@ -133,7 +133,11 @@ router.post('/upload', requireAuth, requireAdminLevel, handleUpload, async (req,
   const batchId = `batch_${Date.now()}`
   const adminId = req.user?.id || null
   const records = rows.map(r => normalizeRow(r, prospectType, batchId, adminId))
-  const CHUNK_SIZE = 1000
+  // 5 000 rows per chunk → ~24 API calls for a 121k file instead of 121.
+  // Keeps well under Supabase's REST rate limits; ~1.5 MB payload per chunk
+  // is comfortably within PostgREST's default body limit.
+  const CHUNK_SIZE = 5000
+  const CHUNK_SLEEP_MS = 1200 // 1.2 s between chunks ≈ <1 req/s sustained
 
   // Register the job immediately so the UI can start polling
   importJobs.set(batchId, {
@@ -155,15 +159,16 @@ router.post('/upload', requireAuth, requireAdminLevel, handleUpload, async (req,
     try {
       for (let i = 0; i < records.length; i += CHUNK_SIZE) {
         const chunk = records.slice(i, i + CHUNK_SIZE)
-        // Retry once on rate-limit (429) with a longer back-off
+        // Up to 5 attempts with exponential back-off on 429
         let chunkData, error
-        for (let attempt = 0; attempt < 4; attempt++) {
+        for (let attempt = 0; attempt < 5; attempt++) {
           ;({ data: chunkData, error } = await supabaseAdmin
             .from('outreach_prospects')
             .upsert(chunk, { onConflict: 'license_number,prospect_type', ignoreDuplicates: true }))
           if (!error) break
           if (error.code === '429' || error.message?.includes('Too Many Requests')) {
-            await sleep(3000 * (attempt + 1)) // 3s, 6s, 9s, 12s back-off
+            const wait = 5000 * Math.pow(2, attempt) // 5s, 10s, 20s, 40s, 80s
+            await sleep(wait)
           } else {
             break
           }
@@ -176,8 +181,7 @@ router.post('/upload', requireAuth, requireAdminLevel, handleUpload, async (req,
         totalInserted += chunkData?.length ?? chunk.length
         job.processed = Math.min(i + CHUNK_SIZE, records.length)
         job.imported = totalInserted
-        // 400ms pause — well under Supabase rate limits even on base plan
-        if (i + CHUNK_SIZE < records.length) await sleep(400)
+        if (i + CHUNK_SIZE < records.length) await sleep(CHUNK_SLEEP_MS)
       }
       await supabaseAdmin.from('admin_audit_log').insert({
         action: 'PROSPECT_IMPORT',
