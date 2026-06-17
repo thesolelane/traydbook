@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useAdminRealtime } from '../../hooks/useAdminRealtime'
 import { Building2, ChevronDown, ChevronRight, RefreshCw } from 'lucide-react'
 import {
   SectionProps,
@@ -59,6 +60,8 @@ export default function BrokeragesSection({ authHeaders }: SectionProps) {
   useEffect(() => {
     void load()
   }, [])
+
+  useAdminRealtime(['users', 'credit_transfers'], load)
 
   async function toggleExpand(id: string) {
     if (expanded === id) {

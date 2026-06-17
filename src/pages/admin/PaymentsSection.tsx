@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useAdminRealtime } from '../../hooks/useAdminRealtime'
 import { CheckCircle, XCircle, DollarSign } from 'lucide-react'
 import {
   SectionProps,
@@ -32,6 +33,9 @@ export default function PaymentsSection({ authHeaders }: SectionProps) {
   const [statusFilter, setStatusFilter] = useState('')
   const [totals, setTotals] = useState<PaymentTotals>({ completed: 0, failed: 0, totalCents: 0 })
   const [err, setErr] = useState('')
+  const [rtKey, setRtKey] = useState(0)
+
+  useAdminRealtime(['purchases'], () => setRtKey(k => k + 1))
 
   useEffect(() => {
     async function load() {
@@ -52,7 +56,7 @@ export default function PaymentsSection({ authHeaders }: SectionProps) {
       }
     }
     void load()
-  }, [statusFilter])
+  }, [statusFilter, rtKey])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>

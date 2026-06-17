@@ -33,6 +33,10 @@ export default defineConfig({
         replacement: path.resolve(workspaceRoot, 'src'),
       },
       {
+        find: '@admin',
+        replacement: path.resolve(__dirname, 'src'),
+      },
+      {
         find: path.resolve(workspaceRoot, 'src/context/AuthContext'),
         replacement: path.resolve(__dirname, 'src/context/AuthContext'),
       },
@@ -65,6 +69,10 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:4000',
         changeOrigin: true,
+      },
+      '/ws': {
+        target: 'ws://localhost:4000',
+        ws: true,
       },
     },
   },

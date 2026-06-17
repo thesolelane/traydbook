@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useAdminRealtime } from '../../hooks/useAdminRealtime'
 import {
   Search,
   RefreshCw,
@@ -104,6 +105,8 @@ export default function UsersSection({ authHeaders }: SectionProps) {
   useEffect(() => {
     void loadUsers()
   }, [loadUsers])
+
+  useAdminRealtime(['users', 'credit_ledger'], loadUsers)
 
   async function handleRoleChange(userId: string, newRole: string) {
     setActionLoading(userId + ':role')

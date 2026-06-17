@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useAdminRealtime } from '../../hooks/useAdminRealtime'
 import { Search, Plus } from 'lucide-react'
 import {
   SectionProps,
@@ -27,6 +28,9 @@ export default function WalletsSection({ authHeaders }: SectionProps) {
   const [adjusting, setAdjusting] = useState(false)
   const [adjustMsg, setAdjustMsg] = useState('')
   const [adjustErr, setAdjustErr] = useState('')
+  const [rtKey, setRtKey] = useState(0)
+
+  useAdminRealtime(['users', 'credit_ledger'], () => setRtKey(k => k + 1))
 
   useEffect(() => {
     async function load() {
@@ -43,7 +47,7 @@ export default function WalletsSection({ authHeaders }: SectionProps) {
       }
     }
     void load()
-  }, [])
+  }, [rtKey])
 
   const filtered = wallets.filter(
     w =>

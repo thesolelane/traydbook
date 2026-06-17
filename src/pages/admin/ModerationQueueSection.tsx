@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useAdminRealtime } from '../../hooks/useAdminRealtime'
 import { CheckCircle, XCircle, AlertTriangle, RefreshCw } from 'lucide-react'
 import { SectionProps } from './shared'
 
@@ -42,6 +43,8 @@ export default function ModerationQueueSection({ authHeaders }: SectionProps) {
   useEffect(() => {
     void load()
   }, [load])
+
+  useAdminRealtime(['content_moderation_queue'], load)
 
   async function resolve(id: string, decision: 'approve' | 'reject' | 'escalate') {
     setResolving(id)

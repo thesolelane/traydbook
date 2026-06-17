@@ -69,6 +69,7 @@ import {
   GitBranch,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { adminWs } from '../lib/adminWs'
 import { AdminAuthProvider } from '../context/AuthContext'
 import OverviewSection from '@main/pages/admin/OverviewSection'
 import UsersSection from '@main/pages/admin/UsersSection'
@@ -177,6 +178,11 @@ export default function AdminPanel({ session }: Props) {
         if (data?.account_type) setCurrentUserRole(data.account_type)
       })
   }, [session.user.id])
+
+  useEffect(() => {
+    adminWs.connect(session.access_token)
+    return () => adminWs.disconnect()
+  }, [session.access_token])
 
   function authHeaders(): Record<string, string> {
     return { Authorization: `Bearer ${session.access_token}` }

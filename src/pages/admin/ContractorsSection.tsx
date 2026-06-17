@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useAdminRealtime } from '../../hooks/useAdminRealtime'
 import {
   Search,
   RefreshCw,
@@ -108,6 +109,8 @@ export default function ContractorsSection({ authHeaders }: SectionProps) {
   useEffect(() => {
     void loadContractors()
   }, [loadContractors])
+
+  useAdminRealtime(['contractor_profiles', 'lead_bank_ledger'], loadContractors)
 
   async function expandLedger(userId: string) {
     if (expandedId === userId) {

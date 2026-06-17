@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useAdminRealtime } from '../../hooks/useAdminRealtime'
 import {
   Users,
   BarChart2,
@@ -15,7 +16,7 @@ import {
 } from 'lucide-react'
 import { StatCard, SectionCard, SectionProps } from './shared'
 
-const POLL_INTERVAL = 15_000
+const POLL_INTERVAL = 60_000
 
 type ActivityEvent = {
   type: 'signup' | 'post' | 'bid' | 'job'
@@ -159,6 +160,11 @@ export default function OverviewSection({ authHeaders }: SectionProps) {
       if (timerRef.current) clearInterval(timerRef.current)
     }
   }, [])
+
+  useAdminRealtime(
+    ['users', 'posts', 'bids', 'job_listings', 'rfqs', 'credit_ledger', 'security_events'],
+    () => { void loadStats(); void loadFeed(feedHours) }
+  )
 
   useEffect(() => {
     void loadFeed(feedHours)

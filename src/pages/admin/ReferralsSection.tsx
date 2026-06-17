@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useAdminRealtime } from '../../hooks/useAdminRealtime'
 import { Search, ChevronDown, ChevronRight, RefreshCw, GitBranch } from 'lucide-react'
 import {
   SectionProps,
@@ -69,6 +70,8 @@ export default function ReferralsSection({ authHeaders }: SectionProps) {
   useEffect(() => {
     void load()
   }, [])
+
+  useAdminRealtime(['users', 'referral_signups'], () => void load())
 
   function handleSearch(val: string) {
     setQ(val)

@@ -1,4 +1,6 @@
+import http from 'http'
 import express from 'express'
+import { WebSocketServer } from 'ws'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { rateLimit, ipKeyGenerator } from 'express-rate-limit'
@@ -12,6 +14,7 @@ import { activateSafeMode, isSafeMode, getSafeModeReason } from './server/lib/sa
 import { keyManager } from './server/lib/key-rotation.js'
 import { runProspectMatch, shouldRunMatch } from './server/lib/prospect-match.js'
 import { modeAwareMiddleware } from './server/lib/mode-middleware.js'
+import { startRealtimeRelay, realtimeEmitter } from './server/lib/realtime-relay.js'
 
 import monitorRoutes from './server/routes/admin-monitor.js'
 import userSecurityRoutes from './server/routes/admin-users-security.js'
@@ -31,6 +34,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const app = express()
 const PORT = process.env.PORT ?? process.env.ADMIN_PORT ?? 4000
+const server = http.createServer(app)
 
 // Trust exactly one reverse-proxy hop (Coolify/Traefik) so req.ip reflects
 // the real client IP rather than the proxy's address.  Without this, the
@@ -267,6 +271,55 @@ app.use((_req, res) => {
   res.sendFile(path.join(ADMIN_DIST, 'index.html'))
 })
 
+// ── Realtime WebSocket relay ──────────────────────────────────────────────────
+// Admin browser tabs connect to /ws?token=<jwt>.  The server verifies the
+// token with Supabase, checks the user is an admin, then fans out every
+// Supabase Realtime change event to the connected tab.
+const wss = new WebSocketServer({ noServer: true })
+
+server.on('upgrade', async (request, socket, head) => {
+  const clientIp = (request.socket.remoteAddress ?? '').replace(/^::ffff:/, '')
+  const isLoopback = clientIp === '::1' || clientIp === '127.0.0.1'
+  if (ALLOWED_IPS.length > 0 && !isLoopback && !ALLOWED_IPS.includes(clientIp)) {
+    socket.destroy()
+    return
+  }
+
+  try {
+    const url = new URL(request.url, 'http://localhost')
+    const token = url.searchParams.get('token')
+    if (!token) { socket.destroy(); return }
+
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token)
+    if (error || !user) { socket.destroy(); return }
+
+    const { data: profile } = await supabaseAdmin
+      .from('users')
+      .select('account_type')
+      .eq('id', user.id)
+      .single()
+
+    if (!['admin', 'super_admin'].includes(profile?.account_type)) {
+      socket.destroy()
+      return
+    }
+
+    wss.handleUpgrade(request, socket, head, ws => wss.emit('connection', ws))
+  } catch {
+    socket.destroy()
+  }
+})
+
+wss.on('connection', ws => {
+  const send = event => {
+    if (ws.readyState === 1) ws.send(JSON.stringify(event))
+  }
+  realtimeEmitter.on('change', send)
+  ws.on('close', () => realtimeEmitter.off('change', send))
+  ws.on('error', () => realtimeEmitter.off('change', send))
+  console.log(`[ws] Admin client connected (${wss.clients.size} total)`)
+})
+
 // ── Startup ───────────────────────────────────────────────────────────────────
 async function main() {
   await loadLogFromDisk()
@@ -283,13 +336,15 @@ async function main() {
     activateSafeMode(app, err.message)
   }
 
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     const env = process.env.SUPABASE_ENV ?? 'production'
     const ips = ALLOWED_IPS.length ? ALLOWED_IPS.join(', ') : 'all (no restriction)'
     console.log(`[admin-server] Listening on :${PORT}`)
     console.log(`[admin-server] Supabase env: ${env}`)
     console.log(`[admin-server] Allowed IPs: ${ips}`)
     console.log(`[admin-server] Mode: ${isSafeMode() ? '🛡️  SAFE (quarantine active)' : '✅ FULL'}`)
+    startRealtimeRelay()
+    console.log('[admin-server] Realtime relay started')
   })
 
   // ── Prospect→User match scheduler (every 7 days) ─────────────────────────

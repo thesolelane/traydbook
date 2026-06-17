@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useAdminRealtime } from '../../hooks/useAdminRealtime'
 import {
   RefreshCw,
   Pause,
@@ -188,9 +189,11 @@ export default function BobMonitorSection({ authHeaders }: SectionProps) {
 
   useEffect(() => {
     if (!autoRefresh) return
-    const t = setInterval(() => void load(), 15000)
+    const t = setInterval(() => void load(), 60000)
     return () => clearInterval(t)
   }, [autoRefresh, load])
+
+  useAdminRealtime(['bob_control', 'leads'], load)
 
   async function approveSuggestion(id: string) {
     await fetch(`/api/admin/bob/suggestion/${id}/approve`, {

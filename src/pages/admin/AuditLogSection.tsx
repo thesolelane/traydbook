@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useAdminRealtime } from '../../hooks/useAdminRealtime'
 import { RefreshCw, ChevronDown, ChevronRight } from 'lucide-react'
 import { SectionProps } from './shared'
 
@@ -53,6 +54,8 @@ export default function AuditLogSection({ authHeaders }: SectionProps) {
   useEffect(() => {
     void load()
   }, [load])
+
+  useAdminRealtime(['admin_audit_log'], load)
 
   const uniqueActions = [...new Set(entries.map(e => e.action))]
 

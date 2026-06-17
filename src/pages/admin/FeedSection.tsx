@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useAdminRealtime } from '../../hooks/useAdminRealtime'
 import { Trash2 } from 'lucide-react'
 import {
   SectionProps,
@@ -35,6 +36,7 @@ export default function FeedSection({ authHeaders }: SectionProps) {
   const [loadingPosts, setLoadingPosts] = useState(true)
   const [loadingFlagged, setLoadingFlagged] = useState(true)
   const [loadingComments, setLoadingComments] = useState(true)
+  const [rtKey, setRtKey] = useState(0)
   const [actionMsg, setActionMsg] = useState('')
   const [actionErr, setActionErr] = useState('')
   const [confirmDeletePost, setConfirmDeletePost] = useState<string | null>(null)
@@ -83,7 +85,9 @@ export default function FeedSection({ authHeaders }: SectionProps) {
     void loadPosts()
     void loadFlagged()
     void loadComments()
-  }, [])
+  }, [rtKey])
+
+  useAdminRealtime(['posts', 'comments'], () => setRtKey(k => k + 1))
 
   async function deletePost(postId: string) {
     const res = await fetch(`/api/admin/post/${postId}`, {

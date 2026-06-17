@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useAdminRealtime } from '../../hooks/useAdminRealtime'
 import { Shield, RefreshCw, Eye, EyeOff } from 'lucide-react'
 import { SectionProps } from './shared'
 
@@ -64,6 +65,8 @@ export default function ThreatMonitorSection({ authHeaders }: SectionProps) {
   useEffect(() => {
     void load()
   }, [load])
+
+  useAdminRealtime(['security_events'], load)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
