@@ -299,12 +299,17 @@ function ProspectsTab({ authHeaders }: SectionProps) {
     }
   }, [statusFilter, typeFilter, typeClassFilter])
 
+  // Mount only — stats, type-classes, and match status don't need to re-run on filter changes
   useEffect(() => {
     void loadStats()
-    void loadProspects()
     void loadTypeClasses()
     void loadMatchStatus()
-  }, [loadStats, loadProspects, loadTypeClasses, loadMatchStatus])
+  }, [loadStats, loadTypeClasses, loadMatchStatus])
+
+  // Prospects reload only when filter state changes (loadProspects ref changes with filters)
+  useEffect(() => {
+    void loadProspects()
+  }, [loadProspects])
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -680,10 +685,26 @@ function ProspectsTab({ authHeaders }: SectionProps) {
       </div>
 
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        {/* All-statuses button */}
+        <button
+          onClick={() => setStatusFilter('')}
+          style={{
+            padding: '5px 12px',
+            borderRadius: 20,
+            fontSize: 12,
+            fontWeight: 600,
+            border: statusFilter === '' ? '1px solid var(--color-text-muted)' : '1px solid var(--color-border)',
+            background: statusFilter === '' ? 'rgba(255,255,255,0.08)' : 'var(--color-surface)',
+            color: statusFilter === '' ? 'var(--color-text)' : 'var(--color-text-muted)',
+            cursor: 'pointer',
+          }}
+        >
+          All {stats && !statusFilter ? `(${stats.total.toLocaleString()})` : ''}
+        </button>
         {statuses.map(s => (
           <button
             key={s}
-            onClick={() => setStatusFilter(s)}
+            onClick={() => setStatusFilter(prev => prev === s ? '' : s)}
             style={{
               padding: '5px 12px',
               borderRadius: 20,
@@ -701,40 +722,38 @@ function ProspectsTab({ authHeaders }: SectionProps) {
               gap: 4,
             }}
           >
-            {STATUS_ICON[s]} {s} {stats?.by_status[s] ? `(${stats.by_status[s]})` : ''}
+            {STATUS_ICON[s]} {s} {stats?.by_status[s] ? `(${stats.by_status[s].toLocaleString()})` : ''}
           </button>
         ))}
-        <button
-          onClick={() => {
-            setTypeFilter(t => {
-              const next =
-                t === 'contractor'
-                  ? 'real_estate_agent'
-                  : t === 'real_estate_agent'
-                    ? ''
-                    : 'contractor'
-              setTypeClassFilter('')
-              void loadTypeClasses(next || undefined)
-              return next
-            })
-          }}
-          style={{
-            marginLeft: 8,
-            padding: '5px 12px',
-            borderRadius: 20,
-            fontSize: 12,
-            border: typeFilter ? '1px solid var(--color-brand)' : '1px solid var(--color-border)',
-            background: typeFilter ? 'rgba(226,114,42,0.1)' : 'var(--color-surface)',
-            color: typeFilter ? 'var(--color-brand)' : 'var(--color-text-muted)',
-            cursor: 'pointer',
-          }}
-        >
-          {typeFilter
-            ? typeFilter === 'contractor'
-              ? '🔨 Contractors'
-              : '🏠 RE Agents'
-            : 'All Types'}
-        </button>
+        {/* Type filter — two explicit toggles instead of a 3-state cycle */}
+        <div style={{ display: 'flex', gap: 4, marginLeft: 8 }}>
+          {([
+            { value: 'contractor', label: '🔨 Contractors' },
+            { value: 'real_estate_agent', label: '🏠 RE Agents' },
+          ] as const).map(({ value, label }) => (
+            <button
+              key={value}
+              onClick={() => {
+                const next = typeFilter === value ? '' : value
+                setTypeFilter(next)
+                setTypeClassFilter('')
+                void loadTypeClasses(next || undefined)
+              }}
+              style={{
+                padding: '5px 12px',
+                borderRadius: 20,
+                fontSize: 12,
+                fontWeight: 600,
+                border: typeFilter === value ? '1px solid var(--color-brand)' : '1px solid var(--color-border)',
+                background: typeFilter === value ? 'rgba(226,114,42,0.15)' : 'var(--color-surface)',
+                color: typeFilter === value ? 'var(--color-brand)' : 'var(--color-text-muted)',
+                cursor: 'pointer',
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
         {typeClasses.length > 0 && (
           <select
             value={typeClassFilter}
