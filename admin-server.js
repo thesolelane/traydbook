@@ -209,8 +209,15 @@ app.use(express.json())
 // ── Mode-Aware Middleware (safe mode enforcement) ──────────────────────────────
 app.use(modeAwareMiddleware)
 
-// ── Existing Admin API Routes ─────────────────────────────────────────────────
-app.use(generalRateLimit, adminRoutes)
+// ── Path-specific routes registered FIRST so their dedicated rate limiters are
+//    the only ones that apply.  The general catch-all (adminRoutes) comes after;
+//    Express stops at the first matching handler, so these never touch
+//    generalRateLimit.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── Outreach Prospects (CSV import + Bob enrichment) ─────────────────────────
+app.use('/api/admin/prospects', prospectsRateLimit, prospectsRoutes)
+app.use('/api/admin/outreach', generalRateLimit, outreachTemplatesRoutes)
 
 // ── Security: Monitor, Threats, Quarantine, Audit ────────────────────────────
 app.use('/api/admin/monitor', generalRateLimit, monitorRoutes)
@@ -234,11 +241,6 @@ app.use('/api/admin/revoke', destructiveRateLimit, revokeRoutes)
 // ── Security: AI Command Bar (BOB/OpenAI) ────────────────────────────────────
 app.use('/api/admin/ai', bobRateLimit, aiCommandRoutes)
 
-// ── Contractor Trust Score / Lead Bank ───────────────────────────────────────
-app.use(generalRateLimit, contractorsRoutes)
-app.use(generalRateLimit, apiKeysRoutes)
-app.use(destructiveRateLimit, webhookRoutes)
-
 // ── Bob agent push commands ───────────────────────────────────────────────────
 // GET (ping, control, logs) → monitor limit (400/15 min).
 // POST (commands, approvals) → AI command limit (20/15 min).
@@ -251,12 +253,17 @@ app.use(
   bobRoutes
 )
 
-// ── Outreach Prospects (CSV import + Bob enrichment) ─────────────────────────
-app.use('/api/admin/prospects', prospectsRateLimit, prospectsRoutes)
-app.use('/api/admin/outreach', generalRateLimit, outreachTemplatesRoutes)
-
 // ── Code Security Scanner (expensive — shell + FS scan) ──────────────────────
 app.use('/api/admin/security', scanRateLimit, securityScanRoutes)
+
+// ── Contractor Trust Score / Lead Bank ───────────────────────────────────────
+app.use(generalRateLimit, contractorsRoutes)
+app.use(generalRateLimit, apiKeysRoutes)
+app.use(destructiveRateLimit, webhookRoutes)
+
+// ── General Admin API Routes (catch-all — generalRateLimit applies only to
+//    routes not already handled above) ─────────────────────────────────────────
+app.use(generalRateLimit, adminRoutes)
 
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/api/admin-health', (_req, res) =>
