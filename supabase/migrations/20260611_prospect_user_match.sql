@@ -6,20 +6,8 @@ ALTER TABLE public.outreach_prospects
   ADD COLUMN IF NOT EXISTS joined_at       timestamptz;
 
 -- Extend status constraint to include 'converted'
--- Drop the existing check (name may vary across environments) then re-add it cleanly
-DO $$
-DECLARE
-  c text;
-BEGIN
-  SELECT conname INTO c
-  FROM   pg_constraint
-  WHERE  conrelid = 'public.outreach_prospects'::regclass
-    AND  contype  = 'c'
-    AND  pg_get_constraintdef(oid) LIKE '%status%IN%';
-  IF c IS NOT NULL THEN
-    EXECUTE format('ALTER TABLE public.outreach_prospects DROP CONSTRAINT %I', c);
-  END IF;
-END $$;
+ALTER TABLE public.outreach_prospects
+  DROP CONSTRAINT IF EXISTS outreach_prospects_status_check;
 
 ALTER TABLE public.outreach_prospects
   ADD CONSTRAINT outreach_prospects_status_check
