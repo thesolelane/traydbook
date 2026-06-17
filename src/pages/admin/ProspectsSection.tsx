@@ -338,16 +338,31 @@ function ProspectsTab({ authHeaders }: SectionProps) {
       setUploading(false)
       isUploadingRef.current = false
 
+      let pollFailures = 0
+      const MAX_POLL_FAILURES = 3
       const poll = async () => {
         try {
           const r = await fetch(`/api/admin/prospects/import-status/${batchId}`, {
             headers: authHeaders(),
           })
-          // On a transient error (429, 5xx) keep retrying — don't silently stop
+          // 404 = job gone (server restarted mid-import) — stop immediately
+          if (r.status === 404) {
+            setErr('Import job was lost — the server may have restarted during the upload. Check the database to confirm how many rows were inserted, then retry if needed.')
+            setUploading(false)
+            isUploadingRef.current = false
+            return
+          }
+          // Other non-ok (429, 5xx) = transient — retry up to MAX_POLL_FAILURES times
           if (!r.ok) {
+            pollFailures++
+            if (pollFailures >= MAX_POLL_FAILURES) {
+              setErr(`Import status check failed after ${MAX_POLL_FAILURES} attempts (HTTP ${r.status}). The import may still be running in the background.`)
+              return
+            }
             setTimeout(poll, 5000)
             return
           }
+          pollFailures = 0
           const job = await r.json()
           setImportJob({
             batchId,
