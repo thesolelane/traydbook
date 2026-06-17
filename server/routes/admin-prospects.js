@@ -335,8 +335,9 @@ router.get('/type-classes', requireAuth, requireAnyStaff, async (req, res) => {
 })
 
 // HEAD count helper — returns exact count with zero rows transferred
+// query must already have .select('*', { count: 'exact', head: true }) applied.
 async function headCount(query) {
-  const { count, error } = await query.select('*', { count: 'exact', head: true })
+  const { count, error } = await query
   return error ? 0 : (count ?? 0)
 }
 
@@ -368,7 +369,10 @@ router.get('/stats', requireAuth, requireAnyStaff, async (req, res) => {
   } catch { /* RPC not available — fall through to legacy path */ }
 
   // ── Legacy path: 11 sequential HEAD counts ────────────────────────────
-  const tbl = () => supabaseAdmin.from('outreach_prospects')
+  // tbl() includes .select() so .eq() can be chained before headCount awaits.
+  const tbl = () => supabaseAdmin
+    .from('outreach_prospects')
+    .select('*', { count: 'exact', head: true })
   const total = await headCount(tbl())
 
   const statuses = ['pending', 'enriched', 'drafted', 'sent', 'replied', 'skipped', 'bounced']
