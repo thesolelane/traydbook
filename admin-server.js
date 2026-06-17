@@ -142,19 +142,20 @@ const bobMonitorRateLimit = rateLimit({
     }),
 })
 
-// Tier 4 — General admin API (read-heavy: lists, dashboards, monitor, contractors).
-// 120 requests per 15 minutes per IP.
-// Higher cap for prospects routes — polling + bulk ops need more headroom
+// Tier 4 — High-traffic admin reads (prospects, contractors, users, dashboards).
+// Each path group gets its OWN limiter instance so one busy tab never starves
+// another — all instances share the same rateLimitKey strategy.
+// Service-key requests (Bob, internal tools) bypass the counter entirely.
+const skipServiceKeys = (req) => !!(req.headers['x-service-key'] || req.headers['x-api-key'])
+
+// Prospects: import polling + bulk ops need the most headroom (2000/15 min)
 const prospectsRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 2000,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: rateLimitKey,
-  // Service-key requests (Bob, internal tools) bypass the counter entirely.
-  // They authenticate via x-service-key / x-api-key headers, not a user JWT,
-  // and must not share the admin browser's rate-limit bucket.
-  skip: (req) => !!(req.headers['x-service-key'] || req.headers['x-api-key']),
+  skip: skipServiceKeys,
   handler: (_req, res) =>
     res.status(429).json({
       error: 'TOO_MANY_REQUESTS',
@@ -162,18 +163,43 @@ const prospectsRateLimit = rateLimit({
     }),
 })
 
-const generalRateLimit = rateLimit({
+// Contractors tab: trust-score reads + lead-bank writes (separate counter from catch-all)
+const contractorsRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 1000,
+  max: 2000,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: rateLimitKey,
+  skip: skipServiceKeys,
   handler: (_req, res) =>
     res.status(429).json({
       error: 'TOO_MANY_REQUESTS',
       message: 'Rate limit exceeded — please slow down.',
     }),
 })
+
+// General admin tabs (users, stats, posts, wallets, invites, purchases, etc.)
+// Each path group uses its OWN instance of this config so their counters are independent.
+function makeGeneralLimiter() {
+  return rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 2000,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: rateLimitKey,
+    skip: skipServiceKeys,
+    handler: (_req, res) =>
+      res.status(429).json({
+        error: 'TOO_MANY_REQUESTS',
+        message: 'Rate limit exceeded — please slow down.',
+      }),
+  })
+}
+
+const generalRateLimit    = makeGeneralLimiter() // catch-all adminRoutes
+const outreachRateLimit   = makeGeneralLimiter() // outreach templates
+const monitorRateLimit    = makeGeneralLimiter() // monitor / audit
+const apiKeysRateLimit    = makeGeneralLimiter() // api-keys tab
 
 // Health check — before IP restriction so Coolify can reach it.
 // Does NOT expose safe_mode_reason to avoid leaking internal error details
@@ -217,10 +243,10 @@ app.use(modeAwareMiddleware)
 
 // ── Outreach Prospects (CSV import + Bob enrichment) ─────────────────────────
 app.use('/api/admin/prospects', prospectsRateLimit, prospectsRoutes)
-app.use('/api/admin/outreach', generalRateLimit, outreachTemplatesRoutes)
+app.use('/api/admin/outreach', outreachRateLimit, outreachTemplatesRoutes)
 
 // ── Security: Monitor, Threats, Quarantine, Audit ────────────────────────────
-app.use('/api/admin/monitor', generalRateLimit, monitorRoutes)
+app.use('/api/admin/monitor', monitorRateLimit, monitorRoutes)
 
 // ── Security: Enhanced User Controls ─────────────────────────────────────────
 // Suspension / unsuspension / force-logout are destructive; reads fall through
@@ -257,12 +283,14 @@ app.use(
 app.use('/api/admin/security', scanRateLimit, securityScanRoutes)
 
 // ── Contractor Trust Score / Lead Bank ───────────────────────────────────────
-app.use(generalRateLimit, contractorsRoutes)
-app.use(generalRateLimit, apiKeysRoutes)
+// Path prefix added so contractorsRoutes gets its own counter independent of
+// the catch-all adminRoutes pool.
+app.use('/api/admin/contractors', contractorsRateLimit, contractorsRoutes)
+app.use('/api/admin/api-keys', apiKeysRateLimit, apiKeysRoutes)
 app.use(destructiveRateLimit, webhookRoutes)
 
 // ── General Admin API Routes (catch-all — generalRateLimit applies only to
-//    routes not already handled above) ─────────────────────────────────────────
+//    routes not already handled above: users, stats, posts, wallets, invites…)
 app.use(generalRateLimit, adminRoutes)
 
 // ── Health check ──────────────────────────────────────────────────────────────
