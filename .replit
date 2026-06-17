@@ -60,6 +60,7 @@ SIM_WEBHOOK_SECRET = "758c30240da4df28def2e5dcfa067d99a213a9dce277c53a"
 PROTECTED_SUPER_ADMIN_EMAIL = "acooper@cooperanth.com"
 PHYSICAL_ADDRESS = "Principal Office, 30 N Gould St Ste R, Sheridan, WY 82801, USA"
 VITE_PHYSICAL_ADDRESS = "Principal Office, 30 N Gould St Ste R, Sheridan, WY 82801, USA"
+BOB_URL = "https://bob.traydbook.com"
 
 [postMerge]
 path = "scripts/post-merge.sh"
