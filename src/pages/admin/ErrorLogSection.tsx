@@ -6,6 +6,7 @@ interface ErrorEntry {
   id: string
   timestamp: string
   context: string
+  source: 'supabase' | 'stripe' | 'network' | 'client' | 'server'
   message: string
   detail: string | null
   stack: string | null
@@ -26,6 +27,34 @@ const CONTEXT_COLORS: Record<string, string> = {
   server: '#aaa',
 }
 
+const SOURCE_META: Record<string, { label: string; color: string; description: string }> = {
+  supabase: {
+    label: 'Supabase',
+    color: '#3ecf8e',
+    description: 'Database, auth, or storage error from Supabase / PostgREST.',
+  },
+  stripe: {
+    label: 'Stripe',
+    color: '#5271e0',
+    description: 'Stripe API call failed — payment, webhook, or subscription error.',
+  },
+  network: {
+    label: 'Network',
+    color: '#e0a03a',
+    description: 'External fetch failed — DNS, timeout, or connection refused. May indicate an infrastructure issue.',
+  },
+  client: {
+    label: 'Client',
+    color: '#aaa',
+    description: '4xx error — bad request, missing auth, or not found. Caused by the caller, not the server.',
+  },
+  server: {
+    label: 'Server',
+    color: '#e05252',
+    description: 'Node / Express error — uncaught exception, middleware failure, or 5xx response.',
+  },
+}
+
 export default function ErrorLogSection({ authHeaders }: SectionProps) {
   const [entries, setEntries] = useState<ErrorEntry[]>([])
   const [total, setTotal] = useState(0)
@@ -33,13 +62,17 @@ export default function ErrorLogSection({ authHeaders }: SectionProps) {
   const [clearing, setClearing] = useState(false)
   const [confirmClear, setConfirmClear] = useState(false)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
-  const [filter, setFilter] = useState<string>('all')
+  const [contextFilter, setContextFilter] = useState<string>('all')
+  const [sourceFilter, setSourceFilter] = useState<string>('all')
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const params = filter !== 'all' ? `?context=${filter}` : ''
-      const res = await fetch(`/api/admin/error-log${params}`, { headers: authHeaders() })
+      const params = new URLSearchParams()
+      if (contextFilter !== 'all') params.set('context', contextFilter)
+      if (sourceFilter !== 'all') params.set('source', sourceFilter)
+      const qs = params.toString() ? `?${params}` : ''
+      const res = await fetch(`/api/admin/error-log${qs}`, { headers: authHeaders() })
       if (res.ok) {
         const data = await res.json()
         setEntries(data.items ?? [])
@@ -48,7 +81,7 @@ export default function ErrorLogSection({ authHeaders }: SectionProps) {
     } finally {
       setLoading(false)
     }
-  }, [filter])
+  }, [contextFilter, sourceFilter])
 
   useEffect(() => {
     void load()
@@ -73,6 +106,13 @@ export default function ErrorLogSection({ authHeaders }: SectionProps) {
   }
 
   const contexts = ['all', ...Array.from(new Set(entries.map(e => e.context)))]
+  const sources = Object.keys(SOURCE_META)
+
+  // Count entries per source for the filter badges
+  const sourceCounts = entries.reduce<Record<string, number>>((acc, e) => {
+    acc[e.source ?? 'server'] = (acc[e.source ?? 'server'] ?? 0) + 1
+    return acc
+  }, {})
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -161,19 +201,22 @@ export default function ErrorLogSection({ authHeaders }: SectionProps) {
           </div>
         }
       >
+        {/* Context filter */}
         <div
           style={{
-            padding: '12px 20px',
+            padding: '10px 20px',
             borderBottom: '1px solid var(--color-border)',
             display: 'flex',
             gap: 8,
             flexWrap: 'wrap',
+            alignItems: 'center',
           }}
         >
+          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginRight: 4 }}>Area</span>
           {contexts.map(ctx => (
             <button
               key={ctx}
-              onClick={() => setFilter(ctx)}
+              onClick={() => setContextFilter(ctx)}
               style={{
                 padding: '4px 10px',
                 fontSize: 11,
@@ -184,15 +227,86 @@ export default function ErrorLogSection({ authHeaders }: SectionProps) {
                 textTransform: 'uppercase',
                 letterSpacing: '0.5px',
                 background:
-                  filter === ctx
+                  contextFilter === ctx
                     ? (CONTEXT_COLORS[ctx] ?? 'var(--color-brand)')
                     : 'var(--color-bg)',
-                color: filter === ctx ? '#fff' : 'var(--color-text-muted)',
+                color: contextFilter === ctx ? '#fff' : 'var(--color-text-muted)',
               }}
             >
               {ctx}
             </button>
           ))}
+        </div>
+
+        {/* Source filter */}
+        <div
+          style={{
+            padding: '10px 20px',
+            borderBottom: '1px solid var(--color-border)',
+            display: 'flex',
+            gap: 8,
+            flexWrap: 'wrap',
+            alignItems: 'center',
+          }}
+        >
+          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginRight: 4 }}>Source</span>
+          <button
+            onClick={() => setSourceFilter('all')}
+            style={{
+              padding: '4px 10px',
+              fontSize: 11,
+              fontWeight: 700,
+              borderRadius: 20,
+              border: 'none',
+              cursor: 'pointer',
+              background: sourceFilter === 'all' ? 'var(--color-brand)' : 'var(--color-bg)',
+              color: sourceFilter === 'all' ? '#fff' : 'var(--color-text-muted)',
+            }}
+          >
+            ALL
+          </button>
+          {sources.map(src => {
+            const meta = SOURCE_META[src]
+            const count = sourceCounts[src] ?? 0
+            const active = sourceFilter === src
+            return (
+              <button
+                key={src}
+                onClick={() => setSourceFilter(src)}
+                title={meta.description}
+                style={{
+                  padding: '4px 10px',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  borderRadius: 20,
+                  border: `1px solid ${active ? meta.color : 'transparent'}`,
+                  cursor: 'pointer',
+                  background: active ? `${meta.color}25` : 'var(--color-bg)',
+                  color: active ? meta.color : 'var(--color-text-muted)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                }}
+              >
+                {meta.label}
+                {count > 0 && (
+                  <span style={{
+                    background: active ? meta.color : 'var(--color-border)',
+                    color: active ? '#fff' : 'var(--color-text-muted)',
+                    borderRadius: 10,
+                    padding: '0 5px',
+                    fontSize: 10,
+                    fontWeight: 800,
+                    lineHeight: '16px',
+                    minWidth: 16,
+                    textAlign: 'center',
+                  }}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            )
+          })}
         </div>
 
         {loading ? (
@@ -217,7 +331,8 @@ export default function ErrorLogSection({ authHeaders }: SectionProps) {
           <div>
             {entries.map((entry, i) => {
               const isOpen = expanded.has(entry.id)
-              const color = CONTEXT_COLORS[entry.context] ?? '#aaa'
+              const ctxColor = CONTEXT_COLORS[entry.context] ?? '#aaa'
+              const srcMeta = SOURCE_META[entry.source ?? 'server']
               return (
                 <div
                   key={entry.id}
@@ -241,28 +356,48 @@ export default function ErrorLogSection({ authHeaders }: SectionProps) {
                   >
                     <Circle
                       size={8}
-                      fill={color}
-                      color={color}
+                      fill={ctxColor}
+                      color={ctxColor}
                       style={{ marginTop: 5, flexShrink: 0 }}
                     />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div
                         style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}
                       >
+                        {/* Context badge */}
                         <span
                           style={{
                             fontSize: 10,
                             fontWeight: 700,
                             textTransform: 'uppercase',
                             letterSpacing: '0.5px',
-                            color,
+                            color: ctxColor,
                             padding: '2px 6px',
-                            background: `${color}20`,
+                            background: `${ctxColor}20`,
                             borderRadius: 4,
                           }}
                         >
                           {entry.context}
                         </span>
+
+                        {/* Source badge */}
+                        <span
+                          title={srcMeta?.description}
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            color: srcMeta?.color ?? '#aaa',
+                            padding: '2px 6px',
+                            background: `${srcMeta?.color ?? '#aaa'}15`,
+                            borderRadius: 4,
+                            border: `1px solid ${srcMeta?.color ?? '#aaa'}40`,
+                          }}
+                        >
+                          {srcMeta?.label ?? entry.source ?? 'server'}
+                        </span>
+
                         {entry.route && (
                           <span
                             style={{
@@ -321,6 +456,22 @@ export default function ErrorLogSection({ authHeaders }: SectionProps) {
                         borderTop: '1px solid var(--color-border)',
                       }}
                     >
+                      {/* Source explanation */}
+                      {srcMeta && (
+                        <div style={{
+                          marginTop: 12,
+                          padding: '8px 12px',
+                          borderRadius: 6,
+                          background: `${srcMeta.color}10`,
+                          border: `1px solid ${srcMeta.color}30`,
+                          fontSize: 12,
+                          color: srcMeta.color,
+                          fontWeight: 500,
+                        }}>
+                          <strong>Source — {srcMeta.label}:</strong> {srcMeta.description}
+                        </div>
+                      )}
+
                       {entry.detail && (
                         <div style={{ marginTop: 12 }}>
                           <p
@@ -423,46 +574,53 @@ export default function ErrorLogSection({ authHeaders }: SectionProps) {
         )}
       </SectionCard>
 
-      <SectionCard title="What These Errors Mean">
+      {/* Source legend */}
+      <SectionCard title="Error Sources — What They Mean">
+        <div style={{ padding: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
+            {Object.entries(SOURCE_META).map(([src, meta]) => (
+              <div
+                key={src}
+                style={{
+                  padding: 12,
+                  background: 'var(--color-bg)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 8,
+                  borderLeft: `3px solid ${meta.color}`,
+                }}
+              >
+                <p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 700, color: meta.color }}>
+                  {meta.label}
+                </p>
+                <p style={{ margin: 0, fontSize: 12, color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
+                  {meta.description}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.6 }}>
+            <strong style={{ color: 'var(--color-text)' }}>Note:</strong> Infrastructure crashes
+            (container OOM, Coolify restarts) cannot be logged — the process is already dead.
+            They appear as sudden gaps in the log timeline or as prior <strong>Network</strong> errors
+            if a downstream service became unreachable before the crash.
+          </p>
+        </div>
+      </SectionCard>
+
+      {/* Context legend */}
+      <SectionCard title="Error Areas — What They Mean">
         <div style={{ padding: 20 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             {[
-              {
-                ctx: 'post',
-                label: 'Post Creation',
-                desc: 'Errors when users try to create a feed post. Usually a database permission issue.',
-              },
-              {
-                ctx: 'upload',
-                label: 'File Upload',
-                desc: 'Photo uploads failing. Usually Supabase storage bucket permissions.',
-              },
-              {
-                ctx: 'onboarding',
-                label: 'Onboarding',
-                desc: 'Profile setup failures. Usually missing required fields or schema mismatch.',
-              },
-              {
-                ctx: 'auth',
-                label: 'Authentication',
-                desc: 'Login or token verification failures.',
-              },
-              {
-                ctx: 'stripe',
-                label: 'Stripe / Payments',
-                desc: 'Credit purchase or webhook processing errors.',
-              },
+              { ctx: 'post', label: 'Post Creation', desc: 'Errors when users try to create a feed post. Usually a database permission issue.' },
+              { ctx: 'upload', label: 'File Upload', desc: 'Photo uploads failing. Usually Supabase storage bucket permissions.' },
+              { ctx: 'onboarding', label: 'Onboarding', desc: 'Profile setup failures. Usually missing required fields or schema mismatch.' },
+              { ctx: 'auth', label: 'Authentication', desc: 'Login or token verification failures.' },
+              { ctx: 'stripe', label: 'Stripe / Payments', desc: 'Credit purchase or webhook processing errors.' },
               { ctx: 'sms', label: 'SMS', desc: 'Text message dispatch failures via Telnyx.' },
-              {
-                ctx: 'admin',
-                label: 'Admin Actions',
-                desc: 'Errors triggered by admin panel operations.',
-              },
-              {
-                ctx: 'server',
-                label: 'Server / General',
-                desc: 'Uncaught server errors or unhandled exceptions.',
-              },
+              { ctx: 'admin', label: 'Admin Actions', desc: 'Errors triggered by admin panel operations.' },
+              { ctx: 'server', label: 'Server / General', desc: 'Uncaught server errors or unhandled exceptions.' },
             ].map(({ ctx, label, desc }) => (
               <div
                 key={ctx}
@@ -474,24 +632,10 @@ export default function ErrorLogSection({ authHeaders }: SectionProps) {
                   borderLeft: `3px solid ${CONTEXT_COLORS[ctx] ?? '#aaa'}`,
                 }}
               >
-                <p
-                  style={{
-                    margin: '0 0 4px',
-                    fontSize: 13,
-                    fontWeight: 700,
-                    color: 'var(--color-text)',
-                  }}
-                >
+                <p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 700, color: 'var(--color-text)' }}>
                   {label}
                 </p>
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: 12,
-                    color: 'var(--color-text-muted)',
-                    lineHeight: 1.5,
-                  }}
-                >
+                <p style={{ margin: 0, fontSize: 12, color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
                   {desc}
                 </p>
               </div>

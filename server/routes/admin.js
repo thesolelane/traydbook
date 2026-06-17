@@ -589,7 +589,8 @@ router.get('/api/admin/error-log', blockServiceKeys, requireAuth, requireSuperAd
   const limit = Math.min(parseInt(req.query.limit ?? '100'), 500)
   const offset = parseInt(req.query.offset ?? '0')
   const context = req.query.context?.toString() || undefined
-  res.json(getErrorLog({ limit, offset, context }))
+  const source = req.query.source?.toString() || undefined
+  res.json(getErrorLog({ limit, offset, context, source }))
 })
 
 router.delete(
