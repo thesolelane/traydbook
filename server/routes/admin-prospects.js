@@ -310,9 +310,8 @@ router.get('/', requireAuth, requireAnyStaff, async (req, res) => {
 })
 
 // GET /api/admin/prospects/type-classes — distinct type_class values for filter dropdown
-// type_class is low-cardinality (typically <200 distinct values). We sample three
-// windows across the table so we catch all values without scanning every row.
-// Each window = 2 000 rows → 6 000 rows total instead of 121 000+.
+// Uses get_prospect_type_classes() RPC — single server-side DISTINCT scan instead of
+// the old 4-request sampling approach (which could also miss values not in sampled windows).
 // Results are cached 5 minutes — type_class values only change after a new import.
 router.get('/type-classes', requireAuth, requireAnyStaff, async (req, res) => {
   const { prospect_type } = req.query
@@ -321,38 +320,16 @@ router.get('/type-classes', requireAuth, requireAnyStaff, async (req, res) => {
   const cached = getCached(cacheKey)
   if (cached) return res.json(cached)
 
-  const base = () => {
-    let q = supabaseAdmin
-      .from('outreach_prospects')
-      .select('type_class', { count: 'exact' })
-      .not('type_class', 'is', null)
-      .neq('type_class', '')
-    if (prospect_type) q = q.eq('prospect_type', prospect_type)
-    return q
+  const { data, error } = await supabaseAdmin.rpc('get_prospect_type_classes', {
+    p_prospect_type: prospect_type || null,
+  })
+
+  if (error) {
+    console.error('[prospects] type-classes RPC error:', error.message)
+    return res.status(500).json({ error: error.message })
   }
 
-  // Get total count first (head request — zero rows transferred)
-  const { count: total } = await base().limit(0)
-  const n = total ?? 0
-
-  // Sample start, middle, and end of the table (2 000 rows each)
-  const WINDOW = 2000
-  const mid = Math.max(0, Math.floor(n / 2) - WINDOW / 2)
-  const end = Math.max(0, n - WINDOW)
-
-  const [r1, r2, r3] = await Promise.all([
-    base().range(0, WINDOW - 1),
-    base().range(mid, mid + WINDOW - 1),
-    base().range(end, end + WINDOW - 1),
-  ])
-
-  const all = [
-    ...(r1.data || []),
-    ...(r2.data || []),
-    ...(r3.data || []),
-  ]
-  const classes = [...new Set(all.map(r => r.type_class).filter(Boolean))].sort()
-  const result = { type_classes: classes }
+  const result = { type_classes: data ?? [] }
   setCached(cacheKey, result, 5 * 60 * 1000) // 5 minutes
   res.json(result)
 })
