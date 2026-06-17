@@ -147,7 +147,7 @@ const bobMonitorRateLimit = rateLimit({
 // Higher cap for prospects routes — polling + bulk ops need more headroom
 const prospectsRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 600,
+  max: 2000,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: rateLimitKey,

@@ -290,18 +290,43 @@ router.get('/', requireAuth, requireAnyStaff, async (req, res) => {
 })
 
 // GET /api/admin/prospects/type-classes — distinct type_class values for filter dropdown
+// type_class is low-cardinality (typically <200 distinct values). We sample three
+// windows across the table so we catch all values without scanning every row.
+// Each window = 2 000 rows → 6 000 rows total instead of 121 000+.
 router.get('/type-classes', requireAuth, requireAnyStaff, async (req, res) => {
   const { prospect_type } = req.query
-  let q = supabaseAdmin
-    .from('outreach_prospects')
-    .select('type_class')
-    .not('type_class', 'is', null)
-    .neq('type_class', '')
-    .limit(250000) // override Supabase's 1000-row default — must scan all rows for distinct values
-  if (prospect_type) q = q.eq('prospect_type', prospect_type)
-  const { data, error } = await q
-  if (error) return res.status(500).json({ error: error.message })
-  const classes = [...new Set((data || []).map(r => r.type_class).filter(Boolean))].sort()
+
+  const base = () => {
+    let q = supabaseAdmin
+      .from('outreach_prospects')
+      .select('type_class', { count: 'exact' })
+      .not('type_class', 'is', null)
+      .neq('type_class', '')
+    if (prospect_type) q = q.eq('prospect_type', prospect_type)
+    return q
+  }
+
+  // Get total count first (head request — zero rows transferred)
+  const { count: total } = await base().limit(0)
+  const n = total ?? 0
+
+  // Sample start, middle, and end of the table (2 000 rows each)
+  const WINDOW = 2000
+  const mid = Math.max(0, Math.floor(n / 2) - WINDOW / 2)
+  const end = Math.max(0, n - WINDOW)
+
+  const [r1, r2, r3] = await Promise.all([
+    base().range(0, WINDOW - 1),
+    base().range(mid, mid + WINDOW - 1),
+    base().range(end, end + WINDOW - 1),
+  ])
+
+  const all = [
+    ...(r1.data || []),
+    ...(r2.data || []),
+    ...(r3.data || []),
+  ]
+  const classes = [...new Set(all.map(r => r.type_class).filter(Boolean))].sort()
   res.json({ type_classes: classes })
 })
 
@@ -330,12 +355,17 @@ router.get('/stats', requireAuth, requireAnyStaff, async (req, res) => {
     by_type[t] = await headCount(tbl().eq('prospect_type', t))
   }
 
-  // Unique people — distinct person_key values (single column, so transfer is small)
-  const { data: keyRows } = await tbl()
-    .select('person_key')
-    .not('person_key', 'is', null)
-    .limit(250000)
-  const unique_people = new Set((keyRows || []).map(r => r.person_key)).size
+  // unique_people requires the person_key column (migration 20260611_person_key.sql).
+  // Skip gracefully if the column isn't in the schema cache yet.
+  let unique_people = null
+  try {
+    const { data: keyRows, error: keyErr } = await tbl()
+      .select('person_key')
+      .not('person_key', 'is', null)
+      .neq('person_key', '')
+      .limit(250000)
+    if (!keyErr) unique_people = new Set((keyRows || []).map(r => r.person_key)).size
+  } catch { /* column missing — omit stat */ }
 
   res.json({ total, unique_people, by_status, by_type })
 })
