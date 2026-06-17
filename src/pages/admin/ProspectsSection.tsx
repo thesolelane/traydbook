@@ -220,6 +220,7 @@ function ProspectsTab({ authHeaders }: SectionProps) {
     imported: number
     done: boolean
     error: string | null
+    warning: string | null
   } | null>(null)
   const [err, setErr] = useState('')
   const [success, setSuccess] = useState('')
@@ -334,7 +335,7 @@ function ProspectsTab({ authHeaders }: SectionProps) {
       // Server accepted — start polling for background progress
       const batchId = data.batch_id
       const total = data.total
-      setImportJob({ batchId, total, processed: 0, imported: 0, done: false, error: null })
+      setImportJob({ batchId, total, processed: 0, imported: 0, done: false, error: null, warning: null })
       setUploading(false)
       isUploadingRef.current = false
 
@@ -370,7 +371,8 @@ function ProspectsTab({ authHeaders }: SectionProps) {
             processed: job.processed,
             imported: job.imported,
             done: job.done,
-            error: job.error,
+            error: job.error ?? null,
+            warning: job.warning ?? null,
           })
           if (!job.done) {
             setTimeout(poll, 4000)
@@ -379,7 +381,8 @@ function ProspectsTab({ authHeaders }: SectionProps) {
               setErr(`Import error: ${job.error}`)
             } else {
               setSuccess(
-                `✓ Imported ${(job.total ?? job.imported ?? 0).toLocaleString()} prospects (batch: ${batchId})`
+                `✓ Imported ${(job.imported ?? 0).toLocaleString()} of ${(job.total ?? 0).toLocaleString()} prospects (batch: ${batchId})` +
+                (job.warning ? ` — ⚠ ${job.warning}` : '')
               )
             }
             await loadStats()

@@ -145,6 +145,7 @@ router.post('/upload', requireAuth, requireAdminLevel, handleUpload, async (req,
     imported: 0,
     done: false,
     error: null,
+    warning: null, // set if columns were stripped due to pending migrations
   })
 
   // Respond right away — don't wait for Supabase inserts (avoids Traefik timeout)
@@ -164,18 +165,51 @@ router.post('/upload', requireAuth, requireAdminLevel, handleUpload, async (req,
       err.message?.toLowerCase().includes('too many requests') ||
       err.message?.toLowerCase().includes('rate limit')
 
+    // PGRST204 = column exists in payload but not in DB schema cache.
+    // Parse the offending column name so we can strip it and keep going.
+    const parseMissingCol = err => {
+      if (err.code !== 'PGRST204') return null
+      const m = err.message?.match(/Could not find the '(\w+)' column/)
+      return m ? m[1] : null
+    }
+
+    // Columns confirmed missing from the live DB (e.g. pending migrations).
+    // We strip them on the fly so the import still works.
+    const strippedCols = new Set()
+
+    const applyStrip = rows =>
+      strippedCols.size === 0
+        ? rows
+        : rows.map(r => {
+            const out = { ...r }
+            for (const col of strippedCols) delete out[col]
+            return out
+          })
+
     try {
       for (let i = 0; i < records.length; i += CHUNK_SIZE) {
         const chunk = records.slice(i, i + CHUNK_SIZE)
         const chunkNum = Math.floor(i / CHUNK_SIZE) + 1
         const totalChunks = Math.ceil(records.length / CHUNK_SIZE)
-        // Up to 6 attempts with exponential back-off on rate-limit responses
+        // Up to 6 attempts with exponential back-off on rate-limit responses.
+        // PGRST204 (missing column) is retried immediately after stripping the column.
         let chunkData, error
-        for (let attempt = 0; attempt < 6; attempt++) {
+        for (let attempt = 0; attempt < 8; attempt++) {
+          const payload = applyStrip(chunk)
           ;({ data: chunkData, error } = await supabaseAdmin
             .from('outreach_prospects')
-            .upsert(chunk, { onConflict: 'license_number,prospect_type', ignoreDuplicates: true }))
+            .upsert(payload, { onConflict: 'license_number,prospect_type', ignoreDuplicates: true }))
           if (!error) break
+          const missingCol = parseMissingCol(error)
+          if (missingCol) {
+            // Column not in live DB yet (migration pending) — strip it and retry immediately
+            strippedCols.add(missingCol)
+            console.warn(
+              `[import] chunk ${chunkNum}/${totalChunks}: column '${missingCol}' missing from DB schema ` +
+              `(PGRST204) — stripping and retrying. Apply migration to restore full functionality.`
+            )
+            continue // retry this attempt index — no sleep needed
+          }
           if (isRateLimit(error)) {
             const wait = 5000 * Math.pow(2, attempt) // 5s→10s→20s→40s→80s→160s
             console.warn(
@@ -184,7 +218,7 @@ router.post('/upload', requireAuth, requireAdminLevel, handleUpload, async (req,
             )
             await sleep(wait)
           } else {
-            // Non-rate-limit error — log full details and abort
+            // Non-rate-limit, non-schema error — log full details and abort
             console.error(
               `[import] chunk ${chunkNum}/${totalChunks} failed:`,
               JSON.stringify({ status: error.status, code: error.code, message: error.message, details: error.details })
@@ -214,6 +248,10 @@ router.post('/upload', requireAuth, requireAdminLevel, handleUpload, async (req,
       job.processed = records.length
       job.imported = totalInserted
       job.done = true
+      if (strippedCols.size > 0) {
+        job.warning = `Imported successfully but ${[...strippedCols].join(', ')} column(s) were skipped — ` +
+          `run pending DB migrations in Supabase to restore full functionality.`
+      }
     } catch (e) {
       job.error = e.message
       job.done = true
