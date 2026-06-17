@@ -133,11 +133,10 @@ router.post('/upload', requireAuth, requireAdminLevel, handleUpload, async (req,
   const batchId = `batch_${Date.now()}`
   const adminId = req.user?.id || null
   const records = rows.map(r => normalizeRow(r, prospectType, batchId, adminId))
-  // 5 000 rows per chunk → ~24 API calls for a 121k file instead of 121.
-  // Keeps well under Supabase's REST rate limits; ~1.5 MB payload per chunk
-  // is comfortably within PostgREST's default body limit.
-  const CHUNK_SIZE = 5000
-  const CHUNK_SLEEP_MS = 1200 // 1.2 s between chunks ≈ <1 req/s sustained
+  // 2 000 rows per chunk — safer payload (~800 KB JSON per chunk).
+  // PostgREST can handle larger but 2k avoids memory pressure on the DB side.
+  const CHUNK_SIZE = 2000
+  const CHUNK_SLEEP_MS = 2500 // 2.5 s between chunks keeps us well under rate limits
 
   // Register the job immediately so the UI can start polling
   importJobs.set(batchId, {
@@ -156,25 +155,45 @@ router.post('/upload', requireAuth, requireAdminLevel, handleUpload, async (req,
     const job = importJobs.get(batchId)
     let totalInserted = 0
     const sleep = ms => new Promise(r => setTimeout(r, ms))
+
+    // Supabase JS client returns status as a number on the error object.
+    // error.code is a PostgreSQL/PostgREST code string (e.g. "PGRST301"), not "429".
+    const isRateLimit = err =>
+      err.status === 429 ||
+      err.code === '429' ||
+      err.message?.toLowerCase().includes('too many requests') ||
+      err.message?.toLowerCase().includes('rate limit')
+
     try {
       for (let i = 0; i < records.length; i += CHUNK_SIZE) {
         const chunk = records.slice(i, i + CHUNK_SIZE)
-        // Up to 5 attempts with exponential back-off on 429
+        const chunkNum = Math.floor(i / CHUNK_SIZE) + 1
+        const totalChunks = Math.ceil(records.length / CHUNK_SIZE)
+        // Up to 6 attempts with exponential back-off on rate-limit responses
         let chunkData, error
-        for (let attempt = 0; attempt < 5; attempt++) {
+        for (let attempt = 0; attempt < 6; attempt++) {
           ;({ data: chunkData, error } = await supabaseAdmin
             .from('outreach_prospects')
             .upsert(chunk, { onConflict: 'license_number,prospect_type', ignoreDuplicates: true }))
           if (!error) break
-          if (error.code === '429' || error.message?.includes('Too Many Requests')) {
-            const wait = 5000 * Math.pow(2, attempt) // 5s, 10s, 20s, 40s, 80s
+          if (isRateLimit(error)) {
+            const wait = 5000 * Math.pow(2, attempt) // 5s→10s→20s→40s→80s→160s
+            console.warn(
+              `[import] chunk ${chunkNum}/${totalChunks} rate-limited (attempt ${attempt + 1}),` +
+              ` status=${error.status} code=${error.code} — waiting ${wait}ms`
+            )
             await sleep(wait)
           } else {
+            // Non-rate-limit error — log full details and abort
+            console.error(
+              `[import] chunk ${chunkNum}/${totalChunks} failed:`,
+              JSON.stringify({ status: error.status, code: error.code, message: error.message, details: error.details })
+            )
             break
           }
         }
         if (error) {
-          job.error = error.message
+          job.error = `${error.message} (status=${error.status ?? '?'} code=${error.code ?? '?'})`
           job.done = true
           return
         }

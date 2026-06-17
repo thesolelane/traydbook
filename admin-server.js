@@ -160,7 +160,7 @@ const prospectsRateLimit = rateLimit({
 
 const generalRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 120,
+  max: 1000,
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: rateLimitKey,
