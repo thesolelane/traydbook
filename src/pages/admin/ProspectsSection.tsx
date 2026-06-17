@@ -231,6 +231,7 @@ function ProspectsTab({ authHeaders }: SectionProps) {
   const [bounceLogs, setBounceLogs] = useState<Record<string, SendLogEntry | null>>({})
   const [bounceLoading, setBounceLoading] = useState<Record<string, boolean>>({})
   const fileRef = useRef<HTMLInputElement>(null)
+  const isUploadingRef = useRef(false) // sync guard — prevents double-fire from programmatic input clear
   const [prospectType, setProspectType] = useState<'contractor' | 'real_estate_agent'>('contractor')
   const [matchStatus, setMatchStatus] = useState<{ last_run: string | null; next_run: string | null } | null>(null)
   const [matchRunning, setMatchRunning] = useState(false)
@@ -307,11 +308,14 @@ function ProspectsTab({ authHeaders }: SectionProps) {
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    // Sync guard — React state (uploading) may not be true yet on a double-fire
+    // caused by programmatically clearing the input value below.
+    if (isUploadingRef.current) return
+    isUploadingRef.current = true
     setUploading(true)
     setErr('')
     setSuccess('')
     setImportJob(null)
-    if (fileRef.current) fileRef.current.value = ''
     try {
       const form = new FormData()
       form.append('file', file)
@@ -324,18 +328,26 @@ function ProspectsTab({ authHeaders }: SectionProps) {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Upload failed')
 
+      // Clear the input AFTER the request so browsers don't re-fire onChange
+      if (fileRef.current) fileRef.current.value = ''
+
       // Server accepted — start polling for background progress
       const batchId = data.batch_id
       const total = data.total
       setImportJob({ batchId, total, processed: 0, imported: 0, done: false, error: null })
       setUploading(false)
+      isUploadingRef.current = false
 
       const poll = async () => {
         try {
           const r = await fetch(`/api/admin/prospects/import-status/${batchId}`, {
             headers: authHeaders(),
           })
-          if (!r.ok) return
+          // On a transient error (429, 5xx) keep retrying — don't silently stop
+          if (!r.ok) {
+            setTimeout(poll, 5000)
+            return
+          }
           const job = await r.json()
           setImportJob({
             batchId,
@@ -360,13 +372,15 @@ function ProspectsTab({ authHeaders }: SectionProps) {
             await loadProspects()
           }
         } catch {
-          setTimeout(poll, 3000)
+          setTimeout(poll, 5000)
         }
       }
       setTimeout(poll, 2000)
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Upload failed')
       setUploading(false)
+      isUploadingRef.current = false
+      if (fileRef.current) fileRef.current.value = ''
     }
   }
 
