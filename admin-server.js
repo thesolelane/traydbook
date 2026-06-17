@@ -151,6 +151,10 @@ const prospectsRateLimit = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: rateLimitKey,
+  // Service-key requests (Bob, internal tools) bypass the counter entirely.
+  // They authenticate via x-service-key / x-api-key headers, not a user JWT,
+  // and must not share the admin browser's rate-limit bucket.
+  skip: (req) => !!(req.headers['x-service-key'] || req.headers['x-api-key']),
   handler: (_req, res) =>
     res.status(429).json({
       error: 'TOO_MANY_REQUESTS',

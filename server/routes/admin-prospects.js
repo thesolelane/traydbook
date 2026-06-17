@@ -32,6 +32,23 @@ function escapeHtml(str) {
 const router = Router()
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } })
 
+// ─── Simple TTL cache (in-process, no dependencies) ───────────────────────────
+// Keeps expensive Supabase aggregations out of the hot path.
+// stats:   30 s — numbers change slowly; an admin refreshing twice in 30 s gets
+//          the same snapshot, which is fine.
+// type-classes: 5 min — distinct licence-type strings change only after an import.
+const _cache = new Map() // key → { data, expiresAt }
+function getCached(key) {
+  const e = _cache.get(key)
+  if (!e) return null
+  if (Date.now() > e.expiresAt) { _cache.delete(key); return null }
+  return e.data
+}
+function setCached(key, data, ttlMs) {
+  _cache.set(key, { data, expiresAt: Date.now() + ttlMs })
+}
+function bustCache(key) { _cache.delete(key) }
+
 // In-memory import job tracker (single-instance admin server)
 const importJobs = new Map()
 // { batchId: { total, processed, done, error, imported } }
@@ -252,6 +269,9 @@ router.post('/upload', requireAuth, requireAdminLevel, handleUpload, async (req,
         job.warning = `Imported successfully but ${[...strippedCols].join(', ')} column(s) were skipped — ` +
           `run pending DB migrations in Supabase to restore full functionality.`
       }
+      // Bust stats + type-classes caches so the fresh row counts appear immediately
+      bustCache('stats')
+      _cache.forEach((_, k) => { if (k.startsWith('type-classes:')) _cache.delete(k) })
     } catch (e) {
       job.error = e.message
       job.done = true
@@ -293,8 +313,13 @@ router.get('/', requireAuth, requireAnyStaff, async (req, res) => {
 // type_class is low-cardinality (typically <200 distinct values). We sample three
 // windows across the table so we catch all values without scanning every row.
 // Each window = 2 000 rows → 6 000 rows total instead of 121 000+.
+// Results are cached 5 minutes — type_class values only change after a new import.
 router.get('/type-classes', requireAuth, requireAnyStaff, async (req, res) => {
   const { prospect_type } = req.query
+  const cacheKey = `type-classes:${prospect_type || 'all'}`
+
+  const cached = getCached(cacheKey)
+  if (cached) return res.json(cached)
 
   const base = () => {
     let q = supabaseAdmin
@@ -327,7 +352,9 @@ router.get('/type-classes', requireAuth, requireAnyStaff, async (req, res) => {
     ...(r3.data || []),
   ]
   const classes = [...new Set(all.map(r => r.type_class).filter(Boolean))].sort()
-  res.json({ type_classes: classes })
+  const result = { type_classes: classes }
+  setCached(cacheKey, result, 5 * 60 * 1000) // 5 minutes
+  res.json(result)
 })
 
 // HEAD count helper — returns exact count with zero rows transferred
@@ -336,11 +363,35 @@ async function headCount(query) {
   return error ? 0 : (count ?? 0)
 }
 
-// GET /api/admin/prospects/stats — sequential HEAD counts (no row data transferred)
+// GET /api/admin/prospects/stats
+// Tries the get_prospect_stats() RPC first (1 Supabase round-trip).
+// Falls back to 11 sequential HEAD counts if the RPC doesn't exist yet
+// (i.e. migration 20260617_prospect_stats_rpc.sql hasn't been applied).
+// Results are cached 30 seconds — stats change slowly and the cache
+// eliminates redundant Supabase calls from rapid refreshes or concurrent
+// admin sessions.
 router.get('/stats', requireAuth, requireAnyStaff, async (req, res) => {
-  const tbl = () => supabaseAdmin.from('outreach_prospects')
+  const cached = getCached('stats')
+  if (cached) return res.json(cached)
 
-  // Total first, then statuses + types sequentially to avoid request burst
+  // ── Fast path: single RPC call ────────────────────────────────────────
+  try {
+    const { data: rpcData, error: rpcErr } = await supabaseAdmin.rpc('get_prospect_stats')
+    if (!rpcErr && rpcData) {
+      const parsed = typeof rpcData === 'string' ? JSON.parse(rpcData) : rpcData
+      const result = {
+        total: Number(parsed.total ?? 0),
+        unique_people: null, // populated once person_key migration is applied
+        by_status: parsed.by_status ?? {},
+        by_type: parsed.by_type ?? {},
+      }
+      setCached('stats', result, 30_000)
+      return res.json(result)
+    }
+  } catch { /* RPC not available — fall through to legacy path */ }
+
+  // ── Legacy path: 11 sequential HEAD counts ────────────────────────────
+  const tbl = () => supabaseAdmin.from('outreach_prospects')
   const total = await headCount(tbl())
 
   const statuses = ['pending', 'enriched', 'drafted', 'sent', 'replied', 'skipped', 'bounced']
@@ -355,19 +406,9 @@ router.get('/stats', requireAuth, requireAnyStaff, async (req, res) => {
     by_type[t] = await headCount(tbl().eq('prospect_type', t))
   }
 
-  // unique_people requires the person_key column (migration 20260611_person_key.sql).
-  // Skip gracefully if the column isn't in the schema cache yet.
-  let unique_people = null
-  try {
-    const { data: keyRows, error: keyErr } = await tbl()
-      .select('person_key')
-      .not('person_key', 'is', null)
-      .neq('person_key', '')
-      .limit(250000)
-    if (!keyErr) unique_people = new Set((keyRows || []).map(r => r.person_key)).size
-  } catch { /* column missing — omit stat */ }
-
-  res.json({ total, unique_people, by_status, by_type })
+  const result = { total, unique_people: null, by_status, by_type }
+  setCached('stats', result, 30_000)
+  res.json(result)
 })
 
 // GET /api/admin/prospects/work-queue — Bob fetches pending prospects + matching approved template
