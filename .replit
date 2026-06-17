@@ -58,6 +58,8 @@ run = ["node", "server/index.js"]
 VITE_SUPABASE_URL = "https://tpwrpezsvclzblktgjli.supabase.co"
 SIM_WEBHOOK_SECRET = "758c30240da4df28def2e5dcfa067d99a213a9dce277c53a"
 PROTECTED_SUPER_ADMIN_EMAIL = "acooper@cooperanth.com"
+PHYSICAL_ADDRESS = "Principal Office, 30 N Gould St Ste R, Sheridan, WY 82801, USA"
+VITE_PHYSICAL_ADDRESS = "Principal Office, 30 N Gould St Ste R, Sheridan, WY 82801, USA"
 
 [postMerge]
 path = "scripts/post-merge.sh"
