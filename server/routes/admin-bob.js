@@ -10,6 +10,7 @@ import { Router } from 'express'
 import { supabaseAdmin } from '../lib/clients.js'
 import { pushToBob } from '../lib/bob-push.js'
 import { requireAuth, requireAnyStaff, requireAdminLevel } from '../lib/auth.js'
+import { logError } from '../lib/errorLog.js'
 
 const router = Router()
 
@@ -157,12 +158,30 @@ router.post('/chat', requireAuth, requireAdminLevel, async (req, res) => {
 
     const data = await r.json().catch(() => ({ error: 'Invalid JSON from Bob' }))
     if (!r.ok) {
-      return res.status(r.status).json({ error: data?.error ?? `Bob returned ${r.status}` })
+      const errMsg = data?.error ?? data?.message ?? `Bob returned ${r.status}`
+      logError({
+        context: 'bob',
+        message: `Bob chat error — ${errMsg}`,
+        detail: data?.detail ?? null,
+        userId: req.user?.id,
+        route: '/api/admin/bob/chat',
+        method: 'POST',
+        statusCode: r.status,
+      })
+      return res.status(r.status).json({ error: errMsg })
     }
     res.json(data)
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Failed to reach Bob'
-    console.error('[admin-bob/chat]', msg)
+    logError({
+      context: 'bob',
+      message: `Bob chat unreachable — ${msg}`,
+      detail: `Endpoint: ${bobUrl.replace(/\/$/, '')}/bob/chat/message`,
+      stack: e instanceof Error ? e.stack : undefined,
+      userId: req.user?.id,
+      route: '/api/admin/bob/chat',
+      method: 'POST',
+    })
     res.status(502).json({ error: msg })
   }
 })

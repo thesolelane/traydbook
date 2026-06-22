@@ -24,6 +24,7 @@ const CONTEXT_COLORS: Record<string, string> = {
   sms: '#3abfe0',
   stripe: '#5271e0',
   admin: '#e052a0',
+  bob: '#22c9a5',
   server: '#aaa',
 }
 
@@ -903,6 +904,7 @@ export default function ErrorLogSection({ authHeaders }: SectionProps) {
               { ctx: 'stripe', label: 'Stripe / Payments', desc: 'Credit purchase or webhook processing errors.' },
               { ctx: 'sms', label: 'SMS', desc: 'Text message dispatch failures via Telnyx.' },
               { ctx: 'admin', label: 'Admin Actions', desc: 'Errors triggered by admin panel operations.' },
+              { ctx: 'bob', label: 'Bob (AI Agent)', desc: 'Errors communicating with Bob — unreachable, non-2xx response, or AI provider failure.' },
               { ctx: 'server', label: 'Server / General', desc: 'Uncaught server errors or unhandled exceptions.' },
             ].map(({ ctx, label, desc }) => (
               <div
