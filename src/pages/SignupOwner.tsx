@@ -88,6 +88,17 @@ const PROJECT_TYPES = [
   'Other',
 ]
 
+const HOMEOWNER_PROJECT_TYPES = [
+  'Home Renovation / Remodel',
+  'Repair / Maintenance',
+  'New Addition or Build',
+  'Historic Restoration',
+  'Landscaping / Exterior',
+  'Other',
+]
+
+const CLIENT_TYPES = ['Buyers', 'Sellers', 'Investors', 'Both buyers & sellers', 'All types']
+
 const BUDGET_RANGES = [
   'Under $5,000',
   '$5,000 – $25,000',
@@ -147,11 +158,16 @@ export default function SignupOwner() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
 
-  // Step 2 — project preferences
+  // Step 2 — project preferences (project_owner / homeowner)
   const [projectType, setProjectType] = useState('')
   const [budgetRange, setBudgetRange] = useState('')
   const [timeline, setTimeline] = useState('')
   const [tradesNeeded, setTradesNeeded] = useState<string[]>([])
+
+  // Step 2 — agent-specific preferences
+  const [agentMetro, setAgentMetro] = useState('')
+  const [clientTypes, setClientTypes] = useState<string[]>([])
+  const [agentTradesNeeded, setAgentTradesNeeded] = useState<string[]>([])
 
   // Step 3 — profile info
   const [displayName, setDisplayName] = useState('')
@@ -208,6 +224,16 @@ export default function SignupOwner() {
     )
   }
 
+  function toggleAgentTrade(trade: string) {
+    setAgentTradesNeeded(prev =>
+      prev.includes(trade) ? prev.filter(t => t !== trade) : [...prev, trade]
+    )
+  }
+
+  function toggleClientType(ct: string) {
+    setClientTypes(prev => (prev.includes(ct) ? prev.filter(t => t !== ct) : [...prev, ct]))
+  }
+
   async function handleStep1(e: FormEvent) {
     e.preventDefault()
     setError('')
@@ -237,9 +263,22 @@ export default function SignupOwner() {
   function handleStep2(e: FormEvent) {
     e.preventDefault()
     setError('')
-    if (!projectType) {
-      setError('Please select a project type.')
-      return
+    if (accountType === 'agent') {
+      if (!agentMetro.trim()) {
+        setError('Please enter the metro area you work in.')
+        return
+      }
+    } else if (accountType === 'homeowner') {
+      if (!projectType) {
+        setError('Please select a project type.')
+        return
+      }
+    } else {
+      // project_owner
+      if (!projectType) {
+        setError('Please select a project type.')
+        return
+      }
     }
     setStep(3)
   }
@@ -452,8 +491,227 @@ export default function SignupOwner() {
               </>
             )}
 
-            {/* ── STEP 2: Project Preferences ── */}
-            {step === 2 && (
+            {/* ── STEP 2: Preferences (varies by account type) ── */}
+            {step === 2 && accountType === 'agent' && (
+              <>
+                <h1 className="auth-title">Your market</h1>
+                <p className="auth-subtitle">
+                  Step 2 of {totalSteps} · Tell us about your clients and territory
+                </p>
+                <form onSubmit={handleStep2} className="auth-form">
+                  {error && <div className="auth-error">{error}</div>}
+
+                  <div className="form-group">
+                    <label>Metro / market area you work in</label>
+                    <input
+                      type="text"
+                      value={agentMetro}
+                      onChange={e => setAgentMetro(e.target.value)}
+                      placeholder="e.g. Denver, CO"
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>
+                      Typical client type{' '}
+                      <span
+                        style={{
+                          fontWeight: 400,
+                          textTransform: 'none',
+                          letterSpacing: 0,
+                          color: 'var(--color-text-muted)',
+                        }}
+                      >
+                        (select all that apply)
+                      </span>
+                    </label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
+                      {CLIENT_TYPES.map(ct => (
+                        <button
+                          key={ct}
+                          type="button"
+                          onClick={() => toggleClientType(ct)}
+                          style={{
+                            padding: '5px 12px',
+                            borderRadius: 20,
+                            border: `1.5px solid ${clientTypes.includes(ct) ? 'var(--color-brand)' : 'var(--color-border)'}`,
+                            background: clientTypes.includes(ct)
+                              ? 'rgba(232,93,4,0.1)'
+                              : 'var(--color-bg)',
+                            color: clientTypes.includes(ct)
+                              ? 'var(--color-brand)'
+                              : 'var(--color-text-muted)',
+                            fontSize: 12,
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'all 0.15s',
+                          }}
+                        >
+                          {ct}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>
+                      Trades you most often need to source{' '}
+                      <span
+                        style={{
+                          fontWeight: 400,
+                          textTransform: 'none',
+                          letterSpacing: 0,
+                          color: 'var(--color-text-muted)',
+                        }}
+                      >
+                        (select all that apply)
+                      </span>
+                    </label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
+                      {TRADE_CATEGORIES.map(trade => (
+                        <button
+                          key={trade}
+                          type="button"
+                          onClick={() => toggleAgentTrade(trade)}
+                          style={{
+                            padding: '5px 12px',
+                            borderRadius: 20,
+                            border: `1.5px solid ${agentTradesNeeded.includes(trade) ? 'var(--color-brand)' : 'var(--color-border)'}`,
+                            background: agentTradesNeeded.includes(trade)
+                              ? 'rgba(232,93,4,0.1)'
+                              : 'var(--color-bg)',
+                            color: agentTradesNeeded.includes(trade)
+                              ? 'var(--color-brand)'
+                              : 'var(--color-text-muted)',
+                            fontSize: 12,
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'all 0.15s',
+                          }}
+                        >
+                          {trade}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="step-nav">
+                    <button type="button" className="btn-secondary" onClick={() => setStep(1)}>
+                      Back
+                    </button>
+                    <button type="submit" className="btn-primary" style={{ flex: 1 }}>
+                      Continue
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
+
+            {step === 2 && accountType === 'homeowner' && (
+              <>
+                <h1 className="auth-title">Your project</h1>
+                <p className="auth-subtitle">
+                  Step 2 of {totalSteps} · Help us match you with the right contractors
+                </p>
+                <form onSubmit={handleStep2} className="auth-form">
+                  {error && <div className="auth-error">{error}</div>}
+
+                  <div className="form-group">
+                    <label>Type of home project</label>
+                    <select
+                      value={projectType}
+                      onChange={e => setProjectType(e.target.value)}
+                      required
+                    >
+                      <option value="">Select project type</option>
+                      {HOMEOWNER_PROJECT_TYPES.map(t => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Approximate budget for this project</label>
+                    <select value={budgetRange} onChange={e => setBudgetRange(e.target.value)}>
+                      <option value="">Select budget range</option>
+                      {BUDGET_RANGES.map(r => (
+                        <option key={r} value={r}>
+                          {r}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label>When do you need it done?</label>
+                    <select value={timeline} onChange={e => setTimeline(e.target.value)}>
+                      <option value="">Select timeline</option>
+                      {TIMELINE_OPTIONS.map(t => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label>
+                      Trades you need{' '}
+                      <span
+                        style={{
+                          fontWeight: 400,
+                          textTransform: 'none',
+                          letterSpacing: 0,
+                          color: 'var(--color-text-muted)',
+                        }}
+                      >
+                        (select all that apply)
+                      </span>
+                    </label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
+                      {TRADE_CATEGORIES.map(trade => (
+                        <button
+                          key={trade}
+                          type="button"
+                          onClick={() => toggleTrade(trade)}
+                          style={{
+                            padding: '5px 12px',
+                            borderRadius: 20,
+                            border: `1.5px solid ${tradesNeeded.includes(trade) ? 'var(--color-brand)' : 'var(--color-border)'}`,
+                            background: tradesNeeded.includes(trade)
+                              ? 'rgba(232,93,4,0.1)'
+                              : 'var(--color-bg)',
+                            color: tradesNeeded.includes(trade)
+                              ? 'var(--color-brand)'
+                              : 'var(--color-text-muted)',
+                            fontSize: 12,
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'all 0.15s',
+                          }}
+                        >
+                          {trade}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="step-nav">
+                    <button type="button" className="btn-secondary" onClick={() => setStep(1)}>
+                      Back
+                    </button>
+                    <button type="submit" className="btn-primary" style={{ flex: 1 }}>
+                      Continue
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
+
+            {step === 2 && accountType !== 'agent' && accountType !== 'homeowner' && (
               <>
                 <h1 className="auth-title">Project preferences</h1>
                 <p className="auth-subtitle">
