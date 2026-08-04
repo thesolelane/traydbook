@@ -9,6 +9,7 @@ import ComposeModal from '../components/ComposeModal'
 import { FeedPost, FilterType, SidebarUser, POST_TYPE_BADGE } from '../types/feed'
 import MissedLeadsNudge from '../components/MissedLeadsNudge'
 import FtueWelcomeBanner from '../components/FtueWelcomeBanner'
+import ProfileCompletionBanner from '../components/ProfileCompletionBanner'
 import '../styles/feed.css'
 
 function compositeScore(post: FeedPost, connIds: Set<string>): number {
@@ -679,6 +680,9 @@ export default function Feed() {
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* First-time user welcome banner */}
           <FtueWelcomeBanner />
+
+          {/* Profile completion nudge — contractors with mostly-empty profiles */}
+          {isContractor && <ProfileCompletionBanner />}
 
           {/* Missed leads nudge — contractors only */}
           {isContractor && <MissedLeadsNudge />}
