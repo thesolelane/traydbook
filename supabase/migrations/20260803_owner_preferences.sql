@@ -1,6 +1,7 @@
--- Add owner_preferences JSONB column to users table
--- Stores project type, budget range, timeline, and trades needed
--- collected during signup for project_owner / homeowner / agent accounts.
+-- Migration: Add owner_preferences JSONB column to users table
+-- Stores signup preferences for agents, homeowners, and project owners.
+-- For agents: metro, client_types, trades_needed
+-- For homeowners/project_owners: project_type, budget_range, timeline, trades_needed
 
-alter table public.users
-  add column if not exists owner_preferences jsonb;
+ALTER TABLE public.users
+  ADD COLUMN IF NOT EXISTS owner_preferences JSONB;

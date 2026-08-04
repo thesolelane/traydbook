@@ -53,6 +53,7 @@ export interface Database {
           credit_balance: number
           created_at: string
           deleted_at: string | null
+          owner_preferences: Record<string, unknown> | null
         }
         Insert: Omit<Database['public']['Tables']['users']['Row'], 'id' | 'created_at'>
         Update: Partial<Database['public']['Tables']['users']['Insert']>

@@ -297,6 +297,23 @@ export default function SignupOwner() {
 
       const referral = getReferral()
 
+      // Build account-type-specific preferences to persist
+      let ownerPreferences: Record<string, unknown> | null = null
+      if (accountType === 'agent') {
+        ownerPreferences = {
+          metro: agentMetro || null,
+          client_types: clientTypes.length > 0 ? clientTypes : null,
+          trades_needed: agentTradesNeeded.length > 0 ? agentTradesNeeded : null,
+        }
+      } else if (accountType === 'homeowner' || accountType === 'project_owner') {
+        ownerPreferences = {
+          project_type: projectType || null,
+          budget_range: budgetRange || null,
+          timeline: timeline || null,
+          trades_needed: tradesNeeded.length > 0 ? tradesNeeded : null,
+        }
+      }
+
       const { error: profileError } = await supabase.from('users').insert({
         id: uid,
         email,
@@ -310,6 +327,7 @@ export default function SignupOwner() {
         credit_balance: 50,
         deleted_at: null,
         onboarding_complete: true,
+        owner_preferences: ownerPreferences,
         ...(referral
           ? {
               referral_source: referral.referral_source,
