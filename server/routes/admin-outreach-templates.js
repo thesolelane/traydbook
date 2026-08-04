@@ -156,7 +156,7 @@ router.delete('/templates/:id', requireAuth, requireAdminLevel, async (req, res)
 
 // GET /api/admin/outreach/send-log
 router.get('/send-log', requireServiceKeyOrStaff(['outreach:read']), async (req, res) => {
-  const { prospect_id, template_id, delivery_status, limit = 100, offset = 0 } = req.query
+  const { prospect_id, template_id, delivery_status, sent_after, sent_before, limit = 100, offset = 0 } = req.query
 
   let q = supabaseAdmin
     .from('outreach_send_log')
@@ -174,13 +174,17 @@ router.get('/send-log', requireServiceKeyOrStaff(['outreach:read']), async (req,
   if (prospect_id) q = q.eq('prospect_id', prospect_id)
   if (template_id) q = q.eq('template_id', template_id)
   if (delivery_status) q = q.eq('delivery_status', delivery_status)
+  if (sent_after) q = q.gte('sent_at', sent_after)
+  if (sent_before) q = q.lte('sent_at', sent_before)
 
-  // Compute aggregate delivery stats (always global, not filtered by delivery_status)
+  // Compute aggregate delivery stats — filtered by date but NOT by delivery_status
   let statsQuery = supabaseAdmin
     .from('outreach_send_log')
     .select('delivery_status')
   if (prospect_id) statsQuery = statsQuery.eq('prospect_id', prospect_id)
   if (template_id) statsQuery = statsQuery.eq('template_id', template_id)
+  if (sent_after) statsQuery = statsQuery.gte('sent_at', sent_after)
+  if (sent_before) statsQuery = statsQuery.lte('sent_at', sent_before)
 
   const [{ data, error, count }, { data: statusRows, error: statsErr }] = await Promise.all([
     q,

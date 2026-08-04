@@ -2130,6 +2130,17 @@ function TemplatesTab({ authHeaders }: SectionProps) {
 
 // ─── Send Log tab ─────────────────────────────────────────────────────────────
 
+// Helper: compute sent_after / sent_before from a preset string
+function dateRangeFromPreset(preset: string): { sentAfter: string; sentBefore: string } | null {
+  if (preset === 'custom' || preset === '') return null
+  const now = new Date()
+  const days = preset === '7d' ? 7 : preset === '30d' ? 30 : preset === '90d' ? 90 : null
+  if (!days) return null
+  const after = new Date(now)
+  after.setDate(after.getDate() - days)
+  return { sentAfter: after.toISOString(), sentBefore: now.toISOString() }
+}
+
 function SendLogTab({ authHeaders }: SectionProps) {
   const [logs, setLogs] = useState<SendLogEntry[]>([])
   const [total, setTotal] = useState(0)
@@ -2138,6 +2149,17 @@ function SendLogTab({ authHeaders }: SectionProps) {
   const [err, setErr] = useState('')
   const [expanded, setExpanded] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState('')
+  const [datePreset, setDatePreset] = useState('') // '', '7d', '30d', '90d', 'custom'
+  const [customFrom, setCustomFrom] = useState('')
+  const [customTo, setCustomTo] = useState('')
+
+  // Derive the ISO range to send to the API
+  const derivedRange = datePreset === 'custom'
+    ? {
+        sentAfter: customFrom ? new Date(customFrom).toISOString() : '',
+        sentBefore: customTo ? new Date(customTo + 'T23:59:59').toISOString() : '',
+      }
+    : (dateRangeFromPreset(datePreset) ?? { sentAfter: '', sentBefore: '' })
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -2145,6 +2167,18 @@ function SendLogTab({ authHeaders }: SectionProps) {
     try {
       const params = new URLSearchParams({ limit: '100' })
       if (statusFilter) params.set('delivery_status', statusFilter)
+
+      // Date range — recompute inside callback so it always reflects the latest state
+      const range = datePreset === 'custom'
+        ? {
+            sentAfter: customFrom ? new Date(customFrom).toISOString() : '',
+            sentBefore: customTo ? new Date(customTo + 'T23:59:59').toISOString() : '',
+          }
+        : (dateRangeFromPreset(datePreset) ?? { sentAfter: '', sentBefore: '' })
+
+      if (range.sentAfter) params.set('sent_after', range.sentAfter)
+      if (range.sentBefore) params.set('sent_before', range.sentBefore)
+
       const res = await fetch(`/api/admin/outreach/send-log?${params}`, { headers: authHeaders() })
       if (!res.ok) throw new Error('Failed to load send log')
       const data = await res.json()
@@ -2156,7 +2190,7 @@ function SendLogTab({ authHeaders }: SectionProps) {
     } finally {
       setLoading(false)
     }
-  }, [statusFilter])
+  }, [statusFilter, datePreset, customFrom, customTo])
 
   useEffect(() => {
     void load()
@@ -2166,6 +2200,14 @@ function SendLogTab({ authHeaders }: SectionProps) {
 
   const pct = (n: number) =>
     stats && stats.total > 0 ? Math.round((n / stats.total) * 100) : 0
+
+  const datePresets = [
+    { value: '', label: 'All time' },
+    { value: '7d', label: 'Last 7 days' },
+    { value: '30d', label: 'Last 30 days' },
+    { value: '90d', label: 'Last 90 days' },
+    { value: 'custom', label: 'Custom…' },
+  ]
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -2207,6 +2249,77 @@ function SendLogTab({ authHeaders }: SectionProps) {
         </div>
       )}
 
+      {/* ── Date range picker ──────────────────────────────────────── */}
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        {datePresets.map(p => (
+          <button
+            key={p.value}
+            onClick={() => setDatePreset(p.value)}
+            style={{
+              padding: '5px 12px',
+              borderRadius: 20,
+              fontSize: 12,
+              fontWeight: 600,
+              border: datePreset === p.value
+                ? '1px solid var(--color-brand)'
+                : '1px solid var(--color-border)',
+              background: datePreset === p.value
+                ? 'rgba(226,114,42,0.15)'
+                : 'var(--color-surface)',
+              color: datePreset === p.value
+                ? 'var(--color-brand)'
+                : 'var(--color-text-muted)',
+              cursor: 'pointer',
+            }}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Custom date inputs */}
+      {datePreset === 'custom' && (
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <label style={{ fontSize: 12, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
+              From
+            </label>
+            <input
+              type="date"
+              value={customFrom}
+              onChange={e => setCustomFrom(e.target.value)}
+              style={{
+                padding: '5px 10px',
+                borderRadius: 6,
+                border: '1px solid var(--color-border)',
+                background: 'var(--color-surface)',
+                color: 'var(--color-text)',
+                fontSize: 12,
+              }}
+            />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <label style={{ fontSize: 12, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
+              To
+            </label>
+            <input
+              type="date"
+              value={customTo}
+              onChange={e => setCustomTo(e.target.value)}
+              style={{
+                padding: '5px 10px',
+                borderRadius: 6,
+                border: '1px solid var(--color-border)',
+                background: 'var(--color-surface)',
+                color: 'var(--color-text)',
+                fontSize: 12,
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ── Status filter + refresh ────────────────────────────────── */}
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         {deliveryStatuses.map(s => (
           <button
@@ -2257,7 +2370,10 @@ function SendLogTab({ authHeaders }: SectionProps) {
 
       {total > 0 && (
         <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-          {total.toLocaleString()} emails sent total
+          {total.toLocaleString()} emails
+          {derivedRange.sentAfter || derivedRange.sentBefore
+            ? ' in selected range'
+            : ' sent total'}
         </div>
       )}
 
