@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
 const WALLET_SETUP_SESSION_KEY = 'walletSetup_pendingMnemonic'
+const WALLET_SETUP_STEP_KEY = 'walletSetup_step'
 
 function deriveKeypairFromMnemonic(mnemonic: string): Keypair {
   const seed = bip39.mnemonicToSeedSync(mnemonic)
@@ -97,6 +98,10 @@ export default function WalletSetup() {
     const keypair = deriveKeypairFromMnemonic(phrase)
     setMnemonic(phrase)
     setPubkeyB58(keypair.publicKey.toBase58())
+    const savedStep = sessionStorage.getItem(WALLET_SETUP_STEP_KEY)
+    if (savedStep === 'verify') {
+      setStep('verify')
+    }
   }, [statusChecked])
 
   useEffect(() => {
@@ -139,6 +144,7 @@ export default function WalletSetup() {
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'Failed to save wallet')
       sessionStorage.removeItem(WALLET_SETUP_SESSION_KEY)
+      sessionStorage.removeItem(WALLET_SETUP_STEP_KEY)
       setSaved(true)
       navigate('/feed', { replace: true })
     } catch (err) {
@@ -149,6 +155,7 @@ export default function WalletSetup() {
 
   function handlePhraseNext() {
     setError('')
+    sessionStorage.setItem(WALLET_SETUP_STEP_KEY, 'verify')
     setStep('verify')
   }
 
@@ -669,6 +676,7 @@ export default function WalletSetup() {
           onClick={() => {
             setVerifyError('')
             setVerifyInputs({})
+            sessionStorage.removeItem(WALLET_SETUP_STEP_KEY)
             setStep('phrase')
           }}
           style={{
