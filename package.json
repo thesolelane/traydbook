@@ -19,7 +19,8 @@
     "start": "NODE_ENV=production node server/index.js",
     "deploy": "npm run build && npm run start",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "check:enums": "node scripts/check-enum-values.js"
   },
   "dependencies": {
     "@solana/web3.js": "^1.98.4",

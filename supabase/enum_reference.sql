@@ -1,0 +1,82 @@
+-- =============================================================================
+-- ENUM REFERENCE — Single source of truth for live DB ENUM types
+-- =============================================================================
+--
+-- The live Supabase DB uses strict ENUM types for several columns.
+-- Any RPC function or migration that inserts a value NOT listed here will
+-- throw error 22P02 (invalid_text_representation) at runtime with NO
+-- compile-time warning.
+--
+-- BEFORE writing a new INSERT into credit_ledger or notifications:
+--   1. Find the column's enum below.
+--   2. Use ONLY a value from the list.
+--   3. If you need a new value, add it with ALTER TYPE … ADD VALUE first and
+--      update this file in the same migration.
+--
+-- Run `node scripts/check-enum-values.js` to scan all SQL files for invalid
+-- enum literals before deploying.
+-- =============================================================================
+
+
+-- -----------------------------------------------------------------------------
+-- transaction_type  (column: credit_ledger.transaction_type)
+-- -----------------------------------------------------------------------------
+-- Valid values (as of migration 029 / 20260804):
+--
+--   'purchase'          — credit bundle purchased via Stripe
+--   'post_rfq'          — credits spent to post an RFQ
+--   'post_job'          — credits spent to post a job listing
+--   'send_message'      — credits spent on a cold first message to a contractor
+--   'request_contact'   — credits spent to unlock contact details
+--   'boost_listing'     — credits spent to boost a listing
+--   'repost_listing'    — credits spent to repost a listing
+--   'verification_fee'  — credits spent on credential/license verification
+--   'refund'            — credits returned to user (admin action)
+--   'admin_adjustment'  — manual balance correction by admin
+--
+-- DO NOT USE: 'spend'  (was used before migration 029; now invalid)
+-- -----------------------------------------------------------------------------
+
+
+-- -----------------------------------------------------------------------------
+-- notification_type  (column: notifications.type)
+-- -----------------------------------------------------------------------------
+-- Valid values (as of migration 029 / 20260804):
+--
+--   'connection_request'   — someone sent a connection request
+--   'connection_accepted'  — connection request was accepted
+--   'post_liked'           — a post was liked
+--   'post_commented'       — a post received a comment
+--   'bid_received'         — RFQ poster received a new bid
+--   'bid_awarded'          — contractor's bid was awarded
+--   'bid_not_awarded'      — contractor's bid was not selected
+--   'job_application'      — job listing received an application
+--   'rfq_closing_soon'     — RFQ bid deadline is approaching
+--   'credential_expiring'  — a contractor credential is about to expire
+--   'referral_received'    — a referral signup was credited
+--   'safety_alert'         — platform-level safety alert
+--   'message_received'     — a new direct message arrived
+--   'credits_added'        — credits were added to the user's account
+--   'profile_viewed'       — someone viewed the user's profile
+--
+-- DO NOT USE: 'new_bid'  (was used before migration 029; now invalid)
+-- -----------------------------------------------------------------------------
+
+
+-- -----------------------------------------------------------------------------
+-- How to add a new enum value
+-- -----------------------------------------------------------------------------
+-- 1. Add it to the live DB first:
+--      ALTER TYPE transaction_type ADD VALUE 'new_value';
+--      -- or --
+--      ALTER TYPE notification_type ADD VALUE 'new_value';
+--
+-- 2. Add a migration file in supabase/migrations/ that runs the ALTER TYPE.
+--
+-- 3. Update the relevant section above.
+--
+-- 4. Update VALID_TRANSACTION_TYPES or VALID_NOTIFICATION_TYPES in
+--    scripts/check-enum-values.js so the CI check accepts the new value.
+--
+-- 5. Run `node scripts/check-enum-values.js` to confirm no files are broken.
+-- -----------------------------------------------------------------------------
