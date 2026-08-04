@@ -125,53 +125,7 @@ async function postWebhook(payload, extraHeaders = {}) {
 
 describe('webhook deduplication — svix-id present', () => {
   it('first delivery is accepted and recorded', async () => {
-    const { status, json } = await postWebhook(makePayload(), { 'svix-id': 'msg-001' })
-
-    expect(status).toBe(200)
-    expect(json.ok).toBe(true)
-    expect(json.duplicate).toBeUndefined()
-  })
-
-  it('second delivery with the same svix-id is discarded', async () => {
-    // Simulate the first event already stored in delivery_events
-    mockLogRow.delivery_events = [
-      {
-        type: 'email.opened',
-        timestamp: '2026-08-04T10:00:00.000Z',
-        svix_id: 'msg-001',
-        metadata: { email_id: 'resend-email-id-abc' },
-      },
-    ]
-
-    const { status, json } = await postWebhook(makePayload(), { 'svix-id': 'msg-001' })
-
-    expect(status).toBe(200)
-    expect(json.duplicate).toBe(true)
-    // Supabase update should NOT have been called
-    expect(lastUpdate).toBeNull()
-  })
-
-  it('second delivery with a different svix-id is accepted', async () => {
-    mockLogRow.delivery_events = [
-      {
-        type: 'email.opened',
-        timestamp: '2026-08-04T10:00:00.000Z',
-        svix_id: 'msg-001',
-        metadata: { email_id: 'resend-email-id-abc' },
-      },
-    ]
-
-    const { status, json } = await postWebhook(makePayload(), { 'svix-id': 'msg-002' })
-
-    expect(status).toBe(200)
-    expect(json.ok).toBe(true)
-    expect(json.duplicate).toBeUndefined()
-  })
-})
-
-describe('webhook deduplication — svix-id absent (secondary guard)', () => {
-  it('first delivery without svix-id is accepted', async () => {
-    const { status, json } = await postWebhook(makePayload())
+    const { status, json } = await postWebhook(payload)
 
     expect(status).toBe(200)
     expect(json.ok).toBe(true)
@@ -188,23 +142,6 @@ describe('webhook deduplication — svix-id absent (secondary guard)', () => {
       },
     ]
 
-    const { status, json } = await postWebhook(makePayload())
-
-    expect(status).toBe(200)
-    expect(json.duplicate).toBe(true)
-    expect(lastUpdate).toBeNull()
-  })
-
-  it('same type+email_id but different timestamp is accepted', async () => {
-    mockLogRow.delivery_events = [
-      {
-        type: 'email.opened',
-        timestamp: '2026-08-04T10:00:00.000Z',
-        metadata: { email_id: 'resend-email-id-abc' },
-      },
-    ]
-
-    const payload = makePayload({ created_at: '2026-08-04T11:00:00.000Z' })
     const { status, json } = await postWebhook(payload)
 
     expect(status).toBe(200)
@@ -212,7 +149,8 @@ describe('webhook deduplication — svix-id absent (secondary guard)', () => {
     expect(json.duplicate).toBeUndefined()
   })
 
-  it('same type+timestamp but different email_id is accepted', async () => {
+  it('second delivery without svix-id and identical (type+timestamp+email_id) is discarded', async () => {
+    // Simulate the first event already in delivery_events (no svix_id stored)
     mockLogRow.delivery_events = [
       {
         type: 'email.opened',
@@ -221,7 +159,74 @@ describe('webhook deduplication — svix-id absent (secondary guard)', () => {
       },
     ]
 
-    const payload = makePayload({ email_id: 'resend-email-id-XYZ' })
+    const { status, json } = await postWebhook(payload)
+
+    expect(status).toBe(200)
+    expect(json.ok).toBe(true)
+    expect(json.duplicate).toBeUndefined()
+  })
+
+  it('second delivery without svix-id and identical (type+timestamp+email_id) is discarded', async () => {
+    // Simulate the first event already in delivery_events (no svix_id stored)
+    mockLogRow.delivery_events = [
+      {
+        type: 'email.opened',
+        timestamp: '2026-08-04T10:00:00.000Z',
+        metadata: { email_id: 'resend-email-id-abc' },
+      },
+    ]
+
+    const { status, json } = await postWebhook(payload)
+
+    expect(status).toBe(200)
+    expect(json.ok).toBe(true)
+    expect(json.duplicate).toBeUndefined()
+  })
+
+  it('second delivery without svix-id and identical (type+timestamp+email_id) is discarded', async () => {
+    // Simulate the first event already in delivery_events (no svix_id stored)
+    mockLogRow.delivery_events = [
+      {
+        type: 'email.opened',
+        timestamp: '2026-08-04T10:00:00.000Z',
+        metadata: { email_id: 'resend-email-id-abc' },
+      },
+    ]
+
+    const { status, json } = await postWebhook(payload)
+
+    expect(status).toBe(200)
+    expect(json.ok).toBe(true)
+    expect(json.duplicate).toBeUndefined()
+  })
+
+  it('different event type with same timestamp+email_id is accepted', async () => {
+    mockLogRow.delivery_events = [
+      {
+        type: 'email.opened',
+        timestamp: '2026-08-04T10:00:00.000Z',
+        metadata: { email_id: 'resend-email-id-abc' },
+      },
+    ]
+
+    const payload = { ...makePayload(), type: 'email.clicked' }
+    const { status, json } = await postWebhook(payload)
+
+    expect(status).toBe(200)
+    expect(json.ok).toBe(true)
+    expect(json.duplicate).toBeUndefined()
+  })
+
+  it('different event type with same timestamp+email_id is accepted', async () => {
+    mockLogRow.delivery_events = [
+      {
+        type: 'email.opened',
+        timestamp: '2026-08-04T10:00:00.000Z',
+        metadata: { email_id: 'resend-email-id-abc' },
+      },
+    ]
+
+    const payload = { ...makePayload(), type: 'email.clicked' }
     const { status, json } = await postWebhook(payload)
 
     expect(status).toBe(200)

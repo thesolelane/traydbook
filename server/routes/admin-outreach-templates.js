@@ -238,6 +238,12 @@ router.get('/send-log', requireServiceKeyOrStaff(['outreach:read']), async (req,
 })
 
 // POST /api/admin/outreach/send-log — Bob writes a send record
+//
+// bob_job_id MUST be set to the `id` returned by the Resend emails.send() API
+// (i.e. the Resend email_id).  The delivery webhook at /api/webhooks/email-delivery
+// uses this value to match incoming Resend events back to the correct send-log row.
+// Without it the webhook falls back to a less-precise email-address match which can
+// mis-identify rows when a prospect has been emailed more than once.
 router.post('/send-log', requireServiceKeyOrStaff(['outreach:write']), async (req, res) => {
   const {
     prospect_id,
@@ -254,6 +260,16 @@ router.post('/send-log', requireServiceKeyOrStaff(['outreach:write']), async (re
       .json({
         error: 'prospect_id, template_id, rendered_subject, and rendered_body_html are required',
       })
+  }
+  // bob_job_id is required so that the delivery webhook can match events back to
+  // this exact row by Resend email_id.  Bob must set it to the `id` returned by
+  // the Resend emails.send() API.  Without it the webhook falls back to an imprecise
+  // email-address match that can mis-associate events when a prospect is emailed
+  // more than once.
+  if (!bob_job_id) {
+    return res
+      .status(400)
+      .json({ error: 'bob_job_id is required (set it to the id returned by the Resend API)' })
   }
 
   // Suppression guard — reject if the prospect's email is in outreach_unsubscribes

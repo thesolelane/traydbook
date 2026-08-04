@@ -189,6 +189,94 @@ Bob calls these endpoints on TraydBook's server.
 
 ---
 
+### Outreach
+
+#### POST /api/admin/outreach/send-log
+**Scope:** `outreach:write`
+**Description:** Record a completed email send in the send log. Bob must call this immediately after Resend accepts the message and **set `bob_job_id` to the `id` returned by the Resend API** (`data.id` in the Resend response). This is the key that lets the delivery webhook match incoming events back to the exact send-log row.
+
+**Request body:**
+```json
+{
+  "prospect_id": "uuid",
+  "template_id": "uuid",
+  "rendered_subject": "Grow Your Business with TraydBook — Alex",
+  "rendered_body_html": "<p>Hi Alex …</p>",
+  "rendered_body_text": "Hi Alex …",
+  "delivery_status": "sent",
+  "bob_job_id": "<resend_email_id>"
+}
+```
+
+**Field notes:**
+
+| Field | Required | Description |
+|---|---|---|
+| `prospect_id` | ✅ | The outreach prospect who received this email |
+| `template_id` | ✅ | The approved template Bob used |
+| `rendered_subject` | ✅ | Subject after merge-tag substitution |
+| `rendered_body_html` | ✅ | HTML body after merge-tag substitution |
+| `rendered_body_text` | — | Plain-text body (recommended; used as fallback by email clients) |
+| `delivery_status` | — | Initial status; defaults to `sent` |
+| `bob_job_id` | ✅ **required** | The `id` from the Resend `emails.send()` response (the Resend email_id). The endpoint returns `400` if this field is missing or blank. It is stored so the delivery webhook can match incoming events back to this exact row without any ambiguity. |
+
+**Resend → bob_job_id mapping:**
+```js
+const { data, error } = await resend.emails.send({ from, to, subject, html, text })
+// data.id is the Resend email_id — store it as bob_job_id
+await fetch(`${TRAYDBOOK_API}/api/admin/outreach/send-log`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json', 'X-Service-Key': SERVICE_KEY },
+  body: JSON.stringify({
+    prospect_id, template_id, rendered_subject, rendered_body_html, rendered_body_text,
+    bob_job_id: data.id,   // ← the Resend email_id
+  }),
+})
+```
+
+**Response `201`:**
+```json
+{
+  "id": "uuid",
+  "prospect_id": "uuid",
+  "template_id": "uuid",
+  "rendered_subject": "…",
+  "delivery_status": "sent",
+  "bob_job_id": "<resend_email_id>",
+  "sent_at": "2026-08-04T00:00:00Z"
+}
+```
+
+**Error `422`:** Prospect email is suppressed (previously bounced or opted out). Bob should mark the prospect as `skipped` and move on.
+
+---
+
+#### Delivery webhook — how events flow back
+
+Resend posts delivery events (delivered, opened, clicked, bounced) to:
+
+```
+POST /api/webhooks/email-delivery
+```
+
+The webhook matches each event to a send-log row by looking up `bob_job_id = data.email_id` in `outreach_send_log`. When `bob_job_id` is set correctly, the match is exact and reliable. If it is missing, the webhook attempts a less-precise fallback match on the recipient email address (most-recent send to that address), which may mis-match when a prospect was emailed more than once.
+
+**Resend event → delivery_status mapping:**
+
+| Resend event type | Stored `delivery_status` |
+|---|---|
+| `email.sent` | `sent` |
+| `email.delivered` | `delivered` |
+| `email.opened` | `opened` |
+| `email.clicked` | `clicked` |
+| `email.bounced` | `bounced` (address auto-suppressed) |
+| `email.complained` | `bounced` (spam complaint treated as bounce) |
+| `email.delivery_delayed` | *(event logged, status unchanged)* |
+
+Status is only ever upgraded, never downgraded (severity order: sent < delivered < opened < clicked < failed < bounced).
+
+---
+
 ### Control State
 
 #### GET /api/bob/control

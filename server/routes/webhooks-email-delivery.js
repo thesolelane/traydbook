@@ -31,14 +31,14 @@ const STATUS_SEVERITY = {
   bounced: 6, // sticky — always preserved once set
 }
 
-function shouldUpgradeStatus(current, incoming) {
+export function shouldUpgradeStatus(current, incoming) {
   const cur = STATUS_SEVERITY[current] ?? 0
   const inc = STATUS_SEVERITY[incoming] ?? 0
   return inc > cur
 }
 
 // ── Resend / Svix event type → delivery_status ────────────────────────────────
-function normaliseEvent(resendType) {
+export function normaliseEvent(resendType) {
   switch (resendType) {
     case 'email.sent':
       return 'sent'
@@ -236,7 +236,12 @@ router.post(
     const existingEvents = logRow.delivery_events || []
 
     if (svixMessageId) {
-      const alreadySeen = existingEvents.some((e) => e.svix_id === svixMessageId)
+      const alreadySeen = existingEvents.some(
+        (e) =>
+          e.type === eventType &&
+          e.timestamp === eventTimestamp &&
+          (e.metadata?.email_id ?? null) === resendEmailId
+      )
       if (alreadySeen) {
         console.log(
           `[email-webhook] Duplicate svix-id=${svixMessageId} — discarding`
