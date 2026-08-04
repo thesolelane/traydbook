@@ -125,7 +125,7 @@ const ACCOUNT_TYPES: {
   },
 ]
 
-type Step = 'account-type' | 'details'
+type Step = 'account-type' | 'details' | 'contractor-details'
 
 export default function Onboarding() {
   const { user, refreshProfile } = useAuth()
@@ -142,6 +142,12 @@ export default function Onboarding() {
   const [state, setState] = useState('')
   const [trade, setTrade] = useState(TRADES[0])
 
+  // Contractor-only extra fields
+  const [businessName, setBusinessName] = useState('')
+  const [yearsExperience, setYearsExperience] = useState('')
+  const [serviceRadius, setServiceRadius] = useState('50')
+  const [bio, setBio] = useState('')
+
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -150,8 +156,19 @@ export default function Onboarding() {
     setStep('details')
   }
 
-  async function handleSubmit(e: FormEvent) {
+  function handleDetailsNext(e: FormEvent) {
     e.preventDefault()
+    const trimName = displayName.trim()
+    if (!trimName) { setError('Please enter your name.'); return }
+    setError('')
+    if (accountType === 'contractor') {
+      setStep('contractor-details')
+    } else {
+      handleSubmitFinal()
+    }
+  }
+
+  async function handleSubmitFinal() {
     if (!user || !accountType) return
 
     const trimName = displayName.trim()
@@ -171,6 +188,10 @@ export default function Onboarding() {
           location_city: city.trim() || null,
           location_state: state || null,
           trade,
+          business_name: businessName.trim() || null,
+          years_experience: yearsExperience ? parseInt(yearsExperience) : null,
+          service_radius_miles: serviceRadius ? parseInt(serviceRadius) : null,
+          bio: bio.trim() || null,
         }),
       })
 
@@ -186,6 +207,11 @@ export default function Onboarding() {
     } finally {
       setSubmitting(false)
     }
+  }
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    await handleSubmitFinal()
   }
 
   return (
@@ -262,13 +288,17 @@ export default function Onboarding() {
               Continue
             </button>
           </>
-        ) : (
+        ) : step === 'details' ? (
           <>
             <h1 className="auth-title">One last step</h1>
-            <p className="auth-subtitle">Confirm your details to finish setting up.</p>
+            <p className="auth-subtitle">
+              {accountType === 'contractor'
+                ? 'Step 1 of 2 · Confirm your details.'
+                : 'Confirm your details to finish setting up.'}
+            </p>
 
             <form
-              onSubmit={handleSubmit}
+              onSubmit={handleDetailsNext}
               style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
             >
               <div className="form-group">
@@ -334,6 +364,87 @@ export default function Onboarding() {
                   className="btn-secondary"
                   style={{ flex: 1 }}
                   onClick={() => setStep('account-type')}
+                  disabled={submitting}
+                >
+                  Back
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  style={{ flex: 2 }}
+                  disabled={submitting}
+                >
+                  {accountType === 'contractor' ? 'Continue' : submitting ? 'Setting up…' : 'Finish Setup'}
+                </button>
+              </div>
+            </form>
+          </>
+        ) : (
+          <>
+            <h1 className="auth-title">Complete your profile</h1>
+            <p className="auth-subtitle">Step 2 of 2 · Trade details (optional — you can update these later)</p>
+
+            <form
+              onSubmit={handleSubmit}
+              style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+            >
+              <div className="form-group">
+                <label className="form-label">Business Name</label>
+                <input
+                  className="form-input"
+                  value={businessName}
+                  onChange={e => setBusinessName(e.target.value)}
+                  placeholder="e.g. Rivera Electric LLC"
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div className="form-group">
+                  <label className="form-label">Years of Experience</label>
+                  <input
+                    className="form-input"
+                    type="number"
+                    value={yearsExperience}
+                    onChange={e => setYearsExperience(e.target.value)}
+                    placeholder="e.g. 12"
+                    min="0"
+                    max="60"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Service Radius (miles)</label>
+                  <input
+                    className="form-input"
+                    type="number"
+                    value={serviceRadius}
+                    onChange={e => setServiceRadius(e.target.value)}
+                    placeholder="50"
+                    min="1"
+                    max="500"
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Bio</label>
+                <textarea
+                  className="form-input"
+                  value={bio}
+                  onChange={e => setBio(e.target.value)}
+                  placeholder="Briefly describe your experience and specialties…"
+                  rows={3}
+                  style={{ resize: 'vertical' }}
+                />
+              </div>
+
+              {error && <p style={{ color: '#ef4444', fontSize: 13, margin: 0 }}>{error}</p>}
+
+              <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  style={{ flex: 1 }}
+                  onClick={() => setStep('details')}
                   disabled={submitting}
                 >
                   Back

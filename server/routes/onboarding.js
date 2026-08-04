@@ -46,6 +46,10 @@ router.post('/api/onboarding/complete', onboardingLimiter, requireAuth, async (r
     location_city,
     location_state,
     trade,
+    business_name,
+    years_experience,
+    service_radius_miles,
+    bio,
     referral_code_used, // optional — code from the referrer's link
   } = req.body
   const userId = req.user.id
@@ -110,6 +114,10 @@ router.post('/api/onboarding/complete', onboardingLimiter, requireAuth, async (r
     const { error: cpErr } = await supabaseAdmin.from('contractor_profiles').insert({
       user_id: userId,
       primary_trade: trade || 'General Contractor',
+      business_name: business_name?.trim() || null,
+      years_experience: Number.isFinite(years_experience) ? years_experience : (years_experience ? parseInt(years_experience) : 0),
+      service_radius_miles: Number.isFinite(service_radius_miles) ? service_radius_miles : (service_radius_miles ? parseInt(service_radius_miles) : 50),
+      bio: bio?.trim() || null,
     })
     if (cpErr) {
       console.error('[onboarding] contractor_profiles insert error:', cpErr)
