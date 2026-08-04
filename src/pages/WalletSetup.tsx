@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import * as bip39 from 'bip39'
 import { derivePath } from 'ed25519-hd-key'
@@ -12,6 +12,18 @@ function deriveKeypairFromMnemonic(mnemonic: string): Keypair {
   return Keypair.fromSeed(key)
 }
 
+/** Pick 3 unique random indices from 0..11 in ascending order */
+function pickVerifyIndices(): [number, number, number] {
+  const pool = Array.from({ length: 12 }, (_, i) => i)
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[pool[i], pool[j]] = [pool[j], pool[i]]
+  }
+  return [pool[0], pool[1], pool[2]].sort((a, b) => a - b) as [number, number, number]
+}
+
+type Step = 'phrase' | 'verify'
+
 export default function WalletSetup() {
   const { profile } = useAuth()
   const navigate = useNavigate()
@@ -24,8 +36,16 @@ export default function WalletSetup() {
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [showAdvanced, setShowAdvanced] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [showAddress, setShowAddress] = useState(false)
+
+  // Step state
+  const [step, setStep] = useState<Step>('phrase')
+
+  // Verification state
+  const verifyIndices = useMemo<[number, number, number]>(() => pickVerifyIndices(), [])
+  const [verifyInputs, setVerifyInputs] = useState<Record<number, string>>({})
+  const [verifyError, setVerifyError] = useState('')
 
   useEffect(() => {
     if (!profile) return
@@ -94,7 +114,7 @@ export default function WalletSetup() {
     }
   }, [mnemonic])
 
-  async function handleContinue() {
+  async function handleSaveWallet() {
     if (!pubkeyB58) return
     setSaving(true)
     setError('')
@@ -120,6 +140,31 @@ export default function WalletSetup() {
     }
   }
 
+  function handlePhraseNext() {
+    setError('')
+    setStep('verify')
+  }
+
+  function handleVerifySubmit() {
+    if (!mnemonic) return
+    const words = mnemonic.split(' ')
+    setVerifyError('')
+
+    const allCorrect = verifyIndices.every(idx => {
+      const input = (verifyInputs[idx] ?? '').trim().toLowerCase()
+      return input === words[idx].toLowerCase()
+    })
+
+    if (!allCorrect) {
+      setVerifyError(
+        "One or more words don't match. Double-check your saved phrase and try again."
+      )
+      return
+    }
+
+    handleSaveWallet()
+  }
+
   if (!profile || !isContractor || !statusChecked || !mnemonic) {
     return (
       <div
@@ -138,246 +183,241 @@ export default function WalletSetup() {
 
   const words = mnemonic.split(' ')
 
-  return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: 'var(--color-bg)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '24px 16px',
-      }}
-    >
+  // ─── Step 1: Show seed phrase ───────────────────────────────────────────────
+  if (step === 'phrase') {
+    return (
       <div
         style={{
-          maxWidth: 520,
-          width: '100%',
-          background: 'var(--color-surface)',
-          border: '1px solid var(--color-border)',
-          borderRadius: 16,
-          padding: '36px 32px',
+          minHeight: '100vh',
+          background: 'var(--color-bg)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '24px 16px',
         }}
       >
-        {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>🎉</div>
-          <h1
-            style={{
-              fontFamily: 'var(--font-condensed)',
-              fontSize: 24,
-              fontWeight: 800,
-              color: 'var(--color-text)',
-              margin: '0 0 8px',
-              letterSpacing: '0.3px',
-            }}
-          >
-            You're all set, {profile?.display_name?.split(' ')[0] ?? 'there'}!
-          </h1>
-          <p style={{ fontSize: 14, color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.6 }}>
-            Your TraydBook rewards wallet is ready. You'll earn credits for completing your profile,
-            posting work, and referring other pros — redeemable for platform features.
-          </p>
-        </div>
-
-        {/* What you can earn */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 28 }}>
-          {[
-            { icon: '✅', label: 'Complete your profile', reward: '25 credits' },
-            { icon: '📸', label: 'Post a project photo', reward: '10 credits' },
-            { icon: '👷', label: 'Refer a trade pro', reward: '50 credits' },
-          ].map(({ icon, label, reward }) => (
-            <div
-              key={label}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                padding: '10px 14px',
-                background: 'var(--color-bg)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 8,
-              }}
-            >
-              <span style={{ fontSize: 18 }}>{icon}</span>
-              <span style={{ fontSize: 13, color: 'var(--color-text)', flex: 1 }}>{label}</span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-brand)' }}>
-                {reward}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        {error && (
-          <div
-            style={{
-              padding: '10px 14px',
-              background: 'rgba(220,38,38,0.08)',
-              border: '1px solid rgba(220,38,38,0.2)',
-              borderRadius: 8,
-              color: '#DC2626',
-              fontSize: 13,
-              marginBottom: 16,
-            }}
-          >
-            {error}
-          </div>
-        )}
-
-        {/* Primary CTA */}
-        <button
-          onClick={handleContinue}
-          disabled={saving || !pubkeyB58}
+        <div
           style={{
+            maxWidth: 520,
             width: '100%',
-            padding: '14px 20px',
-            background: 'var(--color-brand)',
-            border: 'none',
-            borderRadius: 8,
-            cursor: saving ? 'not-allowed' : 'pointer',
-            fontFamily: 'var(--font-condensed)',
-            fontSize: 16,
-            fontWeight: 800,
-            letterSpacing: '0.5px',
-            textTransform: 'uppercase',
-            color: '#fff',
-            opacity: saving ? 0.7 : 1,
-            transition: 'opacity 0.15s',
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 16,
+            padding: '36px 32px',
           }}
         >
-          {saving ? 'One second…' : 'Take Me to My Feed →'}
-        </button>
+          {/* Header */}
+          <div style={{ textAlign: 'center', marginBottom: 28 }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>🎉</div>
+            <h1
+              style={{
+                fontFamily: 'var(--font-condensed)',
+                fontSize: 24,
+                fontWeight: 800,
+                color: 'var(--color-text)',
+                margin: '0 0 8px',
+                letterSpacing: '0.3px',
+              }}
+            >
+              You're all set, {profile?.display_name?.split(' ')[0] ?? 'there'}!
+            </h1>
+            <p style={{ fontSize: 14, color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.6 }}>
+              Your TraydBook rewards wallet is ready. You'll earn credits for completing your
+              profile, posting work, and referring other pros — redeemable for platform features.
+            </p>
+          </div>
 
-        {/* Advanced toggle */}
-        <div style={{ marginTop: 20 }}>
-          <button
-            onClick={() => setShowAdvanced(v => !v)}
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: 12,
-              color: 'var(--color-text-muted)',
-              textDecoration: 'underline',
-              padding: 0,
-              display: 'block',
-              margin: '0 auto',
-            }}
-          >
-            {showAdvanced ? '▲ Hide wallet details' : '▾ Advanced: view wallet details'}
-          </button>
-
-          {showAdvanced && (
-            <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {/* Info */}
+          {/* What you can earn */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
+            {[
+              { icon: '✅', label: 'Complete your profile', reward: '25 credits' },
+              { icon: '📸', label: 'Post a project photo', reward: '10 credits' },
+              { icon: '👷', label: 'Refer a trade pro', reward: '50 credits' },
+            ].map(({ icon, label, reward }) => (
               <div
+                key={label}
                 style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
                   padding: '10px 14px',
-                  background: 'rgba(220,38,38,0.06)',
-                  border: '1px solid rgba(220,38,38,0.2)',
+                  background: 'var(--color-bg)',
+                  border: '1px solid var(--color-border)',
                   borderRadius: 8,
                 }}
               >
-                <p style={{ fontSize: 12, color: '#DC2626', margin: 0, lineHeight: 1.6 }}>
-                  <strong>
-                    Save your seed phrase if you want to import this wallet into an external app
-                    later.
-                  </strong>{' '}
-                  TraydBook generates it entirely in your browser and never stores it. If you lose
-                  it, you cannot recover it — but your TraydBook credits and profile are always safe
-                  with your account login.
-                </p>
+                <span style={{ fontSize: 18 }}>{icon}</span>
+                <span style={{ fontSize: 13, color: 'var(--color-text)', flex: 1 }}>{label}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-brand)' }}>
+                  {reward}
+                </span>
               </div>
+            ))}
+          </div>
 
-              {/* Seed phrase */}
-              <div>
+          {/* Seed phrase section */}
+          <div
+            style={{
+              padding: '10px 14px',
+              background: 'rgba(220,38,38,0.06)',
+              border: '1px solid rgba(220,38,38,0.2)',
+              borderRadius: 8,
+              marginBottom: 12,
+            }}
+          >
+            <p style={{ fontSize: 12, color: '#DC2626', margin: 0, lineHeight: 1.6 }}>
+              <strong>Save your seed phrase before continuing.</strong> TraydBook generates it
+              entirely in your browser and never stores it. If you want to import this wallet into
+              an external app later, you'll need these 12 words. You'll be asked to verify them on
+              the next step.
+            </p>
+          </div>
+
+          {/* Seed phrase grid */}
+          <div
+            style={{
+              background: 'var(--color-bg)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 8,
+              padding: 12,
+              marginBottom: 16,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                color: 'var(--color-text-muted)',
+                fontFamily: 'var(--font-condensed)',
+                fontWeight: 700,
+                letterSpacing: '0.5px',
+                textTransform: 'uppercase',
+                marginBottom: 10,
+              }}
+            >
+              Seed Phrase — 12 Words
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+              {words.map((word, i) => (
                 <div
+                  key={i}
                   style={{
-                    fontSize: 11,
-                    color: 'var(--color-text-muted)',
-                    fontFamily: 'var(--font-condensed)',
-                    fontWeight: 700,
-                    letterSpacing: '0.5px',
-                    textTransform: 'uppercase',
-                    marginBottom: 8,
-                  }}
-                >
-                  Seed Phrase — 12 Words
-                </div>
-                <div
-                  style={{
-                    background: 'var(--color-bg)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    background: 'var(--color-surface)',
                     border: '1px solid var(--color-border)',
-                    borderRadius: 8,
-                    padding: 12,
+                    borderRadius: 6,
+                    padding: '6px 8px',
                   }}
                 >
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
-                    {words.map((word, i) => (
-                      <div
-                        key={i}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          background: 'var(--color-surface)',
-                          border: '1px solid var(--color-border)',
-                          borderRadius: 6,
-                          padding: '6px 8px',
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontSize: 10,
-                            color: 'var(--color-text-muted)',
-                            fontWeight: 700,
-                            minWidth: 14,
-                            textAlign: 'right',
-                          }}
-                        >
-                          {i + 1}
-                        </span>
-                        <span
-                          style={{
-                            fontSize: 12,
-                            fontFamily: 'monospace',
-                            color: 'var(--color-text)',
-                            fontWeight: 600,
-                          }}
-                        >
-                          {word}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                  <button
-                    onClick={copyMnemonic}
+                  <span
                     style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 6,
-                      width: '100%',
-                      marginTop: 10,
-                      padding: '7px 12px',
-                      background: copied ? 'rgba(5,150,105,0.1)' : 'transparent',
-                      border: `1px solid ${copied ? 'rgba(5,150,105,0.3)' : 'var(--color-border)'}`,
-                      borderRadius: 6,
-                      cursor: 'pointer',
-                      fontSize: 11,
+                      fontSize: 10,
+                      color: 'var(--color-text-muted)',
                       fontWeight: 700,
-                      color: copied ? '#059669' : 'var(--color-text-muted)',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.4px',
+                      minWidth: 14,
+                      textAlign: 'right',
                     }}
                   >
-                    {copied ? '✓ Copied' : '⎘ Copy all 12 words'}
-                  </button>
+                    {i + 1}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 12,
+                      fontFamily: 'monospace',
+                      color: 'var(--color-text)',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {word}
+                  </span>
                 </div>
-              </div>
+              ))}
+            </div>
+            <button
+              onClick={copyMnemonic}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                width: '100%',
+                marginTop: 10,
+                padding: '7px 12px',
+                background: copied ? 'rgba(5,150,105,0.1)' : 'transparent',
+                border: `1px solid ${copied ? 'rgba(5,150,105,0.3)' : 'var(--color-border)'}`,
+                borderRadius: 6,
+                cursor: 'pointer',
+                fontSize: 11,
+                fontWeight: 700,
+                color: copied ? '#059669' : 'var(--color-text-muted)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.4px',
+              }}
+            >
+              {copied ? '✓ Copied' : '⎘ Copy all 12 words'}
+            </button>
+          </div>
 
-              {/* Wallet address */}
-              <div>
+          {error && (
+            <div
+              style={{
+                padding: '10px 14px',
+                background: 'rgba(220,38,38,0.08)',
+                border: '1px solid rgba(220,38,38,0.2)',
+                borderRadius: 8,
+                color: '#DC2626',
+                fontSize: 13,
+                marginBottom: 16,
+              }}
+            >
+              {error}
+            </div>
+          )}
+
+          {/* CTA */}
+          <button
+            onClick={handlePhraseNext}
+            style={{
+              width: '100%',
+              padding: '14px 20px',
+              background: 'var(--color-brand)',
+              border: 'none',
+              borderRadius: 8,
+              cursor: 'pointer',
+              fontFamily: 'var(--font-condensed)',
+              fontSize: 16,
+              fontWeight: 800,
+              letterSpacing: '0.5px',
+              textTransform: 'uppercase',
+              color: '#fff',
+              transition: 'opacity 0.15s',
+            }}
+          >
+            I've Saved My Phrase →
+          </button>
+
+          {/* Advanced: wallet address toggle */}
+          <div style={{ marginTop: 20 }}>
+            <button
+              onClick={() => setShowAddress(v => !v)}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 12,
+                color: 'var(--color-text-muted)',
+                textDecoration: 'underline',
+                padding: 0,
+                display: 'block',
+                margin: '0 auto',
+              }}
+            >
+              {showAddress ? '▲ Hide wallet address' : '▾ Advanced: view wallet address'}
+            </button>
+
+            {showAddress && (
+              <div style={{ marginTop: 16 }}>
                 <div
                   style={{
                     fontSize: 11,
@@ -419,13 +459,189 @@ export default function WalletSetup() {
                     lineHeight: 1.5,
                   }}
                 >
-                  Derivation path: m/44'/501'/0'/0' — importable into Phantom or Solflare using your
-                  seed phrase.
+                  Derivation path: m/44'/501'/0'/0' — importable into Phantom or Solflare using
+                  your seed phrase.
                 </p>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
+      </div>
+    )
+  }
+
+  // ─── Step 2: Verify seed phrase ──────────────────────────────────────────────
+  return (
+    <div
+      style={{
+        minHeight: '100vh',
+        background: 'var(--color-bg)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '24px 16px',
+      }}
+    >
+      <div
+        style={{
+          maxWidth: 520,
+          width: '100%',
+          background: 'var(--color-surface)',
+          border: '1px solid var(--color-border)',
+          borderRadius: 16,
+          padding: '36px 32px',
+        }}
+      >
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>🔐</div>
+          <h1
+            style={{
+              fontFamily: 'var(--font-condensed)',
+              fontSize: 24,
+              fontWeight: 800,
+              color: 'var(--color-text)',
+              margin: '0 0 8px',
+              letterSpacing: '0.3px',
+            }}
+          >
+            Confirm Your Phrase
+          </h1>
+          <p style={{ fontSize: 14, color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.6 }}>
+            Enter the words below from your seed phrase to confirm you've saved it correctly.
+          </p>
+        </div>
+
+        {/* Word inputs */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 24 }}>
+          {verifyIndices.map(idx => (
+            <div key={idx}>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: 11,
+                  fontFamily: 'var(--font-condensed)',
+                  fontWeight: 700,
+                  letterSpacing: '0.5px',
+                  textTransform: 'uppercase',
+                  color: 'var(--color-text-muted)',
+                  marginBottom: 6,
+                }}
+              >
+                Word #{idx + 1}
+              </label>
+              <input
+                type="text"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                value={verifyInputs[idx] ?? ''}
+                onChange={e =>
+                  setVerifyInputs(prev => ({ ...prev, [idx]: e.target.value }))
+                }
+                placeholder={`Enter word #${idx + 1}`}
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  padding: '10px 12px',
+                  background: 'var(--color-bg)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 8,
+                  fontSize: 14,
+                  fontFamily: 'monospace',
+                  color: 'var(--color-text)',
+                  outline: 'none',
+                }}
+              />
+            </div>
+          ))}
+        </div>
+
+        {verifyError && (
+          <div
+            style={{
+              padding: '10px 14px',
+              background: 'rgba(220,38,38,0.08)',
+              border: '1px solid rgba(220,38,38,0.2)',
+              borderRadius: 8,
+              color: '#DC2626',
+              fontSize: 13,
+              marginBottom: 16,
+            }}
+          >
+            {verifyError}
+          </div>
+        )}
+
+        {error && (
+          <div
+            style={{
+              padding: '10px 14px',
+              background: 'rgba(220,38,38,0.08)',
+              border: '1px solid rgba(220,38,38,0.2)',
+              borderRadius: 8,
+              color: '#DC2626',
+              fontSize: 13,
+              marginBottom: 16,
+            }}
+          >
+            {error}
+          </div>
+        )}
+
+        {/* Confirm button */}
+        <button
+          onClick={handleVerifySubmit}
+          disabled={
+            saving ||
+            verifyIndices.some(idx => !(verifyInputs[idx] ?? '').trim())
+          }
+          style={{
+            width: '100%',
+            padding: '14px 20px',
+            background: 'var(--color-brand)',
+            border: 'none',
+            borderRadius: 8,
+            cursor:
+              saving || verifyIndices.some(idx => !(verifyInputs[idx] ?? '').trim())
+                ? 'not-allowed'
+                : 'pointer',
+            fontFamily: 'var(--font-condensed)',
+            fontSize: 16,
+            fontWeight: 800,
+            letterSpacing: '0.5px',
+            textTransform: 'uppercase',
+            color: '#fff',
+            opacity:
+              saving || verifyIndices.some(idx => !(verifyInputs[idx] ?? '').trim()) ? 0.6 : 1,
+            transition: 'opacity 0.15s',
+          }}
+        >
+          {saving ? 'One second…' : 'Confirm & Go to My Feed →'}
+        </button>
+
+        {/* Back link */}
+        <button
+          onClick={() => {
+            setVerifyError('')
+            setVerifyInputs({})
+            setStep('phrase')
+          }}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: 12,
+            color: 'var(--color-text-muted)',
+            textDecoration: 'underline',
+            padding: 0,
+            display: 'block',
+            margin: '16px auto 0',
+          }}
+        >
+          ← Go back and view my phrase
+        </button>
       </div>
     </div>
   )
