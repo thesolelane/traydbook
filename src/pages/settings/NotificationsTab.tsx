@@ -57,6 +57,16 @@ const NOTIF_LABELS: { type: NotificationType; label: string; description: string
     label: 'Safety alerts',
     description: 'Safety-related alerts from your network',
   },
+  {
+    type: 'bid_not_awarded',
+    label: 'Bid not awarded',
+    description: 'A bid you submitted was not selected',
+  },
+  {
+    type: 'profile_viewed',
+    label: 'Profile views',
+    description: 'Someone viewed your profile',
+  },
 ]
 
 type NotifPrefs = Partial<Record<NotificationType, boolean>>

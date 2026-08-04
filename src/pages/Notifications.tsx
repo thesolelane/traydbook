@@ -13,6 +13,8 @@ import {
   Star,
   FileText,
   Info,
+  XCircle,
+  Eye,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -59,6 +61,10 @@ function iconForType(type: NotificationType) {
       return <AlertTriangle size={s} color="#DC2626" />
     case 'credits_added':
       return <Coins size={s} color="#059669" />
+    case 'bid_not_awarded':
+      return <XCircle size={s} color="#DC2626" />
+    case 'profile_viewed':
+      return <Eye size={s} color="#7C3AED" />
     default:
       return <Info size={s} color="var(--color-text-muted)" />
   }
@@ -95,6 +101,10 @@ function navTarget(n: Notification): string | null {
       return '/feed'
     case 'credits_added':
       return '/credits'
+    case 'bid_not_awarded':
+      return n.entity_id ? `/bids/${n.entity_id}` : '/bids'
+    case 'profile_viewed':
+      return '/profile'
     default:
       return null
   }
