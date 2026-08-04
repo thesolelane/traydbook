@@ -27,10 +27,10 @@ const NOTIF_LABELS: { type: NotificationType; label: string; description: string
     label: 'Connection accepted',
     description: 'A connection request was accepted',
   },
-  { type: 'bid_submitted', label: 'Bid received', description: 'A contractor bids on your RFQ' },
+  { type: 'bid_received', label: 'Bid received', description: 'A contractor bids on your RFQ' },
   { type: 'bid_awarded', label: 'Bid awarded', description: 'Your bid was selected' },
   {
-    type: 'job_applied',
+    type: 'job_application',
     label: 'Job application',
     description: 'Someone applies to your job listing',
   },

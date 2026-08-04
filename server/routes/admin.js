@@ -168,7 +168,7 @@ router.get('/api/admin/stats', requireAuth, requireAdminLevel, async (req, res) 
       supabaseAdmin
         .from('users')
         .select('*', { count: 'exact', head: true })
-        .in('account_type', ['project_owner', 'homeowner', 'agent']),
+        .in('account_type', ['project_owner', 'homeowner', 'real_estate_agent', 'design_professional', 'investor', 'brokerage']),
       supabaseAdmin.from('posts').select('*', { count: 'exact', head: true }),
       supabaseAdmin.from('job_listings').select('*', { count: 'exact', head: true }),
       supabaseAdmin.from('rfqs').select('*', { count: 'exact', head: true }),

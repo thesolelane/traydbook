@@ -112,7 +112,7 @@ const ACCOUNT_TYPES: {
     desc: 'Developers, investors, and commercial clients posting RFQs.',
   },
   {
-    type: 'agent',
+    type: 'real_estate_agent',
     icon: '🏠',
     title: 'Real Estate Agent',
     desc: 'Agents connecting trades with their clients and projects.',

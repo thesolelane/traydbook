@@ -37,11 +37,11 @@ function iconForType(type: NotificationType) {
       return <Heart size={s} color="#E85D04" />
     case 'post_commented':
       return <MessageSquare size={s} color="#2563EB" />
-    case 'bid_submitted':
+    case 'bid_received':
       return <FileText size={s} color="#059669" />
     case 'bid_awarded':
       return <Award size={s} color="#D97706" />
-    case 'job_applied':
+    case 'job_application':
       return <Briefcase size={s} color="#7C3AED" />
     case 'rfq_closing_soon':
       return <AlertTriangle size={s} color="#DC2626" />
@@ -69,10 +69,10 @@ function navTarget(n: Notification): string | null {
     case 'post_liked':
     case 'post_commented':
       return n.entity_id ? `/feed` : null
-    case 'bid_submitted':
+    case 'bid_received':
     case 'bid_awarded':
       return n.entity_id ? `/bids/${n.entity_id}` : '/bids'
-    case 'job_applied':
+    case 'job_application':
       return n.entity_id ? `/jobs/${n.entity_id}` : '/jobs'
     case 'rfq_closing_soon':
       return n.entity_id ? `/bids/${n.entity_id}` : '/bids'

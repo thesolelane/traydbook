@@ -165,7 +165,7 @@ export default function Navbar() {
   const isContractor = profile?.account_type === 'contractor'
   const isAdmin = isStaff(profile?.account_type)
   const canPostRfq =
-    profile?.account_type === 'project_owner' || profile?.account_type === 'agent' || isAdmin
+    profile?.account_type === 'project_owner' || profile?.account_type === 'real_estate_agent' || isAdmin
 
   function Dot() {
     return (

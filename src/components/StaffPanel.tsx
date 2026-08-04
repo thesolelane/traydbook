@@ -9,8 +9,11 @@ const ROLE_RANK: Record<string, number> = {
   moderator: 2,
   contractor: 1,
   project_owner: 1,
-  agent: 1,
+  real_estate_agent: 1,
+  design_professional: 1,
   homeowner: 1,
+  investor: 1,
+  brokerage: 1,
 }
 
 function getAllowedRoles(callerRole: string) {
@@ -145,8 +148,11 @@ export default function StaffPanel({
     moderator: '#059669',
     contractor: '#D97706',
     project_owner: '#2563EB',
-    agent: '#7C3AED',
+    real_estate_agent: '#7C3AED',
+    design_professional: '#BE185D',
     homeowner: '#6B7280',
+    investor: '#0F766E',
+    brokerage: '#1D4ED8',
   }
 
   return (

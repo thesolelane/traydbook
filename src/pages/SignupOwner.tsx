@@ -63,18 +63,18 @@ const US_STATES = [
 const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   contractor: 'Contractor',
   project_owner: 'Project Owner',
-  agent: 'Real Estate Agent',
+  real_estate_agent: 'Real Estate Agent',
   homeowner: 'Homeowner',
+  design_professional: 'Design Professional',
+  investor: 'Investor / Developer',
+  brokerage: 'Brokerage',
   admin: 'Admin',
-  admin_2: 'Admin 02',
-  hired_dev: 'Hired Dev',
-  moderator: 'Moderator',
 }
 
 const CREDIT_INFO: Record<string, string> = {
   project_owner:
     'Post RFQs (10 credits), job listings (8 credits), and message contractors (3 credits). Start with a free credit pack.',
-  agent: 'Post referrals (5 credits) and message contractors (3 credits).',
+  real_estate_agent: 'Post referrals (5 credits) and message contractors (3 credits).',
   homeowner: 'Post service requests (5 credits) and message contractors (3 credits).',
 }
 
@@ -263,7 +263,7 @@ export default function SignupOwner() {
   function handleStep2(e: FormEvent) {
     e.preventDefault()
     setError('')
-    if (accountType === 'agent') {
+    if (accountType === 'real_estate_agent') {
       if (!agentMetro.trim()) {
         setError('Please enter the metro area you work in.')
         return
@@ -299,7 +299,7 @@ export default function SignupOwner() {
 
       // Build account-type-specific preferences to persist
       let ownerPreferences: Record<string, unknown> | null = null
-      if (accountType === 'agent') {
+      if (accountType === 'real_estate_agent') {
         ownerPreferences = {
           metro: agentMetro || null,
           client_types: clientTypes.length > 0 ? clientTypes : null,
@@ -510,7 +510,7 @@ export default function SignupOwner() {
             )}
 
             {/* ── STEP 2: Preferences (varies by account type) ── */}
-            {step === 2 && accountType === 'agent' && (
+            {step === 2 && accountType === 'real_estate_agent' && (
               <>
                 <h1 className="auth-title">Your market</h1>
                 <p className="auth-subtitle">
@@ -729,7 +729,7 @@ export default function SignupOwner() {
               </>
             )}
 
-            {step === 2 && accountType !== 'agent' && accountType !== 'homeowner' && (
+            {step === 2 && accountType !== 'real_estate_agent' && accountType !== 'homeowner' && (
               <>
                 <h1 className="auth-title">Project preferences</h1>
                 <p className="auth-subtitle">

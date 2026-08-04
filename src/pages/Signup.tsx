@@ -33,7 +33,7 @@ const allAccountTypes: {
     free: false,
   },
   {
-    type: 'agent',
+    type: 'real_estate_agent',
     icon: '🏠',
     title: 'Real Estate Agent',
     desc: 'Agents connecting trades with their clients and projects.',

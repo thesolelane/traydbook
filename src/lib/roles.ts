@@ -1,7 +1,14 @@
 import type { AccountType } from './database.types'
 export type { AccountType }
 export type StaffRole = 'admin' | 'admin_2' | 'hired_dev' | 'moderator'
-export type PlatformRole = 'contractor' | 'project_owner' | 'agent' | 'homeowner'
+export type PlatformRole =
+  | 'contractor'
+  | 'project_owner'
+  | 'real_estate_agent'
+  | 'design_professional'
+  | 'homeowner'
+  | 'investor'
+  | 'brokerage'
 
 export const STAFF_ROLES: { value: StaffRole; label: string; description: string }[] = [
   {
@@ -30,14 +37,17 @@ export const STAFF_ROLES: { value: StaffRole; label: string; description: string
 export const PLATFORM_ROLES: { value: PlatformRole; label: string }[] = [
   { value: 'contractor', label: 'Contractor' },
   { value: 'project_owner', label: 'Project Owner' },
-  { value: 'agent', label: 'Agent' },
+  { value: 'real_estate_agent', label: 'Real Estate Agent' },
+  { value: 'design_professional', label: 'Design Professional' },
   { value: 'homeowner', label: 'Homeowner' },
+  { value: 'investor', label: 'Investor / Developer' },
+  { value: 'brokerage', label: 'Brokerage' },
 ]
 
 export const ALL_INVITE_ROLES = [...STAFF_ROLES, ...PLATFORM_ROLES]
 
-/** Staff roles that bypass credit requirements */
-export const STAFF_TYPES: AccountType[] = ['admin', 'admin_2', 'hired_dev', 'moderator']
+/** Staff roles that bypass credit requirements (includes app-level roles not in the DB enum) */
+export const STAFF_TYPES: string[] = ['admin', 'admin_2', 'hired_dev', 'moderator']
 
 export function isStaff(accountType?: string | null): boolean {
   return STAFF_TYPES.includes(accountType as AccountType)

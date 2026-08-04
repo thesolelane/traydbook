@@ -1,12 +1,12 @@
 export type AccountType =
   | 'contractor'
   | 'project_owner'
-  | 'agent'
   | 'homeowner'
+  | 'real_estate_agent'
+  | 'design_professional'
+  | 'investor'
+  | 'brokerage'
   | 'admin'
-  | 'admin_2'
-  | 'hired_dev'
-  | 'moderator'
 export type AvailabilityStatus = 'available' | 'busy' | 'not_available'
 export type ConnectionStatus = 'pending' | 'accepted' | 'rejected'
 export type DelegationStatus = 'pending' | 'active' | 'revoked'
@@ -22,20 +22,34 @@ export type PostType =
 export type JobType = 'full_time' | 'contract' | 'per_diem' | 'subcontract'
 export type RfqStatus = 'open' | 'awarded' | 'closed' | 'archived'
 export type BidStatus = 'pending' | 'under_review' | 'awarded' | 'not_awarded'
+export type TransactionType =
+  | 'purchase'
+  | 'post_rfq'
+  | 'post_job'
+  | 'send_message'
+  | 'request_contact'
+  | 'boost_listing'
+  | 'repost_listing'
+  | 'verification_fee'
+  | 'refund'
+  | 'admin_adjustment'
 export type NotificationType =
   | 'connection_request'
   | 'connection_accepted'
   | 'post_liked'
   | 'post_commented'
-  | 'bid_submitted'
+  | 'bid_received'
   | 'bid_awarded'
-  | 'job_applied'
+  | 'bid_not_awarded'
+  | 'job_application'
   | 'rfq_closing_soon'
   | 'credential_expiring'
   | 'referral_received'
   | 'safety_alert'
-  | 'credits_added'
   | 'message_received'
+  | 'credits_added'
+  | 'profile_viewed'
+export type PurchaseStatus = 'pending' | 'completed' | 'failed' | 'held'
 
 export interface Database {
   public: {
@@ -257,7 +271,7 @@ export interface Database {
           user_id: string
           delta: number
           balance_after: number
-          transaction_type: 'purchase' | 'spend' | 'refund'
+          transaction_type: TransactionType
           description: string
           created_at: string
         }
@@ -271,7 +285,7 @@ export interface Database {
           stripe_session_id: string
           credits: number
           amount_cents: number
-          status: 'pending' | 'completed' | 'failed'
+          status: PurchaseStatus
           created_at: string
         }
         Insert: Omit<Database['public']['Tables']['purchases']['Row'], 'id' | 'created_at'>

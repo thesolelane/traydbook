@@ -5,8 +5,9 @@ export const STAFF_ROLES = ['admin', 'admin_2', 'hired_dev', 'moderator']
 export const PLATFORM_ROLES = [
   'contractor',
   'project_owner',
-  'agent',
+  'real_estate_agent',
   'homeowner',
+  'design_professional',
   'investor',
   'brokerage',
 ]
@@ -24,7 +25,8 @@ export const ROLE_RANK = {
   moderator: 2,
   contractor: 1,
   project_owner: 1,
-  agent: 1,
+  real_estate_agent: 1,
+  design_professional: 1,
   homeowner: 1,
   investor: 1,
   brokerage: 1,

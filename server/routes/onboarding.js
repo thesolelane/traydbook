@@ -23,8 +23,9 @@ const onboardingLimiter = rateLimit({
 const VALID_ACCOUNT_TYPES = [
   'contractor',
   'project_owner',
-  'agent',
+  'real_estate_agent',
   'homeowner',
+  'design_professional',
   'investor',
   'brokerage',
 ]
