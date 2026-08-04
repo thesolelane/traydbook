@@ -6,6 +6,8 @@ import { Keypair } from '@solana/web3.js'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
+const WALLET_SETUP_SESSION_KEY = 'walletSetup_pendingMnemonic'
+
 function deriveKeypairFromMnemonic(mnemonic: string): Keypair {
   const seed = bip39.mnemonicToSeedSync(mnemonic)
   const { key } = derivePath("m/44'/501'/0'/0'", seed.toString('hex'))
@@ -87,7 +89,11 @@ export default function WalletSetup() {
 
   useEffect(() => {
     if (!statusChecked) return
-    const phrase = bip39.generateMnemonic()
+    const existing = sessionStorage.getItem(WALLET_SETUP_SESSION_KEY)
+    const phrase = existing ?? bip39.generateMnemonic()
+    if (!existing) {
+      sessionStorage.setItem(WALLET_SETUP_SESSION_KEY, phrase)
+    }
     const keypair = deriveKeypairFromMnemonic(phrase)
     setMnemonic(phrase)
     setPubkeyB58(keypair.publicKey.toBase58())
@@ -132,6 +138,7 @@ export default function WalletSetup() {
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'Failed to save wallet')
+      sessionStorage.removeItem(WALLET_SETUP_SESSION_KEY)
       setSaved(true)
       navigate('/feed', { replace: true })
     } catch (err) {
