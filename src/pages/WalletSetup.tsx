@@ -397,6 +397,42 @@ export default function WalletSetup() {
             I've Saved My Phrase →
           </button>
 
+          {/* Skip option */}
+          <div style={{ marginTop: 16, textAlign: 'center' }}>
+            <div
+              style={{
+                padding: '10px 14px',
+                background: 'rgba(161,110,0,0.06)',
+                border: '1px solid rgba(161,110,0,0.22)',
+                borderRadius: 8,
+                marginBottom: 10,
+                textAlign: 'left',
+              }}
+            >
+              <p style={{ fontSize: 12, color: '#92600a', margin: 0, lineHeight: 1.6 }}>
+                <strong>Skip only if you don't need an external wallet.</strong> If you skip, the
+                seed phrase is gone — you won't be able to recover or export this wallet later.
+                Your credits balance and platform features are unaffected.
+              </p>
+            </div>
+            <button
+              onClick={handleSaveWallet}
+              disabled={saving}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: saving ? 'not-allowed' : 'pointer',
+                fontSize: 12,
+                color: 'var(--color-text-muted)',
+                textDecoration: 'underline',
+                padding: 0,
+                opacity: saving ? 0.5 : 1,
+              }}
+            >
+              {saving ? 'Saving…' : "Skip — I don't need to export my wallet"}
+            </button>
+          </div>
+
           {/* Advanced: wallet address toggle */}
           <div style={{ marginTop: 20 }}>
             <button
