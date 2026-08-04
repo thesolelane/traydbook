@@ -48,6 +48,12 @@ interface Stats {
   by_type: Record<string, number>
 }
 
+interface TemplateStats {
+  sent: number
+  opened: number
+  clicked: number
+}
+
 interface Template {
   id: string
   name: string
@@ -59,6 +65,7 @@ interface Template {
   touch_number: number | null
   created_at: string
   updated_at: string
+  stats?: TemplateStats
 }
 
 interface DeliveryEvent {
@@ -1981,6 +1988,54 @@ function TemplatesTab({ authHeaders }: SectionProps) {
                           style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 5 }}
                         >
                           <strong>Subject:</strong> {t.subject}
+                        </div>
+                        {/* ── Per-template stats ── */}
+                        <div
+                          style={{
+                            display: 'flex',
+                            gap: 16,
+                            marginTop: 8,
+                            padding: '6px 10px',
+                            background: 'var(--color-bg)',
+                            borderRadius: 6,
+                            fontSize: 11,
+                            color: 'var(--color-text-muted)',
+                          }}
+                        >
+                          {(() => {
+                            const s = t.stats
+                            if (!s || s.sent === 0) {
+                              return (
+                                <span style={{ color: 'var(--color-text-muted)' }}>
+                                  No sends yet
+                                </span>
+                              )
+                            }
+                            const openPct = Math.round((s.opened / s.sent) * 100)
+                            const clickPct = Math.round((s.clicked / s.sent) * 100)
+                            return (
+                              <>
+                                <span>
+                                  <span style={{ fontWeight: 700, color: 'var(--color-text)' }}>
+                                    {s.sent.toLocaleString()}
+                                  </span>{' '}
+                                  sent
+                                </span>
+                                <span>
+                                  <span style={{ fontWeight: 700, color: '#7c70e8' }}>
+                                    {openPct}%
+                                  </span>{' '}
+                                  opened
+                                </span>
+                                <span>
+                                  <span style={{ fontWeight: 700, color: '#3b82f6' }}>
+                                    {clickPct}%
+                                  </span>{' '}
+                                  clicked
+                                </span>
+                              </>
+                            )
+                          })()}
                         </div>
                         <div style={{ display: 'flex', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
                           <button

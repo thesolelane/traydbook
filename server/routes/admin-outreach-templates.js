@@ -58,9 +58,36 @@ router.get('/templates', requireAuth, requireAnyStaff, async (req, res) => {
     .order('created_at', { ascending: false })
   if (status) q = q.eq('status', status)
   if (prospect_type) q = q.eq('prospect_type', prospect_type)
-  const { data, error } = await q
+
+  // Fetch send-log rows (template_id + delivery_status only) to compute per-template stats
+  const [{ data, error }, { data: logRows, error: logErr }] = await Promise.all([
+    q,
+    supabaseAdmin
+      .from('outreach_send_log')
+      .select('template_id, delivery_status'),
+  ])
+
   if (error) return res.status(500).json({ error: error.message })
-  res.json({ templates: data || [], merge_tags: MERGE_TAGS })
+
+  // Tally sent / opened / clicked per template_id
+  const statsMap = {}
+  if (!logErr && logRows) {
+    for (const row of logRows) {
+      const tid = row.template_id
+      if (!tid) continue
+      if (!statsMap[tid]) statsMap[tid] = { sent: 0, opened: 0, clicked: 0 }
+      statsMap[tid].sent++
+      if (row.delivery_status === 'opened') statsMap[tid].opened++
+      if (row.delivery_status === 'clicked') statsMap[tid].clicked++
+    }
+  }
+
+  const templates = (data || []).map(t => ({
+    ...t,
+    stats: statsMap[t.id] ?? { sent: 0, opened: 0, clicked: 0 },
+  }))
+
+  res.json({ templates, merge_tags: MERGE_TAGS })
 })
 
 // GET /api/admin/outreach/templates/:id
