@@ -231,12 +231,30 @@ router.post(
 
     // Idempotency: discard duplicate deliveries from Svix retries
     const svixMessageId = req.headers['svix-id'] ?? null
+    const existingEvents = logRow.delivery_events || []
+
     if (svixMessageId) {
-      const existingEvents = logRow.delivery_events || []
       const alreadySeen = existingEvents.some((e) => e.svix_id === svixMessageId)
       if (alreadySeen) {
         console.log(
           `[email-webhook] Duplicate svix-id=${svixMessageId} — discarding`
+        )
+        return res.status(200).json({ ok: true, duplicate: true })
+      }
+    } else {
+      // Secondary guard for events that arrive without a svix-id (e.g. non-Svix paths).
+      // Deduplicate on (event type + timestamp + email_id) so a replayed payload
+      // can't inflate open/click counts even when the idempotency header is absent.
+      const eventTimestamp = data.created_at ?? null
+      const alreadySeen = existingEvents.some(
+        (e) =>
+          e.type === eventType &&
+          e.timestamp === eventTimestamp &&
+          (e.metadata?.email_id ?? null) === resendEmailId
+      )
+      if (alreadySeen) {
+        console.log(
+          `[email-webhook] Duplicate event (no svix-id): type=${eventType} ts=${eventTimestamp} email_id=${resendEmailId} — discarding`
         )
         return res.status(200).json({ ok: true, duplicate: true })
       }
