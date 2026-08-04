@@ -174,7 +174,7 @@ export default function Onboarding() {
     setAvatarPreview(URL.createObjectURL(file))
   }
 
-  async function uploadAvatar(uid: string): Promise<string | null> {
+  async function uploadAvatar(uid: string): Promise<{ url: string; path: string } | null> {
     if (!avatarFile) return null
     const ext = avatarFile.name.split('.').pop() ?? 'jpg'
     const path = `${uid}.${ext}`
@@ -183,7 +183,7 @@ export default function Onboarding() {
       .upload(path, avatarFile, { upsert: true, contentType: avatarFile.type })
     if (error) return null
     const { data } = supabase.storage.from('avatars').getPublicUrl(path)
-    return data.publicUrl
+    return { url: data.publicUrl, path }
   }
 
   const [submitting, setSubmitting] = useState(false)
@@ -215,8 +215,16 @@ export default function Onboarding() {
     setSubmitting(true)
     setError('')
 
+    let uploadedAvatarPath: string | null = null
+    // Set to true only after the server has persisted the row (including avatar_url).
+    // Used to guard against deleting a correctly-saved avatar if a post-success
+    // client-side step (refreshProfile / navigate) throws.
+    let onboardingPersisted = false
+
     try {
-      const avatarUrl = await uploadAvatar(user.id)
+      const avatarResult = await uploadAvatar(user.id)
+      const avatarUrl = avatarResult?.url ?? null
+      uploadedAvatarPath = avatarResult?.path ?? null
 
       const headers = await getAuthHeaders()
       const res = await fetch('/api/onboarding/complete', {
@@ -241,9 +249,19 @@ export default function Onboarding() {
         throw new Error(body.error ?? `Server error ${res.status}`)
       }
 
+      // Profile row (including avatar_url) is now committed — do not clean up
+      // the avatar file even if a subsequent client-side step throws.
+      onboardingPersisted = true
+
       await refreshProfile()
       navigate('/feed', { replace: true })
     } catch (err) {
+      // Only delete the orphaned avatar if the server never persisted the row.
+      // If onboardingPersisted is true the DB already holds the avatar_url, so
+      // removing the file would break the saved profile photo.
+      if (uploadedAvatarPath && !onboardingPersisted) {
+        supabase.storage.from('avatars').remove([uploadedAvatarPath]).catch(() => {})
+      }
       setError(err instanceof Error ? err.message : 'Something went wrong.')
     } finally {
       setSubmitting(false)
