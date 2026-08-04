@@ -147,16 +147,18 @@ router.post(
   async (req, res) => {
     const webhookSecret = process.env.RESEND_WEBHOOK_SECRET
 
-    // Signature check — skip only if secret is explicitly not configured
-    if (webhookSecret) {
-      const rawBody = req.body instanceof Buffer ? req.body.toString('utf8') : String(req.body)
-      const valid = verifySvixSignature(rawBody, req.headers, webhookSecret)
-      if (!valid) {
-        console.warn('[email-webhook] Signature verification failed')
-        return res.status(401).json({ error: 'Invalid webhook signature' })
-      }
-    } else {
-      console.warn('[email-webhook] RESEND_WEBHOOK_SECRET not set — skipping signature verification')
+    // Fail-closed: reject all requests if the signing secret is not configured.
+    // This prevents forged events from mutating delivery state in misconfigured envs.
+    if (!webhookSecret) {
+      console.error('[email-webhook] RESEND_WEBHOOK_SECRET is not set — rejecting request')
+      return res.status(503).json({ error: 'Webhook endpoint not configured' })
+    }
+
+    const rawBody = req.body instanceof Buffer ? req.body.toString('utf8') : String(req.body)
+    const valid = verifySvixSignature(rawBody, req.headers, webhookSecret)
+    if (!valid) {
+      console.warn('[email-webhook] Signature verification failed')
+      return res.status(401).json({ error: 'Invalid webhook signature' })
     }
 
     // Parse body (raw middleware gives us a Buffer)

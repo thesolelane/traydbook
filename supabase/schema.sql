@@ -737,6 +737,138 @@ create policy "Admins can read dwell events" on public.dwell_events
     )
   );
 
+-- ============================================================
+-- OUTREACH PROSPECTS
+-- Imported leads (contractors, real estate agents) for Bob outreach.
+-- ============================================================
+create table if not exists public.outreach_prospects (
+  id                  uuid        primary key default gen_random_uuid(),
+  prospect_type       text        not null default 'contractor'
+                                  check (prospect_type in ('contractor', 'real_estate_agent', 'other')),
+  board_code          text,
+  type_class          text,
+  business_name       text,
+  first_name          text,
+  middle_initial      text,
+  last_name           text,
+  general_type        text,
+  address1            text,
+  address2            text,
+  city                text,
+  state               text,
+  zip_code            text,
+  license_number      text,
+  license_issued      date,
+  license_expiration  date,
+  status_description  text,
+  email_found         text,
+  phone_found         text,
+  enrichment_source   text,
+  enrichment_notes    text,
+  enriched_at         timestamptz,
+  email_subject       text,
+  email_body          text,
+  drafted_at          timestamptz,
+  sent_at             timestamptz,
+  replied_at          timestamptz,
+  reply_notes         text,
+  status              text        not null default 'pending'
+                                  check (status in ('pending','enriched','drafted','sent','replied','skipped','bounced','converted')),
+  skip_reason         text,
+  bob_notes           text,
+  import_batch        text,
+  imported_by         uuid,
+  person_key          varchar,
+  joined_user_id      uuid references public.users(id) on delete set null,
+  joined_at           timestamptz,
+  created_at          timestamptz not null default now(),
+  updated_at          timestamptz not null default now(),
+  unique (license_number, prospect_type)
+);
+
+create index if not exists idx_prospects_status        on public.outreach_prospects(status, created_at desc);
+create index if not exists idx_prospects_type          on public.outreach_prospects(prospect_type, status);
+create index if not exists idx_prospects_batch         on public.outreach_prospects(import_batch);
+create index if not exists idx_prospects_state         on public.outreach_prospects(state, city);
+create index if not exists idx_prospects_work_queue    on public.outreach_prospects(created_at asc) where status = 'enriched';
+create index if not exists idx_outreach_prospects_person_key on public.outreach_prospects(person_key);
+create index if not exists idx_prospects_joined_user   on public.outreach_prospects(joined_user_id) where joined_user_id is not null;
+
+-- ============================================================
+-- OUTREACH TEMPLATES
+-- Email templates used by Bob for prospect outreach campaigns.
+-- ============================================================
+create table if not exists public.outreach_templates (
+  id            uuid        primary key default gen_random_uuid(),
+  name          text        not null,
+  prospect_type text        not null default 'contractor'
+                            check (prospect_type in (
+                              'contractor', 'homeowner', 'real_estate_agent',
+                              'investor_flipper', 'investor_buy_hold', 'other'
+                            )),
+  subject       text        not null,
+  body_html     text,
+  body_text     text,
+  touch_number  int         check (touch_number in (1, 2, 3)),
+  status        text        not null default 'draft'
+                            check (status in ('draft', 'approved', 'paused')),
+  created_by    uuid,
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
+);
+
+create index if not exists idx_outreach_templates_type_status on public.outreach_templates(prospect_type, status);
+create index if not exists idx_outreach_templates_type_touch  on public.outreach_templates(prospect_type, touch_number) where status = 'approved';
+
+-- ============================================================
+-- OUTREACH SEND LOG
+-- Records every email sent by Bob, including the rendered HTML
+-- and plain-text bodies (CAN-SPAM compliance).
+-- ============================================================
+create table if not exists public.outreach_send_log (
+  id                  uuid        primary key default gen_random_uuid(),
+  prospect_id         uuid        not null references public.outreach_prospects(id) on delete cascade,
+  template_id         uuid        references public.outreach_templates(id) on delete set null,
+  rendered_subject    text,
+  rendered_body_html  text,
+  rendered_body_text  text,
+  delivery_status     text        not null default 'sent'
+                                  check (delivery_status in ('sent', 'delivered', 'bounced', 'failed', 'opened', 'clicked')),
+  delivery_events     jsonb       not null default '[]'::jsonb,
+  bob_job_id          text,
+  notes               text,
+  sent_at             timestamptz not null default now(),
+  updated_at          timestamptz,
+  unique (prospect_id)
+);
+
+create index if not exists idx_send_log_prospect        on public.outreach_send_log(prospect_id);
+create index if not exists idx_send_log_template        on public.outreach_send_log(template_id);
+create index if not exists idx_send_log_sent_at         on public.outreach_send_log(sent_at desc);
+create index if not exists idx_send_log_delivery_status on public.outreach_send_log(delivery_status);
+-- Ensure rendered_body_text exists on databases created before this column was added
+alter table public.outreach_send_log add column if not exists rendered_body_text text;
+
+grant all on public.outreach_templates  to service_role;
+grant all on public.outreach_send_log   to service_role;
+grant all on public.outreach_prospects  to service_role;
+
+-- ============================================================
+-- OUTREACH UNSUBSCRIBES
+-- CAN-SPAM / CASL compliance — opt-out and bounce suppression.
+-- ============================================================
+create table if not exists public.outreach_unsubscribes (
+  id               uuid        primary key default gen_random_uuid(),
+  email            text        not null unique,
+  unsubscribed_at  timestamptz not null default now(),
+  source           text        not null default 'email_link'
+                               check (source in ('email_link', 'admin', 'bounce'))
+);
+
+create index if not exists idx_unsubscribes_unsubscribed_at on public.outreach_unsubscribes(unsubscribed_at desc);
+
+grant all on public.outreach_unsubscribes to service_role;
+
 -- Atomic like increment/decrement function
 create or replace function public.increment_post_like(post_id uuid, delta integer)
 returns void
