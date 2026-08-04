@@ -170,6 +170,28 @@ const DELIVERY_EVENT_ICON: Record<string, string> = {
   clicked: '🖱️',
 }
 
+/** Pull the first bounce/failed event and return a human-readable reason string, or null. */
+function extractBounceInfo(events: DeliveryEvent[]): string | null {
+  const ev = events.find(e => e.type === 'bounced' || e.type === 'failed')
+  if (!ev || !ev.metadata) return null
+  const m = ev.metadata
+  const parts: string[] = []
+  if (m.bounce_type) parts.push(String(m.bounce_type))
+  if (m.bounce_code) parts.push(`code ${m.bounce_code}`)
+  if (m.bounce_message && m.bounce_message !== m.bounce_code) parts.push(String(m.bounce_message))
+  if (m.reason && m.reason !== m.bounce_message) parts.push(String(m.reason))
+  if (m.message && m.message !== m.bounce_message && m.message !== m.reason) parts.push(String(m.message))
+  return parts.length ? parts.join(' · ') : null
+}
+
+/** Format a metadata object as readable "key: value" pairs separated by · */
+function formatMetadata(meta: Record<string, unknown>): string {
+  return Object.entries(meta)
+    .filter(([, v]) => v !== null && v !== undefined && v !== '')
+    .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${String(v)}`)
+    .join('  ·  ')
+}
+
 // ─── Shared styles ────────────────────────────────────────────────────────────
 
 const inputStyle: React.CSSProperties = {
@@ -2537,6 +2559,28 @@ function SendLogTab({ authHeaders }: SectionProps) {
                 <span style={{ fontSize: 11, color: '#7c70e8', marginLeft: 4 }}>
                   via {entry.template?.name || 'Unknown template'}
                 </span>
+                {(() => {
+                  const info = extractBounceInfo(entry.delivery_events || [])
+                  return info ? (
+                    <span
+                      style={{
+                        fontSize: 10,
+                        color: '#e05252',
+                        background: '#e0525222',
+                        border: '1px solid #e0525244',
+                        padding: '1px 7px',
+                        borderRadius: 4,
+                        maxWidth: 320,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                      title={info}
+                    >
+                      ⚠ {info}
+                    </span>
+                  ) : null
+                })()}
                 <span
                   style={{
                     fontSize: 11,
@@ -2614,15 +2658,19 @@ function SendLogTab({ authHeaders }: SectionProps) {
                                 {new Date(ev.timestamp).toLocaleString()}
                               </span>
                               {ev.metadata && Object.keys(ev.metadata).length > 0 && (
-                                <span
+                                <div
                                   style={{
                                     fontSize: 10,
-                                    color: 'var(--color-text-muted)',
-                                    marginLeft: 8,
+                                    color: (ev.type === 'bounced' || ev.type === 'failed')
+                                      ? '#e05252'
+                                      : 'var(--color-text-muted)',
+                                    marginTop: 2,
+                                    marginLeft: 0,
+                                    lineHeight: 1.5,
                                   }}
                                 >
-                                  {JSON.stringify(ev.metadata)}
-                                </span>
+                                  {formatMetadata(ev.metadata)}
+                                </div>
                               )}
                             </div>
                           </div>
