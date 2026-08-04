@@ -67,6 +67,16 @@ interface DeliveryEvent {
   metadata?: Record<string, unknown>
 }
 
+interface SendLogStats {
+  total: number
+  sent: number
+  delivered: number
+  opened: number
+  clicked: number
+  bounced: number
+  failed: number
+}
+
 interface SendLogEntry {
   id: string
   prospect_id: string
@@ -2123,6 +2133,7 @@ function TemplatesTab({ authHeaders }: SectionProps) {
 function SendLogTab({ authHeaders }: SectionProps) {
   const [logs, setLogs] = useState<SendLogEntry[]>([])
   const [total, setTotal] = useState(0)
+  const [stats, setStats] = useState<SendLogStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -2139,6 +2150,7 @@ function SendLogTab({ authHeaders }: SectionProps) {
       const data = await res.json()
       setLogs(data.logs || [])
       setTotal(data.total || 0)
+      if (data.stats) setStats(data.stats)
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Failed')
     } finally {
@@ -2152,8 +2164,49 @@ function SendLogTab({ authHeaders }: SectionProps) {
 
   const deliveryStatuses = ['', 'sent', 'delivered', 'opened', 'clicked', 'bounced', 'failed']
 
+  const pct = (n: number) =>
+    stats && stats.total > 0 ? Math.round((n / stats.total) * 100) : 0
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+      {/* ── Delivery stats summary bar ─────────────────────────────── */}
+      {stats && stats.total > 0 && (
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          {[
+            { label: 'Total Sent', value: stats.total.toLocaleString(), color: 'var(--color-text)', sub: null },
+            { label: 'Delivered', value: `${pct(stats.delivered)}%`, color: '#10B981', sub: stats.delivered.toLocaleString() },
+            { label: 'Opened', value: `${pct(stats.opened)}%`, color: '#7c70e8', sub: stats.opened.toLocaleString() },
+            { label: 'Clicked', value: `${pct(stats.clicked)}%`, color: '#3b82f6', sub: stats.clicked.toLocaleString() },
+            { label: 'Bounced', value: `${pct(stats.bounced)}%`, color: '#e05252', sub: stats.bounced.toLocaleString() },
+          ].map(card => (
+            <div
+              key={card.label}
+              style={{
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 8,
+                padding: '12px 18px',
+                minWidth: 100,
+                flex: '1 1 0',
+              }}
+            >
+              <div style={{ fontSize: 22, fontWeight: 800, color: card.color, lineHeight: 1 }}>
+                {card.value}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>
+                {card.label}
+              </div>
+              {card.sub !== null && (
+                <div style={{ fontSize: 10, color: 'var(--color-text-muted)', marginTop: 2, opacity: 0.7 }}>
+                  {card.sub} emails
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         {deliveryStatuses.map(s => (
           <button

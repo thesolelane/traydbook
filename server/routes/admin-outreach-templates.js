@@ -175,9 +175,31 @@ router.get('/send-log', requireServiceKeyOrStaff(['outreach:read']), async (req,
   if (template_id) q = q.eq('template_id', template_id)
   if (delivery_status) q = q.eq('delivery_status', delivery_status)
 
-  const { data, error, count } = await q
+  // Compute aggregate delivery stats (always global, not filtered by delivery_status)
+  let statsQuery = supabaseAdmin
+    .from('outreach_send_log')
+    .select('delivery_status')
+  if (prospect_id) statsQuery = statsQuery.eq('prospect_id', prospect_id)
+  if (template_id) statsQuery = statsQuery.eq('template_id', template_id)
+
+  const [{ data, error, count }, { data: statusRows, error: statsErr }] = await Promise.all([
+    q,
+    statsQuery,
+  ])
+
   if (error) return res.status(500).json({ error: error.message })
-  res.json({ logs: data || [], total: count || 0 })
+
+  // Tally counts per delivery_status
+  const statsCounts = { total: 0, sent: 0, delivered: 0, opened: 0, clicked: 0, bounced: 0, failed: 0 }
+  if (!statsErr && statusRows) {
+    for (const row of statusRows) {
+      statsCounts.total++
+      const s = row.delivery_status
+      if (s in statsCounts) statsCounts[s]++
+    }
+  }
+
+  res.json({ logs: data || [], total: count || 0, stats: statsCounts })
 })
 
 // POST /api/admin/outreach/send-log — Bob writes a send record
