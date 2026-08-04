@@ -10,6 +10,7 @@ interface UserProfile {
   avatar_url: string | null
   account_type: AccountType
   credit_balance: number
+  owner_preferences: Record<string, unknown> | null
   is_delegate?: boolean
   delegate_principal_id?: string | null
 }
@@ -55,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data } = await supabase
       .from('users')
       .select(
-        'id, display_name, handle, avatar_url, account_type, credit_balance, is_delegate, delegate_principal_id'
+        'id, display_name, handle, avatar_url, account_type, credit_balance, owner_preferences, is_delegate, delegate_principal_id'
       )
       .eq('id', userId)
       .single()

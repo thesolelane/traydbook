@@ -10,6 +10,7 @@ import {
   Users,
   Wallet,
   Shield,
+  ClipboardList,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { isSuperAdmin } from '../lib/roles'
@@ -22,6 +23,7 @@ import BillingTab from './settings/BillingTab'
 import VerificationTab from './settings/VerificationTab'
 import AdvancedTab from './settings/AdvancedTab'
 import DangerTab from './settings/DangerTab'
+import PreferencesTab from './settings/PreferencesTab'
 
 type Tab =
   | 'account'
@@ -33,6 +35,7 @@ type Tab =
   | 'team'
   | 'advanced'
   | 'staff'
+  | 'preferences'
 
 interface TabDef {
   id: Tab
@@ -40,6 +43,7 @@ interface TabDef {
   icon: React.ReactNode
   contractorOnly?: boolean
   ownerOnly?: boolean
+  ownerOrHomeownerOnly?: boolean
   adminOnly?: boolean
 }
 
@@ -47,6 +51,8 @@ export default function Settings() {
   const { profile, session } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const isContractor = profile?.account_type === 'contractor'
+  const isOwnerOrHomeowner =
+    profile?.account_type === 'project_owner' || profile?.account_type === 'homeowner'
   const isSuperAdminUser = isSuperAdmin(profile?.account_type)
 
   const rawTab = searchParams.get('tab') as Tab | null
@@ -75,6 +81,12 @@ export default function Settings() {
     },
     { id: 'advanced', label: 'Advanced', icon: <Wallet size={15} />, contractorOnly: true },
     { id: 'team', label: 'Team', icon: <Users size={15} />, ownerOnly: true },
+    {
+      id: 'preferences',
+      label: 'Project Preferences',
+      icon: <ClipboardList size={15} />,
+      ownerOrHomeownerOnly: true,
+    },
     { id: 'staff', label: 'Staff', icon: <Shield size={15} />, adminOnly: true },
     { id: 'danger', label: 'Danger Zone', icon: <Trash2 size={15} /> },
   ]
@@ -82,6 +94,7 @@ export default function Settings() {
   const visibleTabs = TABS.filter(t => {
     if (t.contractorOnly && !isContractor) return false
     if (t.ownerOnly && isContractor) return false
+    if (t.ownerOrHomeownerOnly && !isOwnerOrHomeowner) return false
     if (t.adminOnly && !isSuperAdminUser) return false
     return true
   })
@@ -230,6 +243,7 @@ export default function Settings() {
                 />
               </div>
             )}
+            {activeTab === 'preferences' && isOwnerOrHomeowner && <PreferencesTab />}
             {activeTab === 'danger' && <DangerTab />}
           </div>
         </div>
