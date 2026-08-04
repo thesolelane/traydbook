@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react'
+import { useState, useRef, FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -148,6 +148,44 @@ export default function Onboarding() {
   const [serviceRadius, setServiceRadius] = useState('50')
   const [bio, setBio] = useState('')
 
+  // Avatar upload
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const [avatarError, setAvatarError] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const MAX_AVATAR_SIZE = 5 * 1024 * 1024
+
+  function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setAvatarError('')
+    if (!file.type.startsWith('image/')) {
+      setAvatarError('Invalid file type — please upload an image (JPG, PNG, GIF, etc).')
+      e.target.value = ''
+      return
+    }
+    if (file.size > MAX_AVATAR_SIZE) {
+      setAvatarError('File too large — max 5 MB.')
+      e.target.value = ''
+      return
+    }
+    setAvatarFile(file)
+    setAvatarPreview(URL.createObjectURL(file))
+  }
+
+  async function uploadAvatar(uid: string): Promise<string | null> {
+    if (!avatarFile) return null
+    const ext = avatarFile.name.split('.').pop() ?? 'jpg'
+    const path = `${uid}.${ext}`
+    const { error } = await supabase.storage
+      .from('avatars')
+      .upload(path, avatarFile, { upsert: true, contentType: avatarFile.type })
+    if (error) return null
+    const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+    return data.publicUrl
+  }
+
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -178,6 +216,8 @@ export default function Onboarding() {
     setError('')
 
     try {
+      const avatarUrl = await uploadAvatar(user.id)
+
       const headers = await getAuthHeaders()
       const res = await fetch('/api/onboarding/complete', {
         method: 'POST',
@@ -192,6 +232,7 @@ export default function Onboarding() {
           years_experience: yearsExperience ? parseInt(yearsExperience) : null,
           service_radius_miles: serviceRadius ? parseInt(serviceRadius) : null,
           bio: bio.trim() || null,
+          avatar_url: avatarUrl || null,
         }),
       })
 
@@ -388,6 +429,59 @@ export default function Onboarding() {
               onSubmit={handleSubmit}
               style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
             >
+              <div className="form-group">
+                <label className="form-label">Profile Photo (optional)</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div
+                    style={{
+                      width: 64,
+                      height: 64,
+                      borderRadius: '50%',
+                      background: 'var(--color-surface-2)',
+                      border: '1.5px solid var(--color-border)',
+                      overflow: 'hidden',
+                      flexShrink: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 26,
+                    }}
+                  >
+                    {avatarPreview ? (
+                      <img
+                        src={avatarPreview}
+                        alt="Avatar preview"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      '📷'
+                    )}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                      onChange={handleAvatarChange}
+                    />
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      style={{ fontSize: 13, padding: '6px 14px' }}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      {avatarPreview ? 'Change photo' : 'Upload photo'}
+                    </button>
+                    {avatarError && (
+                      <p style={{ color: '#ef4444', fontSize: 12, margin: '4px 0 0' }}>
+                        {avatarError}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div className="form-group">
                 <label className="form-label">Business Name</label>
                 <input

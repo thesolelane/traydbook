@@ -50,6 +50,7 @@ router.post('/api/onboarding/complete', onboardingLimiter, requireAuth, async (r
     years_experience,
     service_radius_miles,
     bio,
+    avatar_url,
     referral_code_used, // optional — code from the referrer's link
   } = req.body
   const userId = req.user.id
@@ -103,6 +104,7 @@ router.post('/api/onboarding/complete', onboardingLimiter, requireAuth, async (r
     credit_balance: welcomeCredits,
     onboarding_complete: true,
     referral_code: referralCode,
+    avatar_url: avatar_url || null,
   })
 
   if (userErr) {
