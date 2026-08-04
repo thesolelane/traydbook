@@ -13,9 +13,9 @@
  */
 
 import { Router } from 'express'
-import { createHmac, timingSafeEqual } from 'crypto'
 import express from 'express'
 import { supabaseAdmin } from '../lib/clients.js'
+import { verifySvixSignature } from '../lib/svix-verify.js'
 
 const router = Router()
 
@@ -58,56 +58,6 @@ export function normaliseEvent(resendType) {
       return null
   }
 }
-
-// ── Svix signature verification ───────────────────────────────────────────────
-// Spec: https://docs.svix.com/receiving/verifying-payloads/how
-//
-// Secret format: "whsec_<base64>" — decode to raw bytes before use.
-// Signed content: "{svix-id}.{svix-timestamp}.{raw-body}"
-// Header: svix-signature = "v1,<base64sig1> v1,<base64sig2> ..."
-function verifySvixSignature(rawBody, headers, secret) {
-  if (!secret) return false
-
-  const msgId = headers['svix-id']
-  const msgTimestamp = headers['svix-timestamp']
-  const msgSignature = headers['svix-signature']
-
-  if (!msgId || !msgTimestamp || !msgSignature) return false
-
-  // Reject replays older than 5 minutes
-  const ts = parseInt(msgTimestamp, 10)
-  if (isNaN(ts) || Math.abs(Date.now() / 1000 - ts) > 300) return false
-
-  // Decode secret (strip "whsec_" prefix if present)
-  const secretBase64 = secret.startsWith('whsec_') ? secret.slice(6) : secret
-  let secretBytes
-  try {
-    secretBytes = Buffer.from(secretBase64, 'base64')
-  } catch {
-    return false
-  }
-
-  const toSign = `${msgId}.${msgTimestamp}.${rawBody}`
-  const computed = createHmac('sha256', secretBytes).update(toSign).digest('base64')
-
-  // svix-signature may contain multiple space-separated "v1,<sig>" tokens
-  const candidates = msgSignature.split(' ')
-  for (const candidate of candidates) {
-    const [version, sig] = candidate.split(',')
-    if (version !== 'v1' || !sig) continue
-    try {
-      if (timingSafeEqual(Buffer.from(sig, 'base64'), Buffer.from(computed, 'base64'))) {
-        return true
-      }
-    } catch {
-      // buffer lengths differ — not a match
-    }
-  }
-
-  return false
-}
-
-// ── Auto-suppress bounced address ─────────────────────────────────────────────
 async function suppressBounce(prospectId) {
   if (!prospectId) return
 
@@ -232,27 +182,21 @@ router.post(
     }
 
     // Idempotency: discard duplicate deliveries from Svix retries
-    const svixMessageId = req.headers['svix-id'] ?? null
+    const svixMessageId  = req.headers['svix-id'] ?? null
     const existingEvents = logRow.delivery_events || []
+    const eventTimestamp = data.created_at ?? null
 
     if (svixMessageId) {
-      const alreadySeen = existingEvents.some(
-        (e) =>
-          e.type === eventType &&
-          e.timestamp === eventTimestamp &&
-          (e.metadata?.email_id ?? null) === resendEmailId
-      )
+      // Svix guarantees a unique message-id per delivery attempt; use it directly.
+      const alreadySeen = existingEvents.some((e) => e.svix_id === svixMessageId)
       if (alreadySeen) {
-        console.log(
-          `[email-webhook] Duplicate svix-id=${svixMessageId} — discarding`
-        )
+        console.log(`[email-webhook] Duplicate svix-id=${svixMessageId} — discarding`)
         return res.status(200).json({ ok: true, duplicate: true })
       }
     } else {
       // Secondary guard for events that arrive without a svix-id (e.g. non-Svix paths).
       // Deduplicate on (event type + timestamp + email_id) so a replayed payload
       // can't inflate open/click counts even when the idempotency header is absent.
-      const eventTimestamp = data.created_at ?? null
       const alreadySeen = existingEvents.some(
         (e) =>
           e.type === eventType &&
