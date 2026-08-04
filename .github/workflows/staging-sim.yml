@@ -1,0 +1,55 @@
+name: Staging Simulation
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      app_url:
+        description: "Override SIM_APP_URL (leave blank to use the secret)"
+        required: false
+        default: ""
+
+jobs:
+  simulate:
+    name: Run post-deploy simulation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Wait for Coolify to redeploy
+        if: github.event_name == 'push'
+        run: |
+          echo "Waiting 3 minutes for Coolify to finish deploying..."
+          sleep 180
+
+      - name: Run simulation
+        env:
+          SIM_APP_URL:        ${{ github.event.inputs.app_url || secrets.SIM_APP_URL }}
+          SIM_SB_URL:         ${{ secrets.SIM_SB_URL }}
+          SIM_SB_ANON_KEY:    ${{ secrets.SIM_SB_ANON_KEY }}
+          SIM_SB_SERVICE_KEY: ${{ secrets.SIM_SB_SERVICE_KEY }}
+          NODE_TLS_REJECT_UNAUTHORIZED: "0"
+        run: node scripts/simulate.mjs
+
+      - name: Notify Slack on failure
+        if: failure() && secrets.SIM_SLACK_WEBHOOK != ''
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SIM_SLACK_WEBHOOK }}
+          COMMIT_SHA:    ${{ github.sha }}
+          RUN_URL:       ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          curl -s -X POST "$SLACK_WEBHOOK" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"text\": \"❌ *TraydBook staging simulation failed* after deploy of \`${COMMIT_SHA:0:7}\`.\nCheck the run for details: ${RUN_URL}\"
+            }"
