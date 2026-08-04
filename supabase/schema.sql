@@ -5,6 +5,89 @@
 create extension if not exists "uuid-ossp";
 
 -- ============================================================
+-- LIVE-DB ENUM TYPES
+-- These enum types exist in the live database and must be
+-- created before any table that references them.
+-- Using DO blocks so this file is idempotent (safe to re-run).
+--
+--   account_type:
+--     contractor, project_owner, homeowner, real_estate_agent,
+--     design_professional, investor, brokerage, admin
+--
+--   transaction_type:
+--     purchase, post_rfq, post_job, send_message,
+--     request_contact, boost_listing, repost_listing,
+--     verification_fee, refund, admin_adjustment
+--
+--   notification_type:
+--     connection_request, connection_accepted, post_liked,
+--     post_commented, bid_received, bid_awarded, bid_not_awarded,
+--     job_application, rfq_closing_soon, credential_expiring,
+--     referral_received, safety_alert, message_received,
+--     credits_added, profile_viewed
+--
+--   post_type:
+--     project_update, job_post, bid_post, trade_tip,
+--     safety_alert, referral, story
+--
+--   bid_status:
+--     pending, under_review, awarded, not_awarded
+--
+--   purchase_status:
+--     pending, completed, failed, held
+-- ============================================================
+
+do $$ begin
+  create type account_type as enum (
+    'contractor', 'project_owner', 'homeowner', 'real_estate_agent',
+    'design_professional', 'investor', 'brokerage', 'admin'
+  );
+exception when duplicate_object then null;
+end $$;
+
+do $$ begin
+  create type transaction_type as enum (
+    'purchase', 'post_rfq', 'post_job', 'send_message',
+    'request_contact', 'boost_listing', 'repost_listing',
+    'verification_fee', 'refund', 'admin_adjustment'
+  );
+exception when duplicate_object then null;
+end $$;
+
+do $$ begin
+  create type notification_type as enum (
+    'connection_request', 'connection_accepted', 'post_liked',
+    'post_commented', 'bid_received', 'bid_awarded', 'bid_not_awarded',
+    'job_application', 'rfq_closing_soon', 'credential_expiring',
+    'referral_received', 'safety_alert', 'message_received',
+    'credits_added', 'profile_viewed'
+  );
+exception when duplicate_object then null;
+end $$;
+
+do $$ begin
+  create type post_type as enum (
+    'project_update', 'job_post', 'bid_post', 'trade_tip',
+    'safety_alert', 'referral', 'story'
+  );
+exception when duplicate_object then null;
+end $$;
+
+do $$ begin
+  create type bid_status as enum (
+    'pending', 'under_review', 'awarded', 'not_awarded'
+  );
+exception when duplicate_object then null;
+end $$;
+
+do $$ begin
+  create type purchase_status as enum (
+    'pending', 'completed', 'failed', 'held'
+  );
+exception when duplicate_object then null;
+end $$;
+
+-- ============================================================
 -- USERS
 -- ============================================================
 create table if not exists public.users (
@@ -178,7 +261,7 @@ create policy "Vouchers can delete own vouches" on public.vouches
 create table if not exists public.posts (
   id             uuid primary key default uuid_generate_v4(),
   author_id      uuid not null references public.users(id) on delete cascade,
-  post_type      text not null check (post_type in ('project_update','job_post','bid_post','trade_tip','safety_alert','referral','story')),
+  post_type      post_type not null,
   body           text not null,
   media_urls     text[] not null default '{}',
   hashtags       text[] not null default '{}',
@@ -330,7 +413,7 @@ create table if not exists public.bids (
   timeline_weeks integer,
   cover_note     text,
   document_url   text,
-  status         text not null default 'pending' check (status in ('pending','under_review','awarded','not_awarded')),
+  status         bid_status not null default 'pending',
   submitted_at   timestamptz not null default now(),
   unique(rfq_id, bidder_id)
 );
@@ -379,8 +462,7 @@ create policy "Recipients can mark read" on public.messages
 create table if not exists public.notifications (
   id          uuid primary key default uuid_generate_v4(),
   user_id     uuid not null references public.users(id) on delete cascade,
-  type        text not null,
-  title       text not null,
+  type        notification_type not null,
   body        text not null,
   entity_id   uuid,
   entity_type text,
@@ -421,7 +503,7 @@ create table if not exists public.credit_ledger (
   user_id          uuid not null references public.users(id) on delete cascade,
   delta            integer not null,
   balance_after    integer not null,
-  transaction_type text not null check (transaction_type in ('purchase','spend','refund')),
+  transaction_type transaction_type not null,
   description      text not null,
   created_at       timestamptz not null default now()
 );
@@ -440,7 +522,7 @@ create table if not exists public.purchases (
   stripe_session_id text not null unique,  -- UNIQUE ensures one row per Stripe session
   credits           integer not null,
   amount_cents      integer not null,
-  status            text not null default 'pending' check (status in ('pending','completed','failed','held')),
+  status            purchase_status not null default 'pending',
   created_at        timestamptz not null default now()
 );
 
@@ -513,11 +595,10 @@ begin
     'Purchased ' || p_credits || ' credits (' || p_bundle_id || ' bundle)'
   );
 
-  insert into public.notifications (user_id, type, title, body, entity_type)
+  insert into public.notifications (user_id, type, body, entity_type)
   values (
     p_user_id,
     'credits_added',
-    'Credits added!',
     p_credits || ' credits have been added to your account.',
     'credit_purchase'
   );
@@ -736,7 +817,7 @@ begin
     end if;
 
     insert into public.credit_ledger (user_id, delta, balance_after, transaction_type, description)
-    values (auth.uid(), -v_rfq_cost, v_new_balance, 'spend', 'Posted RFQ: ' || p_title);
+    values (auth.uid(), -v_rfq_cost, v_new_balance, 'post_rfq', 'Posted RFQ: ' || p_title);
   end if;
 
   -- Optionally share a bid_post to feed
@@ -821,11 +902,10 @@ begin
   returning id into v_bid_id;
 
   -- Notify poster — bypasses notification RLS intentionally via security definer
-  insert into public.notifications (user_id, type, title, body, entity_id, entity_type)
+  insert into public.notifications (user_id, type, body, entity_id, entity_type)
   values (
     v_poster_id,
-    'new_bid',
-    'New bid received',
+    'bid_received',
     coalesce(v_bidder_name, 'A contractor') || ' submitted a bid of $' ||
       round(p_amount)::text || ' on "' || v_rfq_title || '"',
     p_rfq_id,
@@ -894,11 +974,10 @@ begin
   update public.rfqs set status = 'awarded', awarded_to = v_bidder_id where id = p_rfq_id;
 
   -- Notify the winning bidder
-  insert into public.notifications (user_id, type, title, body, entity_id, entity_type)
+  insert into public.notifications (user_id, type, body, entity_id, entity_type)
   values (
     v_bidder_id,
     'bid_awarded',
-    'Your bid was awarded!',
     'Congratulations — your bid has been selected for this project.',
     p_rfq_id,
     'rfq'
@@ -975,7 +1054,7 @@ begin
     end if;
 
     insert into public.credit_ledger (user_id, delta, balance_after, transaction_type, description)
-    values (auth.uid(), -v_job_cost, v_new_balance, 'spend', 'Posted Job: ' || p_title);
+    values (auth.uid(), -v_job_cost, v_new_balance, 'post_job', 'Posted Job: ' || p_title);
   end if;
 
   -- Optionally share to feed with linked_job_id for detail navigation
@@ -1126,7 +1205,7 @@ begin
       end if;
 
       insert into public.credit_ledger (user_id, delta, balance_after, transaction_type, description)
-      values (auth.uid(), -v_cold_msg_cost, v_new_balance, 'spend', 'Cold message to contractor');
+      values (auth.uid(), -v_cold_msg_cost, v_new_balance, 'send_message', 'Cold message to contractor');
     end if;
   end if;
 
@@ -1138,11 +1217,10 @@ begin
   -- Notify recipient
   -- entity_id = sender's user_id (so frontend can identify the conversation partner)
   -- entity_type = 'thread:<canonical_thread_id>' (so frontend can navigate to the thread)
-  insert into public.notifications (user_id, type, title, body, entity_id, entity_type)
+  insert into public.notifications (user_id, type, body, entity_id, entity_type)
   values (
     p_recipient_id,
     'message_received',
-    'New message',
     left(trim(p_body), 100),
     auth.uid(),
     'thread:' || v_canonical_thread_id
