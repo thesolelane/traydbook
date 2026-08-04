@@ -341,20 +341,6 @@ export default function SignupOwner() {
       if (profileError) throw new Error(profileError.message)
       clearReferral()
 
-      // Save signup preferences — non-fatal: column added via migration
-      // supabase/migrations/20260803_owner_preferences.sql
-      if (projectType || budgetRange || timeline || tradesNeeded.length > 0) {
-        await supabase.from('users').update({
-          owner_preferences: {
-            project_type: projectType || null,
-            budget_range: budgetRange || null,
-            timeline: timeline || null,
-            trades_needed: tradesNeeded.length > 0 ? tradesNeeded : null,
-          },
-        }).eq('id', uid)
-        // Ignore error — column may not exist until migration is applied
-      }
-
       await supabase.from('credit_ledger').insert({
         user_id: uid,
         delta: 50,
