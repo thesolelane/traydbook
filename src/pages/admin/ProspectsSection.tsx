@@ -2201,6 +2201,7 @@ function SendLogTab({ authHeaders }: SectionProps) {
   const [total, setTotal] = useState(0)
   const [stats, setStats] = useState<SendLogStats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [err, setErr] = useState('')
   const [expanded, setExpanded] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState('')
@@ -2216,24 +2217,27 @@ function SendLogTab({ authHeaders }: SectionProps) {
       }
     : (dateRangeFromPreset(datePreset) ?? { sentAfter: '', sentBefore: '' })
 
+  // Build shared query params for the current filter state
+  const buildParams = useCallback((offset: number) => {
+    const range = datePreset === 'custom'
+      ? {
+          sentAfter: customFrom ? new Date(customFrom).toISOString() : '',
+          sentBefore: customTo ? new Date(customTo + 'T23:59:59').toISOString() : '',
+        }
+      : (dateRangeFromPreset(datePreset) ?? { sentAfter: '', sentBefore: '' })
+
+    const params = new URLSearchParams({ limit: '100', offset: String(offset) })
+    if (statusFilter) params.set('delivery_status', statusFilter)
+    if (range.sentAfter) params.set('sent_after', range.sentAfter)
+    if (range.sentBefore) params.set('sent_before', range.sentBefore)
+    return params
+  }, [statusFilter, datePreset, customFrom, customTo])
+
   const load = useCallback(async () => {
     setLoading(true)
     setErr('')
     try {
-      const params = new URLSearchParams({ limit: '100' })
-      if (statusFilter) params.set('delivery_status', statusFilter)
-
-      // Date range — recompute inside callback so it always reflects the latest state
-      const range = datePreset === 'custom'
-        ? {
-            sentAfter: customFrom ? new Date(customFrom).toISOString() : '',
-            sentBefore: customTo ? new Date(customTo + 'T23:59:59').toISOString() : '',
-          }
-        : (dateRangeFromPreset(datePreset) ?? { sentAfter: '', sentBefore: '' })
-
-      if (range.sentAfter) params.set('sent_after', range.sentAfter)
-      if (range.sentBefore) params.set('sent_before', range.sentBefore)
-
+      const params = buildParams(0)
       const res = await fetch(`/api/admin/outreach/send-log?${params}`, { headers: authHeaders() })
       if (!res.ok) throw new Error('Failed to load send log')
       const data = await res.json()
@@ -2245,7 +2249,23 @@ function SendLogTab({ authHeaders }: SectionProps) {
     } finally {
       setLoading(false)
     }
-  }, [statusFilter, datePreset, customFrom, customTo])
+  }, [buildParams])
+
+  const loadMore = useCallback(async (currentCount: number) => {
+    setLoadingMore(true)
+    try {
+      const params = buildParams(currentCount)
+      const res = await fetch(`/api/admin/outreach/send-log?${params}`, { headers: authHeaders() })
+      if (!res.ok) throw new Error('Failed to load more entries')
+      const data = await res.json()
+      setLogs(prev => [...prev, ...(data.logs || [])])
+      setTotal(data.total || 0)
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Failed to load more')
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [buildParams])
 
   useEffect(() => {
     void load()
@@ -2425,7 +2445,7 @@ function SendLogTab({ authHeaders }: SectionProps) {
 
       {total > 0 && (
         <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-          {total.toLocaleString()} emails
+          Showing {logs.length.toLocaleString()} of {total.toLocaleString()} emails
           {derivedRange.sentAfter || derivedRange.sentBefore
             ? ' in selected range'
             : ' sent total'}
@@ -2635,6 +2655,33 @@ function SendLogTab({ authHeaders }: SectionProps) {
               )}
             </div>
           ))}
+
+          {/* ── Load more ─────────────────────────────────────────────── */}
+          {total > logs.length && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, paddingTop: 8 }}>
+              <button
+                onClick={() => void loadMore(logs.length)}
+                disabled={loadingMore}
+                style={{
+                  padding: '8px 24px',
+                  borderRadius: 8,
+                  border: '1px solid var(--color-border)',
+                  background: 'var(--color-surface)',
+                  color: loadingMore ? 'var(--color-text-muted)' : 'var(--color-text)',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: loadingMore ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  opacity: loadingMore ? 0.7 : 1,
+                }}
+              >
+                {loadingMore ? <RefreshCw size={13} className="spin" /> : null}
+                {loadingMore ? 'Loading…' : `Load more (${(total - logs.length).toLocaleString()} remaining)`}
+              </button>
+            </div>
+          )}
         </div>
       )}
 
