@@ -67,18 +67,20 @@ async function suppressBounce(prospectId) {
     .eq('id', prospectId)
     .single()
 
-  if (!prospect?.email_found) return
-
-  const email = prospect.email_found.toLowerCase()
-
-  const { error: upsertErr } = await supabaseAdmin
-    .from('outreach_unsubscribes')
-    .upsert(
-      { email, source: 'bounce', unsubscribed_at: new Date().toISOString() },
-      { onConflict: 'email' }
-    )
-  if (upsertErr) {
-    console.warn('[email-webhook] Failed to suppress bounced email:', upsertErr.message)
+  // Suppress the email address only when we have it — but always mark the
+  // prospect as bounced regardless, so both paths stay consistent with the
+  // admin send-log PATCH route which does the same separation.
+  if (prospect?.email_found) {
+    const email = prospect.email_found.toLowerCase()
+    const { error: upsertErr } = await supabaseAdmin
+      .from('outreach_unsubscribes')
+      .upsert(
+        { email, source: 'bounce', unsubscribed_at: new Date().toISOString() },
+        { onConflict: 'email' }
+      )
+    if (upsertErr) {
+      console.warn('[email-webhook] Failed to suppress bounced email:', upsertErr.message)
+    }
   }
 
   const { error: prospectErr } = await supabaseAdmin
