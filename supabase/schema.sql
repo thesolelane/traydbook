@@ -38,6 +38,8 @@ alter table public.users add column if not exists sms_count_this_period integer 
 alter table public.users add column if not exists sms_otp_hash          text;
 alter table public.users add column if not exists sms_otp_expires_at    timestamptz;
 alter table public.users add column if not exists stripe_sms_sub_id     text;
+-- Owner/homeowner/agent signup preferences (project type, budget, timeline, trades needed)
+alter table public.users add column if not exists owner_preferences     jsonb;
 
 alter table public.users enable row level security;
 
