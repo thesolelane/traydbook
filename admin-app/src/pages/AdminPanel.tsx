@@ -282,17 +282,28 @@ export default function AdminPanel({ session }: Props) {
             </div>
           </div>
 
-          {NAV_GROUPS.map((group, gi) => (
-            <div key={group.label} style={{ marginTop: gi === 0 ? 0 : 16 }}>
+          {NAV_GROUPS.map((group, gi) => {
+            const groupActive = group.items.some(item => item.id === section)
+            return (
+            <div
+              key={group.label}
+              style={{
+                marginTop: gi === 0 ? 0 : 16,
+                borderLeft: groupActive ? '3px solid var(--color-brand)' : '3px solid transparent',
+                transition: 'border-color 0.15s',
+              }}
+            >
               <div
                 style={{
                   padding: '0 20px 6px',
+                  paddingLeft: groupActive ? 17 : 20,
                   fontSize: 10,
                   fontWeight: 700,
                   letterSpacing: '0.08em',
                   textTransform: 'uppercase',
-                  color: 'var(--color-text-light)',
+                  color: groupActive ? 'var(--color-brand)' : 'var(--color-text-light)',
                   fontFamily: 'var(--font-condensed)',
+                  transition: 'color 0.15s',
                 }}
               >
                 {group.label}
@@ -333,7 +344,8 @@ export default function AdminPanel({ session }: Props) {
                 </button>
               ))}
             </div>
-          ))}
+          )
+          })}
 
           <div style={{ marginTop: 'auto', padding: '16px 12px 0' }}>
             <button
