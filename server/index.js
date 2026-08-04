@@ -29,6 +29,7 @@ import adminReferralsRoutes from './routes/admin-referrals.js'
 import prospectsRoutes from './routes/admin-prospects.js'
 import outreachTemplatesRoutes from './routes/admin-outreach-templates.js'
 import outreachUnsubscribeRoutes from './routes/outreach-unsubscribe.js'
+import emailDeliveryWebhookRoutes from './routes/webhooks-email-delivery.js'
 import { logError, loadLogFromDisk } from './lib/errorLog.js'
 
 const app = express()
@@ -37,7 +38,10 @@ const app = express()
 // client IP rather than the proxy address. Required for IP-based rate limiting.
 app.set('trust proxy', 1)
 
+// Raw-body routes must be registered before express.json() so their own
+// body-parser middleware (express.raw) applies instead of the global one.
 app.use(stripeRoutes)
+app.use(emailDeliveryWebhookRoutes)
 
 // Health check for Coolify / load balancers
 app.get('/healthz', (_req, res) => res.json({ ok: true }))
