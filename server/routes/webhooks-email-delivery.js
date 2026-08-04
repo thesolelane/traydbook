@@ -229,10 +229,24 @@ router.post(
       return res.status(200).json({ ok: true, matched: false })
     }
 
+    // Idempotency: discard duplicate deliveries from Svix retries
+    const svixMessageId = req.headers['svix-id'] ?? null
+    if (svixMessageId) {
+      const existingEvents = logRow.delivery_events || []
+      const alreadySeen = existingEvents.some((e) => e.svix_id === svixMessageId)
+      if (alreadySeen) {
+        console.log(
+          `[email-webhook] Duplicate svix-id=${svixMessageId} — discarding`
+        )
+        return res.status(200).json({ ok: true, duplicate: true })
+      }
+    }
+
     // Build the event entry for the delivery_events log
     const newEvent = {
       type: eventType,             // store the raw provider event type
       timestamp: data.created_at ?? new Date().toISOString(),
+      ...(svixMessageId ? { svix_id: svixMessageId } : {}),
       metadata: {
         ...(resendEmailId ? { email_id: resendEmailId } : {}),
         ...(data.click?.link ? { link: data.click.link } : {}),
