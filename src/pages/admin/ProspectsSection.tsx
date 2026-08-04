@@ -17,6 +17,7 @@ import {
   UserCheck,
 } from 'lucide-react'
 import { SectionProps } from './shared'
+import { dateRangeFromPreset, buildCustomRange } from '../../utils/sendLogDateRange'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -2182,20 +2183,6 @@ function TemplatesTab({ authHeaders }: SectionProps) {
     </div>
   )
 }
-
-// ─── Send Log tab ─────────────────────────────────────────────────────────────
-
-// Helper: compute sent_after / sent_before from a preset string
-function dateRangeFromPreset(preset: string): { sentAfter: string; sentBefore: string } | null {
-  if (preset === 'custom' || preset === '') return null
-  const now = new Date()
-  const days = preset === '7d' ? 7 : preset === '30d' ? 30 : preset === '90d' ? 90 : null
-  if (!days) return null
-  const after = new Date(now)
-  after.setDate(after.getDate() - days)
-  return { sentAfter: after.toISOString(), sentBefore: now.toISOString() }
-}
-
 function SendLogTab({ authHeaders }: SectionProps) {
   const [logs, setLogs] = useState<SendLogEntry[]>([])
   const [total, setTotal] = useState(0)
@@ -2210,20 +2197,17 @@ function SendLogTab({ authHeaders }: SectionProps) {
   const [customTo, setCustomTo] = useState('')
 
   // Derive the ISO range to send to the API
+  const customRangeResult = datePreset === 'custom' ? buildCustomRange(customFrom, customTo) : null
   const derivedRange = datePreset === 'custom'
-    ? {
-        sentAfter: customFrom ? new Date(customFrom).toISOString() : '',
-        sentBefore: customTo ? new Date(customTo + 'T23:59:59').toISOString() : '',
-      }
+    ? (customRangeResult?.range ?? { sentAfter: '', sentBefore: '' })
     : (dateRangeFromPreset(datePreset) ?? { sentAfter: '', sentBefore: '' })
+  const isReversedRange = customRangeResult?.reversed ?? false
 
   // Build shared query params for the current filter state
   const buildParams = useCallback((offset: number) => {
+    const customResult = datePreset === 'custom' ? buildCustomRange(customFrom, customTo) : null
     const range = datePreset === 'custom'
-      ? {
-          sentAfter: customFrom ? new Date(customFrom).toISOString() : '',
-          sentBefore: customTo ? new Date(customTo + 'T23:59:59').toISOString() : '',
-        }
+      ? (customResult?.range ?? { sentAfter: '', sentBefore: '' })
       : (dateRangeFromPreset(datePreset) ?? { sentAfter: '', sentBefore: '' })
 
     const params = new URLSearchParams({ limit: '100', offset: String(offset) })
@@ -2234,6 +2218,11 @@ function SendLogTab({ authHeaders }: SectionProps) {
   }, [statusFilter, datePreset, customFrom, customTo])
 
   const load = useCallback(async () => {
+    // Skip the fetch if the custom range is reversed — no results would come back anyway
+    if (datePreset === 'custom' && customRangeResult?.reversed) {
+      setLoading(false)
+      return
+    }
     setLoading(true)
     setErr('')
     try {
@@ -2249,7 +2238,7 @@ function SendLogTab({ authHeaders }: SectionProps) {
     } finally {
       setLoading(false)
     }
-  }, [buildParams])
+  }, [buildParams, datePreset, customRangeResult?.reversed])
 
   const loadMore = useCallback(async (currentCount: number) => {
     setLoadingMore(true)
@@ -2289,38 +2278,48 @@ function SendLogTab({ authHeaders }: SectionProps) {
 
       {/* ── Delivery stats summary bar ─────────────────────────────── */}
       {stats && stats.total > 0 && (
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          {[
-            { label: 'Total Sent', value: stats.total.toLocaleString(), color: 'var(--color-text)', sub: null },
-            { label: 'Delivered', value: `${pct(stats.delivered)}%`, color: '#10B981', sub: stats.delivered.toLocaleString() },
-            { label: 'Opened', value: `${pct(stats.opened)}%`, color: '#7c70e8', sub: stats.opened.toLocaleString() },
-            { label: 'Clicked', value: `${pct(stats.clicked)}%`, color: '#3b82f6', sub: stats.clicked.toLocaleString() },
-            { label: 'Bounced', value: `${pct(stats.bounced)}%`, color: '#e05252', sub: stats.bounced.toLocaleString() },
-          ].map(card => (
-            <div
-              key={card.label}
-              style={{
-                background: 'var(--color-surface)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 8,
-                padding: '12px 18px',
-                minWidth: 100,
-                flex: '1 1 0',
-              }}
-            >
-              <div style={{ fontSize: 22, fontWeight: 800, color: card.color, lineHeight: 1 }}>
-                {card.value}
-              </div>
-              <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>
-                {card.label}
-              </div>
-              {card.sub !== null && (
-                <div style={{ fontSize: 10, color: 'var(--color-text-muted)', marginTop: 2, opacity: 0.7 }}>
-                  {card.sub} emails
+        <div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            {[
+              { label: 'Total Sent', value: stats.total.toLocaleString(), color: 'var(--color-text)', sub: null },
+              { label: 'Delivered', value: `${pct(stats.delivered)}%`, color: '#10B981', sub: stats.delivered.toLocaleString() },
+              { label: 'Opened', value: `${pct(stats.opened)}%`, color: '#7c70e8', sub: stats.opened.toLocaleString() },
+              { label: 'Clicked', value: `${pct(stats.clicked)}%`, color: '#3b82f6', sub: stats.clicked.toLocaleString() },
+              { label: 'Bounced', value: `${pct(stats.bounced)}%`, color: '#e05252', sub: stats.bounced.toLocaleString() },
+            ].map(card => (
+              <div
+                key={card.label}
+                style={{
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 8,
+                  padding: '12px 18px',
+                  minWidth: 100,
+                  flex: '1 1 0',
+                }}
+              >
+                <div style={{ fontSize: 22, fontWeight: 800, color: card.color, lineHeight: 1 }}>
+                  {card.value}
                 </div>
-              )}
+                <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>
+                  {card.label}
+                </div>
+                {card.sub !== null && (
+                  <div style={{ fontSize: 10, color: 'var(--color-text-muted)', marginTop: 2, opacity: 0.7 }}>
+                    {card.sub} emails
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          {/* Clarify that stats are date-scoped only — not filtered by delivery status */}
+          {statusFilter && (
+            <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 6, fontStyle: 'italic' }}>
+              Stats show all delivery statuses
+              {derivedRange.sentAfter || derivedRange.sentBefore ? ' within the selected date range' : ''}.
+              The status filter below applies only to the log list.
             </div>
-          ))}
+          )}
         </div>
       )}
 
@@ -2354,43 +2353,50 @@ function SendLogTab({ authHeaders }: SectionProps) {
 
       {/* Custom date inputs */}
       {datePreset === 'custom' && (
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <label style={{ fontSize: 12, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
-              From
-            </label>
-            <input
-              type="date"
-              value={customFrom}
-              onChange={e => setCustomFrom(e.target.value)}
-              style={{
-                padding: '5px 10px',
-                borderRadius: 6,
-                border: '1px solid var(--color-border)',
-                background: 'var(--color-surface)',
-                color: 'var(--color-text)',
-                fontSize: 12,
-              }}
-            />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <label style={{ fontSize: 12, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
+                From
+              </label>
+              <input
+                type="date"
+                value={customFrom}
+                onChange={e => setCustomFrom(e.target.value)}
+                style={{
+                  padding: '5px 10px',
+                  borderRadius: 6,
+                  border: isReversedRange ? '1px solid #e05252' : '1px solid var(--color-border)',
+                  background: 'var(--color-surface)',
+                  color: 'var(--color-text)',
+                  fontSize: 12,
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <label style={{ fontSize: 12, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
+                To
+              </label>
+              <input
+                type="date"
+                value={customTo}
+                onChange={e => setCustomTo(e.target.value)}
+                style={{
+                  padding: '5px 10px',
+                  borderRadius: 6,
+                  border: isReversedRange ? '1px solid #e05252' : '1px solid var(--color-border)',
+                  background: 'var(--color-surface)',
+                  color: 'var(--color-text)',
+                  fontSize: 12,
+                }}
+              />
+            </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <label style={{ fontSize: 12, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
-              To
-            </label>
-            <input
-              type="date"
-              value={customTo}
-              onChange={e => setCustomTo(e.target.value)}
-              style={{
-                padding: '5px 10px',
-                borderRadius: 6,
-                border: '1px solid var(--color-border)',
-                background: 'var(--color-surface)',
-                color: 'var(--color-text)',
-                fontSize: 12,
-              }}
-            />
-          </div>
+          {isReversedRange && (
+            <div style={{ fontSize: 12, color: '#e05252' }}>
+              "From" date must be before "To" date.
+            </div>
+          )}
         </div>
       )}
 

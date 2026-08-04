@@ -6,6 +6,7 @@ import {
   requireAdminLevel,
   requireServiceKeyOrStaff,
 } from '../lib/auth.js'
+import { parseSendLogParams } from '../lib/send-log-query-params.js'
 import { generateUnsubscribeToken } from '../lib/unsubscribe-token.js'
 import { appendEmailFooter } from '../lib/email-footer.js'
 
@@ -183,7 +184,8 @@ router.delete('/templates/:id', requireAuth, requireAdminLevel, async (req, res)
 
 // GET /api/admin/outreach/send-log
 router.get('/send-log', requireServiceKeyOrStaff(['outreach:read']), async (req, res) => {
-  const { prospect_id, template_id, delivery_status, sent_after, sent_before, limit = 100, offset = 0 } = req.query
+  const { logFilters, statsFilters, pagination } = parseSendLogParams(req.query)
+  const { limit, offset } = pagination
 
   let q = supabaseAdmin
     .from('outreach_send_log')
@@ -196,22 +198,24 @@ router.get('/send-log', requireServiceKeyOrStaff(['outreach:read']), async (req,
       { count: 'exact' }
     )
     .order('sent_at', { ascending: false })
-    .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1)
+    .range(offset, offset + limit - 1)
 
-  if (prospect_id) q = q.eq('prospect_id', prospect_id)
-  if (template_id) q = q.eq('template_id', template_id)
-  if (delivery_status) q = q.eq('delivery_status', delivery_status)
-  if (sent_after) q = q.gte('sent_at', sent_after)
-  if (sent_before) q = q.lte('sent_at', sent_before)
+  if (logFilters.prospect_id) q = q.eq('prospect_id', logFilters.prospect_id)
+  if (logFilters.template_id) q = q.eq('template_id', logFilters.template_id)
+  if (logFilters.delivery_status) q = q.eq('delivery_status', logFilters.delivery_status)
+  if (logFilters.sent_after) q = q.gte('sent_at', logFilters.sent_after)
+  if (logFilters.sent_before) q = q.lte('sent_at', logFilters.sent_before)
 
   // Compute aggregate delivery stats — filtered by date but NOT by delivery_status
+  // (statsFilters intentionally omits delivery_status so the bar shows all-status totals
+  //  within the selected date window)
   let statsQuery = supabaseAdmin
     .from('outreach_send_log')
     .select('delivery_status')
-  if (prospect_id) statsQuery = statsQuery.eq('prospect_id', prospect_id)
-  if (template_id) statsQuery = statsQuery.eq('template_id', template_id)
-  if (sent_after) statsQuery = statsQuery.gte('sent_at', sent_after)
-  if (sent_before) statsQuery = statsQuery.lte('sent_at', sent_before)
+  if (statsFilters.prospect_id) statsQuery = statsQuery.eq('prospect_id', statsFilters.prospect_id)
+  if (statsFilters.template_id) statsQuery = statsQuery.eq('template_id', statsFilters.template_id)
+  if (statsFilters.sent_after) statsQuery = statsQuery.gte('sent_at', statsFilters.sent_after)
+  if (statsFilters.sent_before) statsQuery = statsQuery.lte('sent_at', statsFilters.sent_before)
 
   const [{ data, error, count }, { data: statusRows, error: statsErr }] = await Promise.all([
     q,

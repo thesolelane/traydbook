@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+/// <reference types="vitest" />
 
 const isBeta = process.env.SUPABASE_ENV === 'beta'
 
@@ -13,6 +14,14 @@ const supabaseAnonKey = isBeta
 
 export default defineConfig({
   plugins: [react()],
+  test: {
+    environment: 'node',
+    include: [
+      'src/**/*.test.ts',
+      'src/**/*.test.tsx',
+      'server/**/*.test.js',
+    ],
+  },
   define: {
     global: 'globalThis',
     'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(supabaseUrl),
