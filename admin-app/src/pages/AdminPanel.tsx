@@ -67,6 +67,8 @@ import {
   Package,
   Building2,
   GitBranch,
+  ChevronsLeft,
+  ChevronsRight,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { adminWs } from '../lib/adminWs'
@@ -167,6 +169,13 @@ interface Props {
 export default function AdminPanel({ session }: Props) {
   const [section, setSection] = useState<Section>('overview')
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null)
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    try { return localStorage.getItem('admin_sidebar_collapsed') === 'true' } catch { return false }
+  })
+
+  useEffect(() => {
+    try { localStorage.setItem('admin_sidebar_collapsed', String(collapsed)) } catch { /* ignore */ }
+  }, [collapsed])
 
   useEffect(() => {
     supabase
@@ -204,7 +213,7 @@ export default function AdminPanel({ session }: Props) {
       >
         <aside
           style={{
-            width: 220,
+            width: collapsed ? 56 : 220,
             flexShrink: 0,
             borderRight: '1px solid var(--color-border)',
             background: 'var(--color-surface)',
@@ -216,146 +225,189 @@ export default function AdminPanel({ session }: Props) {
             top: 0,
             height: '100vh',
             overflowY: 'auto',
+            overflowX: 'hidden',
+            transition: 'width 0.2s ease',
           }}
         >
+          {/* Header */}
           <div
             style={{
-              padding: '0 20px 20px',
+              padding: collapsed ? '0 0 16px' : '0 20px 20px',
               borderBottom: '1px solid var(--color-border)',
               marginBottom: 8,
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Shield size={18} color="var(--color-brand)" />
-              <span
-                style={{
-                  fontFamily: 'var(--font-condensed)',
-                  fontWeight: 800,
-                  fontSize: 16,
-                  letterSpacing: '0.5px',
-                }}
-              >
-                TRAYDBOOK
-              </span>
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>
-              Super Admin Panel
-            </div>
-            <div
-              style={{
-                fontSize: 11,
-                color: 'var(--color-text-light)',
-                marginTop: 2,
-                wordBreak: 'break-all',
-              }}
-            >
-              {session.user.email}
-            </div>
-            <div style={{ marginTop: 10 }}>
-              <span
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 5,
-                  padding: '3px 8px',
-                  borderRadius: 4,
-                  fontSize: 10,
-                  fontWeight: 800,
-                  letterSpacing: '0.8px',
-                  fontFamily: 'var(--font-condensed)',
-                  background: isBeta ? 'rgba(234,179,8,0.15)' : 'rgba(34,197,94,0.12)',
-                  color: isBeta ? '#eab308' : '#22c55e',
-                  border: `1px solid ${isBeta ? 'rgba(234,179,8,0.35)' : 'rgba(34,197,94,0.3)'}`,
-                }}
-              >
-                <span
+            {collapsed ? (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 40 }}>
+                <Shield size={18} color="var(--color-brand)" />
+              </div>
+            ) : (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Shield size={18} color="var(--color-brand)" />
+                  <span
+                    style={{
+                      fontFamily: 'var(--font-condensed)',
+                      fontWeight: 800,
+                      fontSize: 16,
+                      letterSpacing: '0.5px',
+                    }}
+                  >
+                    TRAYDBOOK
+                  </span>
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>
+                  Super Admin Panel
+                </div>
+                <div
                   style={{
-                    width: 5,
-                    height: 5,
-                    borderRadius: '50%',
-                    background: isBeta ? '#eab308' : '#22c55e',
-                    flexShrink: 0,
+                    fontSize: 11,
+                    color: 'var(--color-text-light)',
+                    marginTop: 2,
+                    wordBreak: 'break-all',
                   }}
-                />
-                {isBeta ? 'BETA DATABASE' : 'PRODUCTION DB'}
-              </span>
-            </div>
+                >
+                  {session.user.email}
+                </div>
+                <div style={{ marginTop: 10 }}>
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      padding: '3px 8px',
+                      borderRadius: 4,
+                      fontSize: 10,
+                      fontWeight: 800,
+                      letterSpacing: '0.8px',
+                      fontFamily: 'var(--font-condensed)',
+                      background: isBeta ? 'rgba(234,179,8,0.15)' : 'rgba(34,197,94,0.12)',
+                      color: isBeta ? '#eab308' : '#22c55e',
+                      border: `1px solid ${isBeta ? 'rgba(234,179,8,0.35)' : 'rgba(34,197,94,0.3)'}`,
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 5,
+                        height: 5,
+                        borderRadius: '50%',
+                        background: isBeta ? '#eab308' : '#22c55e',
+                        flexShrink: 0,
+                      }}
+                    />
+                    {isBeta ? 'BETA DATABASE' : 'PRODUCTION DB'}
+                  </span>
+                </div>
+              </>
+            )}
           </div>
 
+          {/* Nav groups */}
           {NAV_GROUPS.map((group, gi) => {
             const groupActive = group.items.some(item => item.id === section)
             return (
-            <div
-              key={group.label}
-              style={{
-                marginTop: gi === 0 ? 0 : 16,
-                borderLeft: groupActive ? '3px solid var(--color-brand)' : '3px solid transparent',
-                transition: 'border-color 0.15s',
-              }}
-            >
               <div
+                key={group.label}
                 style={{
-                  padding: '0 20px 6px',
-                  paddingLeft: groupActive ? 17 : 20,
-                  fontSize: 10,
-                  fontWeight: 700,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  color: groupActive ? 'var(--color-brand)' : 'var(--color-text-light)',
-                  fontFamily: 'var(--font-condensed)',
-                  transition: 'color 0.15s',
+                  marginTop: gi === 0 ? 0 : collapsed ? 8 : 16,
+                  borderLeft: groupActive ? '3px solid var(--color-brand)' : '3px solid transparent',
+                  transition: 'border-color 0.15s',
                 }}
               >
-                {group.label}
+                {!collapsed && (
+                  <div
+                    style={{
+                      padding: '0 20px 6px',
+                      paddingLeft: groupActive ? 17 : 20,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      color: groupActive ? 'var(--color-brand)' : 'var(--color-text-light)',
+                      fontFamily: 'var(--font-condensed)',
+                      transition: 'color 0.15s',
+                    }}
+                  >
+                    {group.label}
+                  </div>
+                )}
+                {group.items.map(item => {
+                  const itemColor =
+                    item.id === 'errors'
+                      ? section === item.id ? '#e05252' : '#e05252cc'
+                      : item.id === 'threat-monitor'
+                        ? section === item.id ? '#e07c52' : '#e07c52cc'
+                        : section === item.id
+                          ? 'var(--color-brand)'
+                          : 'var(--color-text-muted)'
+                  return (
+                    <button
+                      key={item.id}
+                      title={collapsed ? item.label : undefined}
+                      onClick={() => setSection(item.id)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: collapsed ? 'center' : 'flex-start',
+                        gap: collapsed ? 0 : 10,
+                        padding: collapsed ? '10px 0' : '10px 20px',
+                        width: '100%',
+                        background: section === item.id ? 'rgba(232,93,4,0.1)' : 'none',
+                        border: 'none',
+                        borderRight:
+                          section === item.id ? '3px solid var(--color-brand)' : '3px solid transparent',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: itemColor,
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      {item.icon}
+                      {!collapsed && item.label}
+                    </button>
+                  )
+                })}
               </div>
-              {group.items.map(item => (
-                <button
-                  key={item.id}
-                  onClick={() => setSection(item.id)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    padding: '10px 20px',
-                    width: '100%',
-                    background: section === item.id ? 'rgba(232,93,4,0.1)' : 'none',
-                    border: 'none',
-                    borderRight:
-                      section === item.id ? '3px solid var(--color-brand)' : '3px solid transparent',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color:
-                      item.id === 'errors'
-                        ? section === item.id
-                          ? '#e05252'
-                          : '#e05252cc'
-                        : item.id === 'threat-monitor'
-                          ? section === item.id ? '#e07c52' : '#e07c52cc'
-                          : section === item.id
-                            ? 'var(--color-brand)'
-                            : 'var(--color-text-muted)',
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  {item.icon}
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          )
+            )
           })}
 
-          <div style={{ marginTop: 'auto', padding: '16px 12px 0' }}>
+          {/* Bottom controls */}
+          <div style={{ marginTop: 'auto', padding: collapsed ? '16px 0 0' : '16px 12px 0', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {/* Toggle button */}
             <button
-              onClick={handleSignOut}
+              onClick={() => setCollapsed(c => !c)}
+              title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               style={{
                 display: 'flex',
                 alignItems: 'center',
+                justifyContent: collapsed ? 'center' : 'flex-start',
                 gap: 8,
                 width: '100%',
-                padding: '9px 8px',
+                padding: collapsed ? '9px 0' : '9px 8px',
+                background: 'none',
+                border: '1px solid var(--color-border)',
+                borderRadius: 6,
+                color: 'var(--color-text-muted)',
+                fontSize: 13,
+                cursor: 'pointer',
+              }}
+            >
+              {collapsed ? <ChevronsRight size={14} /> : <><ChevronsLeft size={14} /><span>Collapse</span></>}
+            </button>
+
+            {/* Sign out */}
+            <button
+              onClick={handleSignOut}
+              title={collapsed ? 'Sign out' : undefined}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: collapsed ? 'center' : 'flex-start',
+                gap: 8,
+                width: '100%',
+                padding: collapsed ? '9px 0' : '9px 8px',
                 background: 'none',
                 border: '1px solid var(--color-border)',
                 borderRadius: 6,
@@ -365,7 +417,7 @@ export default function AdminPanel({ session }: Props) {
               }}
             >
               <LogOut size={14} />
-              Sign out
+              {!collapsed && 'Sign out'}
             </button>
           </div>
         </aside>
