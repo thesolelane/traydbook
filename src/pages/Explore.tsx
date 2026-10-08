@@ -208,7 +208,7 @@ export default function Explore() {
   useEffect(() => {
     if (!profile) return
     supabase
-      .from('users')
+      .from('public_profiles')
       .select('location_city, location_state')
       .eq('id', profile.id)
       .single()
@@ -229,7 +229,7 @@ export default function Explore() {
     let stateUserIds: string[] | null = null
     if (locationState) {
       const { data: ud } = await supabase
-        .from('users')
+        .from('public_profiles')
         .select('id')
         .eq('location_state', locationState)
         .limit(2000)
@@ -247,7 +247,7 @@ export default function Explore() {
     let nameUserIds: string[] | null = null
     if (debouncedSearch.trim()) {
       let nameQ = supabase
-        .from('users')
+        .from('public_profiles')
         .select('id')
         .ilike('display_name', `%${debouncedSearch.trim()}%`)
       if (locationState && stateUserIds) {
@@ -276,7 +276,7 @@ export default function Explore() {
         id, user_id, primary_trade, business_name, bio, years_experience,
         rating_avg, rating_count, projects_completed, service_radius_miles,
         availability_status, available_from, badge_tier,
-        user:users!user_id (display_name, handle, avatar_url, location_city, location_state),
+        user:public_profiles!user_id (display_name, handle, avatar_url, location_city, location_state),
         credentials (id, verified_at)
       `
       )

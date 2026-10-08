@@ -191,7 +191,7 @@ export default function PostCard({ post, likedPosts, onLikeToggle }: PostCardPro
       const { data } = await supabase
         .from('comments')
         .select(
-          'id, post_id, body, created_at, author_id, users!author_id (display_name, handle, avatar_url)'
+          'id, post_id, body, created_at, author_id, users:public_profiles!author_id (display_name, handle, avatar_url)'
         )
         .eq('post_id', post.id)
         .order('created_at', { ascending: true })

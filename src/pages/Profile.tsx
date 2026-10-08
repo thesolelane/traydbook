@@ -263,14 +263,15 @@ export default function Profile() {
     setReviews([])
     setCredentials([])
 
-    const { data: userData, error } = await supabase
-      .from('users')
-      .select(
+    const ownProfile = authProfile?.handle === handle && !authProfile.is_delegate
+    const query = ownProfile
+      ? supabase.from('users').select(
         'id, display_name, handle, avatar_url, account_type, location_city, location_state, location_zip, credit_balance, social_links, created_at, is_delegate, phone_number, phone_verified'
-      )
-      .eq('handle', handle)
-      .is('deleted_at', null)
-      .single()
+      ).eq('id', authProfile.id)
+      : supabase.from('public_profiles').select(
+        'id, display_name, handle, avatar_url, bio, account_type, location_city, location_state, is_verified, created_at'
+      ).eq('handle', handle)
+    const { data: userData, error } = await query.single()
 
     if (error || !userData) {
       setNotFound(true)
@@ -434,7 +435,7 @@ export default function Profile() {
         .select(
           `id, post_type, body, media_urls, hashtags, like_count, comment_count, share_count,
           is_urgent, is_boosted, created_at, author_id,
-          users!author_id (display_name, handle, avatar_url, account_type)`
+          users:public_profiles!author_id (display_name, handle, avatar_url, account_type)`
         )
         .eq('author_id', user.id)
         .order('created_at', { ascending: false })
@@ -529,7 +530,7 @@ export default function Profile() {
         .from('reviews')
         .select(
           `id, reviewer_id, reviewee_id, rating, body, verified_job, created_at,
-          users!reviewer_id (display_name, handle, avatar_url)`
+          users:public_profiles!reviewer_id (display_name, handle, avatar_url)`
         )
         .eq('reviewee_id', user.id)
         .order('created_at', { ascending: false })

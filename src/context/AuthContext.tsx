@@ -64,12 +64,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function fetchPrincipalProfile(principalId: string): Promise<UserProfile | null> {
-    const { data } = await supabase
-      .from('users')
-      .select('id, display_name, handle, avatar_url, account_type, credit_balance')
-      .eq('id', principalId)
-      .single()
-    return data as UserProfile | null
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return null
+    const response = await fetch('/api/team/principal-profile', {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    })
+    if (!response.ok) throw new Error('Unable to load delegated account profile')
+    const data = await response.json()
+    if (data.id !== principalId) throw new Error('Delegated account mismatch')
+    return data as UserProfile
   }
 
   async function loadDelegateSession(

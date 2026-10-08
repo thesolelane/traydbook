@@ -176,7 +176,7 @@ export default function Jobs() {
   useEffect(() => {
     if (!profile) return
     supabase
-      .from('users')
+      .from('public_profiles')
       .select('location_city, location_state')
       .eq('id', profile.id)
       .single()
@@ -196,7 +196,7 @@ export default function Jobs() {
   function buildQuery(offset: number) {
     let q = supabase
       .from('job_listings')
-      .select('*, poster:users!poster_id (display_name, handle, avatar_url)')
+      .select('*, poster:public_profiles!poster_id (display_name, handle, avatar_url)')
       .eq('status', 'open')
 
     if (debouncedSearch.trim()) {
@@ -332,7 +332,7 @@ export default function Jobs() {
     const listingIds = [...new Set(apps.map(a => a.listing_id))]
     const { data: listingsData } = await supabase
       .from('job_listings')
-      .select('*, poster:users!poster_id (display_name, handle, avatar_url)')
+      .select('*, poster:public_profiles!poster_id (display_name, handle, avatar_url)')
       .in('id', listingIds)
 
     const listingMap = new Map<string, JobListing>(
@@ -368,7 +368,7 @@ export default function Jobs() {
 
     const { data: listingsData } = await supabase
       .from('job_listings')
-      .select('*, poster:users!poster_id (display_name, handle, avatar_url)')
+      .select('*, poster:public_profiles!poster_id (display_name, handle, avatar_url)')
       .in('id', ids)
       .order('created_at', { ascending: false })
 

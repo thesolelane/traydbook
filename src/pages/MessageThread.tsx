@@ -90,7 +90,7 @@ export default function MessageThread() {
       if (!targetId) return
 
       const { data } = await supabase
-        .from('users')
+        .from('public_profiles')
         .select('id, display_name, handle, avatar_url, account_type')
         .eq('id', targetId)
         .single()

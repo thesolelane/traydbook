@@ -36,7 +36,7 @@ export default function JobDetail() {
     async function load() {
       const { data, error } = await supabase
         .from('job_listings')
-        .select(`*, poster:users!poster_id (display_name, handle, avatar_url, account_type)`)
+        .select(`*, poster:public_profiles!poster_id (display_name, handle, avatar_url, account_type)`)
         .eq('id', id)
         .single()
       if (error || !data) {

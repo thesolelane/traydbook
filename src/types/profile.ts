@@ -15,9 +15,10 @@ export interface ProfileUser {
   account_type: string
   location_city: string | null
   location_state: string | null
-  location_zip: string | null
-  credit_balance: number
-  social_links: SocialLinks | null
+  // Private fields are present only when loading the signed-in user's own row.
+  location_zip?: string | null
+  credit_balance?: number
+  social_links?: SocialLinks | null
   created_at: string
   phone_number?: string | null
   phone_verified?: boolean | null

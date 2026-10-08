@@ -276,7 +276,7 @@ export default function BidDetail() {
         budget_min, budget_max, sq_footage, start_date, duration_weeks, bid_deadline,
         location_zip, location_city, location_state, requirements, bid_count, status,
         awarded_to, is_boosted, created_at,
-        users!poster_id (display_name, handle, avatar_url, account_type)`
+        users:public_profiles!poster_id (display_name, handle, avatar_url, account_type)`
       )
       .eq('id', id!)
       .single()
@@ -319,7 +319,7 @@ export default function BidDetail() {
       .from('bids')
       .select(
         `id, rfq_id, bidder_id, amount, timeline_weeks, cover_note, document_url, status, submitted_at,
-        users!bidder_id (display_name, handle, avatar_url,
+        users:public_profiles!bidder_id (display_name, handle, avatar_url,
           contractor_profiles!user_id (primary_trade, years_experience, rating_avg, rating_count, projects_completed))`
       )
       .eq('rfq_id', id!)

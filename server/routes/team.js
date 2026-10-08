@@ -5,6 +5,32 @@ import { requireAuth } from '../lib/auth.js'
 
 const router = Router()
 
+// Delegates must not read their principal's private users row from the browser.
+// Only an active delegation may retrieve the balance needed for delegated work.
+router.get('/api/team/principal-profile', requireAuth, async (req, res) => {
+  const { data: delegation, error: delegationError } = await supabaseAdmin
+    .from('account_delegations')
+    .select('principal_id')
+    .eq('delegate_id', req.user.id)
+    .eq('status', 'active')
+    .maybeSingle()
+  if (delegationError) return res.status(500).json({ error: 'Unable to check delegation' })
+  if (!delegation) return res.status(403).json({ error: 'Active delegation required' })
+  const { data: profile, error: profileError } = await supabaseAdmin
+    .from('public_profiles')
+    .select('id, display_name, handle, avatar_url, account_type')
+    .eq('id', delegation.principal_id)
+    .single()
+  if (profileError) return res.status(404).json({ error: 'Principal profile not found' })
+  const { data: balance, error: balanceError } = await supabaseAdmin
+    .from('users')
+    .select('credit_balance')
+    .eq('id', delegation.principal_id)
+    .single()
+  if (balanceError) return res.status(500).json({ error: 'Unable to read delegated balance' })
+  res.json({ ...profile, credit_balance: balance.credit_balance, owner_preferences: null })
+})
+
 router.post('/api/team/invite', requireAuth, async (req, res) => {
   const { inviteEmail, role, responsibilityAccepted } = req.body ?? {}
   const principalId = req.user.id

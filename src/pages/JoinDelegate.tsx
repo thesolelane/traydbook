@@ -61,7 +61,7 @@ export default function JoinDelegate() {
       }
 
       const { data: principal } = await supabase
-        .from('users')
+        .from('public_profiles')
         .select('display_name, avatar_url')
         .eq('id', delegation.principal_id)
         .single()

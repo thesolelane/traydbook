@@ -214,7 +214,7 @@ export default function Feed() {
         `
         id, post_type, body, media_urls, hashtags, like_count, comment_count, share_count,
         is_urgent, is_boosted, created_at, author_id, tagged_user_id, linked_job_id, linked_rfq_id,
-        users!author_id (display_name, handle, avatar_url, account_type)
+        users:public_profiles!author_id (display_name, handle, avatar_url, account_type)
       `
       )
       .order('is_boosted', { ascending: false })
@@ -326,7 +326,7 @@ export default function Feed() {
   async function loadMyProfileInfo() {
     if (!profile) return
     const { data: userData } = await supabase
-      .from('users')
+      .from('public_profiles')
       .select('location_city, location_state')
       .eq('id', profile.id)
       .single()
@@ -372,7 +372,7 @@ export default function Feed() {
       const { data } = await supabase
         .from('contractor_profiles')
         .select(
-          'user_id, primary_trade, users!user_id (id, display_name, handle, avatar_url, account_type, location_city, location_state)'
+          'user_id, primary_trade, users:public_profiles!user_id (id, display_name, handle, avatar_url, account_type, location_city, location_state)'
         )
         .eq('primary_trade', myTrade)
         .neq('user_id', profile.id)
@@ -388,7 +388,7 @@ export default function Feed() {
       rows = candidates.slice(0, 6)
     } else if (myCity) {
       const { data } = await supabase
-        .from('users')
+        .from('public_profiles')
         .select(
           'id, display_name, handle, avatar_url, account_type, location_city, location_state, contractor_profiles!user_id (primary_trade)'
         )
@@ -399,7 +399,7 @@ export default function Feed() {
       rows = (data ?? []) as SidebarRow[]
     } else {
       const { data } = await supabase
-        .from('users')
+        .from('public_profiles')
         .select(
           'id, display_name, handle, avatar_url, account_type, location_city, location_state, contractor_profiles!user_id (primary_trade)'
         )

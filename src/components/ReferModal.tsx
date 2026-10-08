@@ -41,7 +41,7 @@ export default function ReferModal({ onClose, onPosted }: ReferModalProps) {
   async function doSearch() {
     setSearching(true)
     const { data } = await supabase
-      .from('users')
+      .from('public_profiles')
       .select(
         'id, display_name, handle, avatar_url, account_type, location_city, location_state, contractor_profiles!user_id (primary_trade)'
       )
@@ -103,7 +103,7 @@ export default function ReferModal({ onClose, onPosted }: ReferModalProps) {
         `
         id, post_type, body, media_urls, hashtags, like_count, comment_count, share_count,
         is_urgent, is_boosted, created_at, author_id, tagged_user_id,
-        users!author_id (display_name, handle, avatar_url, account_type)
+        users:public_profiles!author_id (display_name, handle, avatar_url, account_type)
       `
       )
       .single()

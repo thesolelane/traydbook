@@ -556,7 +556,7 @@ export default function Bids() {
         budget_min, budget_max, sq_footage, start_date, duration_weeks, bid_deadline,
         location_zip, location_city, location_state, requirements, bid_count, status,
         awarded_to, is_boosted, created_at,
-        users!poster_id (display_name, handle, avatar_url, account_type)`
+        users:public_profiles!poster_id (display_name, handle, avatar_url, account_type)`
       )
       .eq('status', 'open')
       .order('is_boosted', { ascending: false })
@@ -603,7 +603,7 @@ export default function Bids() {
       .select(
         `id, rfq_id, amount, timeline_weeks, status, submitted_at,
         rfqs!rfq_id (id, title, trade_needed, location_city, location_state, budget_min, budget_max, bid_deadline, status,
-          users!poster_id (display_name, handle))`
+          users:public_profiles!poster_id (display_name, handle))`
       )
       .eq('bidder_id', profile.id)
       .order('submitted_at', { ascending: false })
@@ -648,7 +648,7 @@ export default function Bids() {
         .select(
           `id, rfq_id, amount, status, submitted_at,
           rfqs!rfq_id (id, title, trade_needed, location_city, location_state, budget_max, start_date,
-            users!poster_id (display_name, handle, avatar_url, location_city, location_state))`
+            users:public_profiles!poster_id (display_name, handle, avatar_url, location_city, location_state))`
         )
         .eq('bidder_id', profile.id)
         .eq('status', 'awarded')
@@ -658,7 +658,7 @@ export default function Bids() {
         .from('rfqs')
         .select(
           `id, title, trade_needed, budget_max, start_date, created_at,
-          users!awarded_to (display_name, handle, avatar_url, location_city, location_state)`
+          users:public_profiles!awarded_to (display_name, handle, avatar_url, location_city, location_state)`
         )
         .eq('poster_id', profile.id)
         .eq('status', 'awarded')
@@ -677,7 +677,7 @@ export default function Bids() {
         budget_min, budget_max, sq_footage, start_date, duration_weeks, bid_deadline,
         location_zip, location_city, location_state, requirements, bid_count, status,
         awarded_to, is_boosted, created_at,
-        users!poster_id (display_name, handle, avatar_url, account_type)`
+        users:public_profiles!poster_id (display_name, handle, avatar_url, account_type)`
       )
       .in('status', ['closed', 'archived'])
       .order('created_at', { ascending: false })

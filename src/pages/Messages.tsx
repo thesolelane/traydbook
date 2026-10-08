@@ -75,7 +75,7 @@ export default function Messages() {
     const uniqueOtherIds = [...new Set(otherIds)]
 
     const { data: users } = await supabase
-      .from('users')
+      .from('public_profiles')
       .select('id, display_name, handle, avatar_url')
       .in('id', uniqueOtherIds)
 

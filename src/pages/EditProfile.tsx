@@ -29,7 +29,7 @@ const AVAILABILITY_OPTIONS = [
 ]
 
 export default function EditProfile() {
-  const { profile, refreshProfile } = useAuth()
+  const { profile, refreshProfile, user: authUser } = useAuth()
 
   const [displayName, setDisplayName] = useState('')
   const [locationCity, setLocationCity] = useState('')
@@ -69,11 +69,15 @@ export default function EditProfile() {
 
   async function loadData() {
     if (!profile) return
-    const { data: userData } = await supabase
-      .from('users')
-      .select('display_name, location_city, location_state, location_zip, avatar_url, social_links')
-      .eq('id', profile.id)
-      .single()
+    const ownProfile = profile.id === authUser?.id
+    const query = ownProfile
+      ? supabase.from('users')
+        .select('display_name, location_city, location_state, location_zip, avatar_url, social_links')
+        .eq('id', authUser.id)
+      : supabase.from('public_profiles')
+        .select('display_name, location_city, location_state, avatar_url')
+        .eq('id', profile.id)
+    const { data: userData } = await query.single()
     if (userData) {
       const u = userData as {
         display_name: string
@@ -165,11 +169,12 @@ export default function EditProfile() {
 
     const userUpdate: Record<string, unknown> = {
       display_name: displayName.trim(),
-      social_links: sanitizedLinks,
     }
+    // Never overwrite private fields that a delegated/public read did not load.
+    if (profile.id === authUser?.id) userUpdate.social_links = sanitizedLinks
     if (locationCity.trim()) userUpdate.location_city = locationCity.trim()
     if (locationState.trim()) userUpdate.location_state = locationState.trim()
-    if (locationZip.trim()) userUpdate.location_zip = locationZip.trim()
+    if (profile.id === authUser?.id && locationZip.trim()) userUpdate.location_zip = locationZip.trim()
     if (avatarUrl) userUpdate.avatar_url = avatarUrl
 
     const { error: userErr } = await supabase.from('users').update(userUpdate).eq('id', profile.id)

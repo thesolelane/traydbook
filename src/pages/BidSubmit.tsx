@@ -73,7 +73,7 @@ export default function BidSubmit() {
         budget_min, budget_max, sq_footage, start_date, duration_weeks, bid_deadline,
         location_zip, location_city, location_state, requirements, bid_count, status,
         awarded_to, is_boosted, created_at,
-        users!poster_id (display_name, handle, avatar_url, account_type)`
+        users:public_profiles!poster_id (display_name, handle, avatar_url, account_type)`
       )
       .eq('id', id!)
       .single()
