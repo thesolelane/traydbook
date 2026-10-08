@@ -176,7 +176,7 @@ function SkeletonProfile() {
 
 export default function Profile() {
   const { handle: urlHandle } = useParams<{ handle: string }>()
-  const { profile: authProfile, refreshProfile } = useAuth()
+  const { profile: authProfile } = useAuth()
   const navigate = useNavigate()
 
   const [user, setUser] = useState<ProfileUser | null>(null)
@@ -593,34 +593,12 @@ export default function Profile() {
     setConnectLoading(false)
   }
 
-  async function handleMessageClick() {
+  function handleMessageClick() {
     if (!authProfile || !user) return
     const threadId = [authProfile.id, user.id].sort().join('_')
-    const isColdMessage =
-      connectionStatus !== 'connected' && authProfile.account_type !== 'contractor'
-    const COLD_MESSAGE_COST = 3
-
-    if (isColdMessage) {
-      if ((authProfile.credit_balance ?? 0) < COLD_MESSAGE_COST) {
-        setMessageToast(
-          `Insufficient credits — you need ${COLD_MESSAGE_COST} to send a cold message (you have ${authProfile.credit_balance ?? 0}).`
-        )
-        setTimeout(() => setMessageToast(null), 5000)
-        return
-      }
-      const { error: creditErr } = await supabase
-        .from('users')
-        .update({ credit_balance: (authProfile.credit_balance ?? 0) - COLD_MESSAGE_COST })
-        .eq('id', authProfile.id)
-      if (creditErr) {
-        setMessageToast('Credit deduction failed — please try again.')
-        setTimeout(() => setMessageToast(null), 3000)
-        return
-      }
-      if (refreshProfile) await refreshProfile()
-    }
-
-    navigate(`/messages/${threadId}`)
+    // Opening a conversation never spends credits. The server charges, records
+    // the ledger entry and sends the first cold message in one transaction.
+    navigate(`/messages/${threadId}?with=${user.id}`)
   }
 
   function handleLikeToggle(postId: string, wasLiked: boolean) {
@@ -844,13 +822,13 @@ export default function Profile() {
                     className="btn btn-secondary"
                     style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}
                     title={
-                      connectionStatus !== 'connected' && authProfile?.account_type !== 'contractor'
-                        ? 'Costs 3 credits'
+                      isContractor && connectionStatus !== 'connected' && authProfile?.account_type !== 'contractor'
+                        ? 'First cold message costs 3 credits; opening this conversation is free'
                         : 'Send a message'
                     }
                   >
                     <MessageSquare size={13} /> Message
-                    {connectionStatus !== 'connected' &&
+                    {isContractor && connectionStatus !== 'connected' &&
                       authProfile?.account_type !== 'contractor' && (
                         <span
                           style={{

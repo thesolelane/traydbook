@@ -14,6 +14,7 @@ import adminBobRoutes from './routes/admin-bob.js'
 import smsRoutes, { sendSmsAlert } from './routes/sms.js'
 import walletRoutes from './routes/wallet.js'
 import onboardingRoutes from './routes/onboarding.js'
+import messageRoutes from './routes/messages.js'
 import uploadRoutes from './routes/upload.js'
 import postRoutes from './routes/posts.js'
 import trustScoreRoutes from './routes/trust-score.js'
@@ -78,6 +79,7 @@ app.use('/api/admin/bob', adminBobRoutes)
 app.use(smsRoutes)
 app.use(walletRoutes)
 app.use(onboardingRoutes)
+app.use(messageRoutes)
 app.use('/api/upload', uploadRoutes)
 app.use('/api/posts', postRoutes)
 app.use(trustScoreRoutes)

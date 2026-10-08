@@ -41,7 +41,7 @@ export default function MessageThread() {
   const { threadId } = useParams<{ threadId: string }>()
   const [searchParams] = useSearchParams()
   const withId = searchParams.get('with')
-  const { profile, canDelegate, logDelegateAction, delegateSession } = useAuth()
+  const { profile, canDelegate, logDelegateAction, delegateSession, refreshProfile } = useAuth()
   const navigate = useNavigate()
 
   const [messages, setMessages] = useState<Message[]>([])
@@ -165,30 +165,34 @@ export default function MessageThread() {
     setSending(true)
     setSendError('')
 
-    const { error } = await supabase.rpc('send_message', {
-      p_recipient_id: otherUser.id,
-      p_thread_id: threadId,
-      p_body: messageBody,
-    })
-
-    if (error) {
-      if (error.message.includes('Insufficient credits')) {
-        navigate('/credits')
-        return
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Please sign in again.')
+      const response = await fetch('/api/messages/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ recipient_id: otherUser.id, body: messageBody }),
+      })
+      const result = await response.json()
+      if (!response.ok) {
+        if (response.status === 402) navigate('/credits')
+        throw new Error(result.error || 'Message could not be sent.')
       }
-      setSendError(error.message)
+      setBody('')
+      setIsFirstContact(false)
+      setShowInquiryModal(false)
+      await Promise.all([loadMessages(), refreshProfile()])
+      inputRef.current?.focus()
+      if (delegateSession) {
+        void logDelegateAction('send_message', { thread_id: threadId, recipient_id: otherUser.id })
+      }
+    } catch (error) {
+      setSendError(error instanceof Error ? error.message : 'Message could not be sent.')
+    } finally {
       setSending(false)
-      throw new Error(error.message)
-    }
-
-    setBody('')
-    setIsFirstContact(false)
-    setShowInquiryModal(false)
-    await loadMessages()
-    setSending(false)
-    inputRef.current?.focus()
-    if (delegateSession) {
-      void logDelegateAction('send_message', { thread_id: threadId, recipient_id: otherUser?.id })
     }
   }
 
