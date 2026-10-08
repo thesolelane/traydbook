@@ -315,8 +315,8 @@ export default function Landing() {
 
     Promise.all([
       supabase
-        .from('profiles')
-        .select('id, full_name, trade, location, created_at')
+        .from('public_profiles')
+        .select('id, display_name, account_type, location_city, location_state, created_at')
         .gte('created_at', since48h)
         .order('created_at', { ascending: false })
         .limit(15),
@@ -329,20 +329,21 @@ export default function Landing() {
         .limit(15),
 
       supabase
-        .from('profiles')
+        .from('public_profiles')
         .select('id', { count: 'exact', head: true })
         .gte('created_at', todayStart.toISOString()),
     ]).then(([profilesRes, postsRes, countRes]) => {
       const items: TickerItem[] = []
 
       for (const p of profilesRes.data ?? []) {
-        const firstName = (p.full_name ?? '').split(' ')[0]
-        const lastInitial = (p.full_name ?? '').split(' ')[1]?.[0]
+        const firstName = (p.display_name ?? '').split(' ')[0]
+        const lastInitial = (p.display_name ?? '').split(' ')[1]?.[0]
         const name = lastInitial ? `${firstName} ${lastInitial}.` : firstName
-        const trade = p.trade ?? 'Tradesperson'
-        const loc = p.location ? ` · ${p.location}` : ''
+        const accountType = (p.account_type ?? 'member').replace(/_/g, ' ')
+        const location = [p.location_city, p.location_state].filter(Boolean).join(', ')
+        const loc = location ? ` · ${location}` : ''
         const when = timeAgo(p.created_at)
-        items.push({ key: `p-${p.id}`, text: `🔨 ${name} joined as ${trade}${loc} · ${when}` })
+        items.push({ key: `p-${p.id}`, text: `🔨 ${name} joined as ${accountType}${loc} · ${when}` })
       }
 
       for (const post of postsRes.data ?? []) {
