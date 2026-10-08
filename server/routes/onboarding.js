@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { rateLimit } from 'express-rate-limit'
 import { supabaseAdmin } from '../lib/clients.js'
 import { requireAuth } from '../lib/auth.js'
+import { validateOnboardingInput } from '../lib/onboarding-input.js'
 import {
   isReferralEnabled,
   generateUniqueCode,
@@ -41,9 +42,17 @@ function slugify(name) {
 }
 
 router.post('/api/onboarding/complete', onboardingLimiter, requireAuth, async (req, res) => {
+  if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+    return res.status(400).json({ error: 'Invalid profile data' })
+  }
+  let input
+  try {
+    input = validateOnboardingInput(req.body)
+  } catch (error) {
+    return res.status(400).json({ error: error.message })
+  }
   const {
     display_name,
-    account_type,
     location_city,
     location_state,
     trade,
@@ -53,7 +62,11 @@ router.post('/api/onboarding/complete', onboardingLimiter, requireAuth, async (r
     bio,
     avatar_url,
     referral_code_used, // optional — code from the referrer's link
-  } = req.body
+    owner_preferences,
+    referral_source,
+    utm_params,
+  } = input
+  const { account_type } = req.body
   const userId = req.user.id
 
   if (!display_name?.trim()) {
@@ -73,7 +86,7 @@ router.post('/api/onboarding/complete', onboardingLimiter, requireAuth, async (r
     return res.status(409).json({ error: 'Profile already exists' })
   }
 
-  const handle = slugify(display_name.trim())
+  const handle = input.handle || slugify(display_name)
 
   // ── Referral system ───────────────────────────────────────────────────────
   let referralCode = null
@@ -106,11 +119,15 @@ router.post('/api/onboarding/complete', onboardingLimiter, requireAuth, async (r
     onboarding_complete: true,
     referral_code: referralCode,
     avatar_url: avatar_url || null,
+    owner_preferences: account_type === 'contractor' ? null : owner_preferences,
+    referral_source,
+    utm_params,
+    referred_at: referral_code_used || referral_source ? new Date().toISOString() : null,
   })
 
   if (userErr) {
     console.error('[onboarding] users insert error:', userErr)
-    return res.status(500).json({ error: userErr.message })
+    return res.status(userErr.code === '23505' ? 409 : 500).json({ error: userErr.message })
   }
 
   if (account_type === 'contractor') {

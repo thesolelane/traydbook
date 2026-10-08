@@ -137,7 +137,7 @@ interface LocationState {
 }
 
 export default function SignupOwner() {
-  const { signUp } = useAuth()
+  const { signUp, refreshProfile } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const state = location.state as LocationState | null
@@ -314,41 +314,36 @@ export default function SignupOwner() {
         }
       }
 
-      const { error: profileError } = await supabase.from('users').insert({
-        id: uid,
-        email,
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Session lost. Please sign in again.')
+      const response = await fetch('/api/onboarding/complete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
         display_name: displayName,
         handle: h,
         avatar_url: uploadedAvatarUrl || null,
         account_type: accountType,
         location_city: locationCity || null,
         location_state: locationState || null,
-        location_zip: null,
-        credit_balance: 50,
-        deleted_at: null,
-        onboarding_complete: true,
+        trade: null,
+        business_name: null,
+        years_experience: null,
+        service_radius_miles: null,
+        bio: null,
         owner_preferences: ownerPreferences,
-        ...(referral
-          ? {
-              referral_source: referral.referral_source,
-              referral_code: referral.referral_code,
-              utm_params: referral.utm_params,
-              referred_at: referral.referred_at,
-            }
-          : {}),
+        referral_code_used: referral?.referral_code || null,
+        referral_source: referral?.referral_source || null,
+        utm_params: referral?.utm_params || null,
+        }),
       })
-
-      if (profileError) throw new Error(profileError.message)
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Unable to create your profile.')
       clearReferral()
-
-      await supabase.from('credit_ledger').insert({
-        user_id: uid,
-        delta: 50,
-        balance_after: 50,
-        transaction_type: 'purchase',
-        description: 'Welcome credits',
-      })
-
+      await refreshProfile()
       navigate('/feed')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred.')

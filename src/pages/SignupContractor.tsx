@@ -112,7 +112,7 @@ interface ContractorLocationState {
 }
 
 export default function SignupContractor() {
-  const { signUp } = useAuth()
+  const { signUp, refreshProfile } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const locationState = location.state as ContractorLocationState | null
@@ -230,51 +230,35 @@ export default function SignupContractor() {
 
       const referral = getReferral()
 
-      const { error: profileError } = await supabase.from('users').insert({
-        id: uid,
-        email: step1.email,
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('Session lost. Please sign in again.')
+      const response = await fetch('/api/onboarding/complete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
         display_name: step2.displayName,
         handle,
         avatar_url: uploadedAvatarUrl || null,
         account_type: accountType,
         location_city: step2.locationCity || null,
         location_state: step2.locationState || null,
-        location_zip: null,
-        credit_balance: 0,
-        deleted_at: null,
-        onboarding_complete: true,
-        ...(referral
-          ? {
-              referral_source: referral.referral_source,
-              referral_code: referral.referral_code,
-              utm_params: referral.utm_params,
-              referred_at: referral.referred_at,
-            }
-          : {}),
-      })
-
-      if (profileError) throw new Error(profileError.message)
-      clearReferral()
-
-      const { error: contractorError } = await supabase.from('contractor_profiles').insert({
-        user_id: uid,
+        trade: step2.primaryTrade,
         business_name: step3.businessName || null,
-        primary_trade: step2.primaryTrade,
-        secondary_trades: [],
         years_experience: parseInt(step2.yearsExperience) || 0,
-        bio: step3.bio || null,
         service_radius_miles: parseInt(step3.serviceRadius) || 50,
-        availability_status: 'available',
-        available_from: null,
-        visible_to_owners: true,
-        rating_avg: 0,
-        rating_count: 0,
-        projects_completed: 0,
-        total_work_value: 0,
+        bio: step3.bio || null,
+        referral_code_used: referral?.referral_code || null,
+        referral_source: referral?.referral_source || null,
+        utm_params: referral?.utm_params || null,
+        }),
       })
-
-      if (contractorError) throw new Error(contractorError.message)
-
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Unable to create your profile.')
+      clearReferral()
+      await refreshProfile()
       navigate('/feed')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred.')
