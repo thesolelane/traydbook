@@ -1,1 +1,3 @@
 - [Live DB ENUM types](live-db-enum-types.md) — purchase_status and account_type are ENUMs in live DB; use ALTER TYPE not DROP/ADD CONSTRAINT.
+- [Backlog scope](backlog-scope.md) — keep suggestions lean; system reliability first, no coverage noise or incremental polish.
+- [Dependency repair constraints](dependency-repair.md) — lock-file repairs must preserve existing versions and externally accessible registry URLs.
