@@ -59,171 +59,214 @@ id = "UHpKx-m6h3QnnnF1sI0kG"
 uri = "file://docs/traydbook-knowledge-base.md"
 type = "text"
 title = "TraydBook Knowledge Base"
+logical_id = "67cc92f5-e1f8-4ae7-b91d-e91a91817960"
 
 [[outputs]]
 id = "IikdeKDzKCHNzBNI_nMI0"
 uri = "file://docs/traydbook-feature-comparison.md"
 type = "text"
 title = "TraydBook Feature Comparison"
+logical_id = "40e1c1d9-5cf5-4149-abac-b0e4723e9407"
 
 [[outputs]]
 id = "9svSifSuCyxDj7Pe-SfaT"
 uri = "file://docs/traydbook-feature-comparison.pdf"
 type = "pdf"
 title = "TraydBook Feature Comparison (PDF)"
+logical_id = "543861dd-cbcd-490b-942e-f435f4285e6e"
 
 [[outputs]]
 id = "klr-_16jHimRdkHVOz8q3"
 uri = "file://docs/traydbook-marketplace-comparison.pdf"
 type = "pdf"
 title = "TraydBook vs Thumbtack, Angi, HomeAdvisor, Houzz, Bark (PDF)"
+logical_id = "aa77a2e6-b251-4526-8103-8f519fc65860"
 
 [[outputs]]
 id = "AXJr9_wioEA8eFHtTrQ4l"
 uri = "file://traydbook-server-config.tar.gz"
 type = "unspecified"
 title = "TraydBook Server Config"
+logical_id = "85f80f85-3339-4dd6-afbc-83a2bcf749cf"
 
 [[outputs]]
 id = "Qksvg8y9ab1oP0wYDIbg7"
 uri = "file://supabase/migrations/admin_security_migration.txt"
 type = "text"
 title = "Admin Security Migration SQL"
+logical_id = "2d257f1f-e87d-4f01-9a84-ea7b55f4fb30"
 
 [[outputs]]
 id = "pjG2GA020ktIElFS_jfb9"
 uri = "file://supabase/migrations/protect_super_admin.txt"
 type = "text"
 title = "Protect Super Admin SQL — run in Supabase"
+logical_id = "184cb443-a4b6-4b33-a75b-1d8ae2580e25"
 
 [[outputs]]
 id = "2QFyTRujpJteW5esQgJia"
 uri = "file://protected-admin-snippet.zip"
 type = "unspecified"
 title = "Protected Super Admin — reusable snippet"
+logical_id = "de762f82-51a3-48a4-9e43-df2a9aedda34"
 
 [[outputs]]
 id = "46jdmpn63FWYMseNBD46I"
 uri = "file://docs/openapi.yaml"
 type = "unspecified"
 title = "TraydBook OpenAPI Spec"
+logical_id = "7bc82ba2-e144-4df3-a54e-a65282be5243"
 
 [[outputs]]
 id = "R1D1TektvD0vREZiTiKyn"
 uri = "file://docs/agent-api-gap-analysis.md"
 type = "text"
 title = "Agent API Gap Analysis"
+logical_id = "0bde9b19-76bb-45bc-81b5-a2d47cc203a5"
 
 [[outputs]]
 id = "tdjDR_m1CGHTA2UWKLRe4"
 uri = "file://docs/bob-api-contract.md"
 type = "text"
 title = "Bob API Contract"
+logical_id = "0b62b337-2410-48d1-b1e2-a26b1f477f40"
 
 [[outputs]]
 id = "GC4_GMZZ-GwKqMdkvIG1G"
 uri = "file://docs/bob-briefing.md"
 type = "text"
 title = "Bob Agent — Admin API Briefing"
+logical_id = "01297f73-00ba-43e5-b41e-691464394716"
 
 [[outputs]]
 id = "rUu_7lCCniYOOV2egPUy4"
 uri = "file://public/logo-transparent.png"
 type = "image"
 title = "TraydBook Logo — softened edges"
+logical_id = "0c38bf04-13df-4dd8-bcec-ef5eee6a95d9"
 
 [[outputs]]
 id = "b2lt9Zg0WMj6B4YJypalo"
 uri = "file://public/logo-ai.png"
 type = "image"
 title = "TraydBook Logo — AI remake (white background)"
+logical_id = "07c229e4-469e-4eed-8323-18207a065b2d"
 
 [[outputs]]
 id = "Z8bi4CswQk14jJuOYMp9F"
 uri = "file://public/logo-ai-transparent.png"
 type = "image"
 title = "TraydBook Logo — AI remake (transparent)"
+logical_id = "536da4a4-1caf-4787-9638-4e0ea3d486db"
 
 [[outputs]]
 id = "n1l5N2FL3aAAxovTjzd4l"
 uri = "file://public/logo-ai4.png"
 type = "image"
 title = "TraydBook Logo — TB monogram (hammer + book)"
+logical_id = "5f5e980c-10b9-4e6b-a017-034455b3aa16"
 
 [[outputs]]
 id = "VWq7R-TW-RP_bpNnKNtoK"
 uri = "file://public/logo-ai5.png"
 type = "image"
 title = "TraydBook Logo — hammer + book B"
+logical_id = "613b1bc1-8340-484f-96eb-5674d3263a8d"
 
 [[outputs]]
 id = "4bB_4dYuZA6AKylUW_3hv"
 uri = "file://public/logo-clean.png"
 type = "image"
 title = "TraydBook Logo — clean, transparent, high-res"
+logical_id = "0b68a7a8-24cd-4ffa-a6a8-b8f909d4534c"
 
 [[outputs]]
 id = "eAq3NX5Lyo3UtkJCGty1Y"
 uri = "file://public/logo-social.png"
 type = "image"
 title = "Social Media — orange background"
+logical_id = "40214587-d7b2-4d1d-bc7f-0d869371de12"
 
 [[outputs]]
 id = "_n4KDWaXjFa42VZ7fV55y"
 uri = "file://public/logo-social-dark.png"
 type = "image"
 title = "TraydBook Social Media Logo — 1080x1080"
+logical_id = "18c39b1e-1db8-4cc1-a117-a9537ced1694"
 
 [[outputs]]
 id = "mu6Xs6kMOsanyjNpuHnRo"
 uri = "file://public/logo-instagram.png"
 type = "image"
 title = "Instagram — 1080x1080"
+logical_id = "50245283-6c2f-4d12-ad75-9936c842b224"
 
 [[outputs]]
 id = "NgmsdMdqF-Is-ezARqKx_"
 uri = "file://public/logo-facebook.png"
 type = "image"
 title = "Facebook — 1080x1080 PNG"
+logical_id = "51873ca3-e2c0-45d7-a998-41355b5c2d23"
 
 [[outputs]]
 id = "DzA2RHjFIQTmdun1kTGs-"
 uri = "file://public/logo-twitter.png"
 type = "image"
 title = "Twitter/X — 400x400 PNG"
+logical_id = "2de04a08-b163-438a-b8c2-ff3b6489aed5"
 
 [[outputs]]
 id = "pFDAFs45N0L9K1CtfUhhA"
 uri = "file://public/traydbook-logos.zip"
 type = "unspecified"
 title = "All Logos — ZIP (Instagram, Facebook, Twitter, Transparent)"
+logical_id = "ecdbea03-263f-4a18-b341-0f690a3bbef2"
 
 [[outputs]]
 id = "_xEgXjUr141IDsBXVaPeq"
 uri = "file://public/logo-instagram.jpg"
 type = "image"
 title = "Instagram — 1080x1080 JPG"
+logical_id = "3cbe69ff-7de4-49ca-bd2a-e19b934dd513"
 
 [[outputs]]
 id = "DzHUVTFpyMb94-ZkKzrIg"
 uri = "file://public/logo-v2-transparent.png"
 type = "image"
 title = "Logo — Transparent PNG"
+logical_id = "488f504c-21b7-40ab-9b27-0f8308df3e00"
 
 [[outputs]]
 id = "uqTATnVkXAs_I7Cmb0YAT"
 uri = "file://public/logo-white-overlay.png"
 type = "image"
 title = "TraydBook — White overlay (transparent background)"
+logical_id = "6fe56dc2-ee14-46f3-87c8-8893a999b047"
 
 [[outputs]]
 id = "F2Lx1ryjNP03h9KENpJKV"
 uri = "file://public/logo-wordmark.png"
 type = "image"
 title = "TraydBook Wordmark"
+logical_id = "0859b3b6-a26c-490d-af7e-7e4b5ba8a44c"
 
 [[outputs]]
 id = "NkZXTX-GckyKpFxYEfp1D"
 uri = "file://public/logo-wordmark-premium.png"
 type = "image"
 title = "traydbook — Premium Wordmark"
+logical_id = "3dbbf159-837b-450e-ba3d-91d6cf152657"
+
+[[outputs]]
+id = "FNcpvwxJG-F8Y3LTI-qB9"
+uri = "file://docs/TraydBook-change-review-2026-10-08.docx"
+type = "word_document"
+title = "TraydBook Change Review"
+description = "Word document with all seven commits, migrations to review, changed files, dev testing instructions, and the freeze/delete proposal."
+logical_id = "c8e9f741-07c5-4400-84bd-609a3ce7e905"
+content_hash = "sha256:d998c083cf16f6f8efac7ff1d6ab4c6088d4c22151ec2aa74fe3bef781d21aad"
+size = 5790
+mtime_ms = 1791439280168
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:9c188798-38bb-4817-8da7-da4aea1349bc/c8e9f741-07c5-4400-84bd-609a3ce7e905/a3cb62b5-77ee-45f0-ab96-fff2ad58e8aa"
+storage_version_token = "1791439286299809"
+content_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
