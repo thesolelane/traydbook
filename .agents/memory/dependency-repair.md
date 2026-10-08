@@ -5,6 +5,6 @@ description: Avoid unintended dependency upgrades and private registry URLs duri
 
 For a lock-file-only repair, preserve all existing dependency versions and manifest ranges. Compare the result against the original files before keeping it.
 
-**Why:** The package installer can upgrade a dependency when supplied its existing caret range and introduce internal registry URLs. Those URLs are unsuitable for installs on an external Coolify host.
+**Why:** The package installer can upgrade a dependency when supplied its existing caret range and introduce internal registry URLs. Those URLs are unsuitable for installs on an external Coolify host. A dry-run install can pass even when the host cannot download the packages.
 
-**How to apply:** Keep only the missing dependency metadata, use public registry URLs with the same verified integrity hashes, and validate full and production npm clean-install resolution in a fresh directory without an existing node_modules tree.
+**How to apply:** Keep only the missing dependency metadata, use public registry URLs with the same verified integrity hashes, and scan the entire lock file for internal hosts, including unchanged entries. Validate actual download access and integrity as well as full and production npm clean-install resolution in a fresh directory without an existing node_modules tree.
